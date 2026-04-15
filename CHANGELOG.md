@@ -26,7 +26,7 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
   - `resources/templates/list`
   - `prompts/list`
   - `prompts/get`
-- `core` tool profile with 50 high-signal tools.
+- `core` tool profile with 19 high-signal tools.
 - `full` tool profile with 67 tools.
 - Scene and hierarchy inspection tools.
 - Node, component, UI, camera, animation, prefab, and asset tools.
@@ -46,6 +46,7 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 - Promoted `execute_javascript` as the recommended primary tool across tool descriptions, prompts, and documentation.
 - Simplified the Cocos panel to focus on service management and MCP client configuration.
 - Changed the menu entry to `Funplay > MCP Server`.
+- Slimmed the default `core` profile from 50 tools to 19 high-signal tools centered on project understanding, diagnostics, and visual validation.
 
 ### Fixed
 

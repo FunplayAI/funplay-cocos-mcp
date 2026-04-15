@@ -194,7 +194,7 @@ url = "http://127.0.0.1:8765/"
 
 - 这是一个 **仅限 Editor** 的扩展，用于自动化 Cocos Creator，不会给最终游戏包添加运行时依赖。
 - MCP Server 默认监听 `http://127.0.0.1:8765/`。
-- 默认 `core` profile 暴露 50 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 67 个工具。
+- 默认 `core` profile 暴露 19 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 67 个工具。
 - 所有已暴露的 MCP 工具都会直接执行，Cocos 扩展里没有额外 approval 开关。
 - 推荐工作流是优先使用 `execute_javascript`，再配合截图、诊断、资产、检查类工具。
 - 如果在面板里修改端口或工具暴露模式，扩展会自动保存配置，并在需要时重启服务。
@@ -227,7 +227,7 @@ Funplay MCP for Cocos 延续 Funplay MCP for Unity 的设计原则，并针对 C
 | 内置服务 | 内嵌 HTTP MCP Server | 内嵌 HTTP MCP Server |
 | 主执行工具 | `execute_javascript` | `execute_code` |
 | 主语言 | 场景/编辑器上下文中的 JavaScript | Unity 编辑器/运行态中的 C# |
-| 默认工具集 | `core`，50 个工具 | 聚焦版 `core` 工具集 |
+| 默认工具集 | `core`，19 个工具 | 聚焦版 `core` 工具集 |
 | 完整工具集 | 67 个工具 | 79 个工具 |
 | 客户端配置 | 一键配置面板 | 一键配置窗口 |
 
@@ -235,10 +235,12 @@ Funplay MCP for Cocos 延续 Funplay MCP for Unity 的设计原则，并针对 C
 
 当前包提供四层能力：
 
-- **Tools** — `core` 下 50 个工具，`full` 下 67 个工具
+- **Tools** — `core` 下 19 个工具，`full` 下 67 个工具
 - **Primary execution** — `execute_javascript` 用于场景/运行态和编辑器/browser 自动化
 - **Prompts** — `fix_script_errors`、`create_playable_prototype`、`scene_validation`、`auto_wire_scene`
 - **Resources** — 项目上下文、场景摘要、当前选择、脚本诊断、资产选择和 MCP 交互历史
+
+当前默认 `core` 工具集刻意保持精简，只包含：`execute_javascript`、`execute_scene_script`、`execute_editor_script`、`get_project_info`、`get_scene_info`、`get_hierarchy`、`list_scenes`、`open_scene`、`list_assets`、`inspect_asset`、`open_asset`、`select_asset`、`run_script_diagnostics`、`get_script_diagnostic_context`、`get_runtime_state`、`capture_editor_screenshot`、`capture_scene_screenshot`、`capture_preview_screenshot`、`list_editor_windows`。
 
 ## 内置 Resources
 

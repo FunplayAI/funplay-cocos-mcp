@@ -194,7 +194,7 @@ Try a higher-level prompt in your AI client:
 
 - This extension is **Editor-only**. It is meant to automate Cocos Creator, not to add runtime dependencies to your final game build.
 - The MCP server listens on `http://127.0.0.1:8765/` by default.
-- The default `core` profile exposes 50 high-signal tools. Switch to `full` in the panel if you want all 67 tools exposed.
+- The default `core` profile exposes 19 high-signal tools. Switch to `full` in the panel if you want all 67 tools exposed.
 - All exposed MCP tools execute directly. There is no extra approval toggle inside the Cocos extension.
 - The recommended workflow is `execute_javascript` first, then focused helper tools for screenshots, diagnostics, assets, and inspection.
 - If you change the server port or tool exposure in the panel, the extension saves the config and restarts the server when needed.
@@ -227,7 +227,7 @@ Funplay MCP for Cocos follows the same design principles as Funplay MCP for Unit
 | Embedded server | Built-in HTTP MCP server | Built-in HTTP MCP server |
 | Primary execution tool | `execute_javascript` | `execute_code` |
 | Primary language | JavaScript in scene/editor contexts | C# in Unity editor/runtime contexts |
-| Default profile | `core` with 50 tools | `core` focused tool profile |
+| Default profile | `core` with 19 tools | `core` focused tool profile |
 | Full profile | 67 tools | 79 tools |
 | Client setup | One-click config panel | One-click config window |
 
@@ -235,10 +235,12 @@ Funplay MCP for Cocos follows the same design principles as Funplay MCP for Unit
 
 The current package exposes four capability layers:
 
-- **Tools** — 50 tools in `core`, 67 tools in `full`
+- **Tools** — 19 tools in `core`, 67 tools in `full`
 - **Primary execution** — `execute_javascript` for scene/runtime and editor/browser automation
 - **Prompts** — `fix_script_errors`, `create_playable_prototype`, `scene_validation`, and `auto_wire_scene`
 - **Resources** — project context, scene summaries, current selection, script diagnostics, asset selection, and MCP interaction history
+
+The default `core` set is intentionally small: `execute_javascript`, `execute_scene_script`, `execute_editor_script`, `get_project_info`, `get_scene_info`, `get_hierarchy`, `list_scenes`, `open_scene`, `list_assets`, `inspect_asset`, `open_asset`, `select_asset`, `run_script_diagnostics`, `get_script_diagnostic_context`, `get_runtime_state`, `capture_editor_screenshot`, `capture_scene_screenshot`, `capture_preview_screenshot`, and `list_editor_windows`.
 
 ## Built-in Resources
 
