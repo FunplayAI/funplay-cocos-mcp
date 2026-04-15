@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+temp/
+Temp/
+Library/
+library/
+dist/
+build/

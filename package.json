@@ -1,0 +1,99 @@
+{
+  "name": "funplay-cocos-mcp",
+  "package_version": 2,
+  "version": "0.1.0",
+  "description": "Embedded MCP server for Cocos Creator with scene script execution, project resources, prompts, and file/scene tools.",
+  "author": "Funplay",
+  "license": "MIT",
+  "main": "browser.js",
+  "scripts": {
+    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-registry.js && node --check lib/utils.js"
+  },
+  "panels": {
+    "default": {
+      "title": "Funplay Cocos MCP",
+      "type": "dockable",
+      "main": "panel/index.js",
+      "size": {
+        "min-width": 520,
+        "min-height": 480,
+        "width": 760,
+        "height": 720
+      }
+    }
+  },
+  "contributions": {
+    "menu": [
+      {
+        "path": "Funplay",
+        "label": "MCP Server",
+        "message": "open-panel"
+      }
+    ],
+    "messages": {
+      "open-panel": {
+        "methods": [
+          "openPanel"
+        ]
+      },
+      "start-server": {
+        "methods": [
+          "startServer"
+        ]
+      },
+      "stop-server": {
+        "methods": [
+          "stopServer"
+        ]
+      },
+      "restart-server": {
+        "methods": [
+          "restartServer"
+        ]
+      },
+      "get-status": {
+        "methods": [
+          "getStatus"
+        ]
+      },
+      "get-panel-state": {
+        "methods": [
+          "getPanelState"
+        ]
+      },
+      "save-config": {
+        "methods": [
+          "saveConfig"
+        ]
+      },
+      "list-tools": {
+        "methods": [
+          "listToolsForPanel"
+        ]
+      },
+      "call-tool": {
+        "methods": [
+          "callToolFromPanel"
+        ]
+      },
+      "read-resource": {
+        "methods": [
+          "readResourceFromPanel"
+        ]
+      },
+      "get-client-config": {
+        "methods": [
+          "getClientConfig"
+        ]
+      },
+      "configure-client": {
+        "methods": [
+          "configureClient"
+        ]
+      }
+    },
+    "scene": {
+      "script": "scene.js"
+    }
+  }
+}
