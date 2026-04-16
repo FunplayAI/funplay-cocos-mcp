@@ -4,6 +4,27 @@ All notable changes to Funplay MCP for Cocos will be documented in this file.
 
 This project follows a simple changelog format inspired by [Keep a Changelog](https://keepachangelog.com/), and uses semantic versioning when releases are tagged.
 
+## [0.1.1] - 2026-04-16
+
+### Added
+
+- Added automatic port fallback when the configured MCP port is already occupied.
+- Added actual-running-port reporting in MCP server status and panel state.
+- Added `.github/pull_request_template.md` for repository contribution guidance.
+- Added `.github/workflows/ci.yml` for lightweight GitHub validation.
+- Added a lightweight GitHub Star promotion log after successful MCP server startup.
+
+### Changed
+
+- Updated one-click MCP client configuration to write the actual running server port instead of the requested port when port fallback is active.
+- Updated the MCP panel status line to show configured-port to actual-port fallback information.
+- Updated the English and Chinese README files to document automatic port fallback behavior.
+
+### Fixed
+
+- Fixed VS Code one-click configuration to use platform-specific config paths with macOS fallback behavior.
+- Fixed Windows one-click MCP configuration path resolution by using a more reliable home/appdata lookup strategy.
+
 ## [0.1.0] - 2026-04-15
 
 ### Added
