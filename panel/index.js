@@ -233,7 +233,11 @@ module.exports = Editor.Panel.define({
       this.$.statusPill.textContent = isRunning ? 'Running' : 'Stopped';
       this.$.statusPill.classList.toggle('running', isRunning);
       this.$.statusPill.classList.toggle('stopped', !isRunning);
-      this.$.statusText.textContent = `${status.url || ''}  |  Project: ${status.projectName || ''}  |  Cocos ${status.cocosVersion || ''}`;
+      const portText = status.portFallbackActive
+        ? `  |  Port fallback: ${status.requestedPort} -> ${status.port}`
+        : '';
+      this.$.statusText.textContent =
+        `${status.url || ''}  |  Project: ${status.projectName || ''}  |  Cocos ${status.cocosVersion || ''}${portText}`;
 
       this.$.enabledInput.value = Boolean(isRunning || config.autostart);
       this.$.portInput.value = Number(config.port || status.port || 8765);

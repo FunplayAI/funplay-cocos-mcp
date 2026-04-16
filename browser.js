@@ -14,6 +14,7 @@ const { InteractionLog } = require('./lib/interaction-log');
 
 const EXTENSION_NAME = manifest.name || 'funplay-cocos-mcp';
 const LOG_PREFIX = '[Funplay Cocos MCP]';
+const REPOSITORY_URL = 'https://github.com/FunplayAI/funplay-cocos-mcp';
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 class ExtensionService {
@@ -114,6 +115,9 @@ class ExtensionService {
 
     await this.server.start();
     console.log(`${LOG_PREFIX} MCP server started at ${this.getStatus().url}`);
+    console.log(
+      `${LOG_PREFIX} If this tool saves you time, please consider giving it a Star on GitHub: ${REPOSITORY_URL}`
+    );
     return this.getStatus();
   }
 
@@ -137,17 +141,35 @@ class ExtensionService {
     return status;
   }
 
+  getEffectiveServerConnection() {
+    const port = this.server && this.server.isRunning() && typeof this.server.getPort === 'function'
+      ? this.server.getPort()
+      : this.config.port;
+    return {
+      host: this.config.host,
+      port,
+      url: `http://${this.config.host}:${port}/`,
+    };
+  }
+
   getStatus() {
+    const effective = this.getEffectiveServerConnection();
+    const fallbackInfo = this.server && this.server.isRunning() && typeof this.server.getPortFallbackInfo === 'function'
+      ? this.server.getPortFallbackInfo()
+      : null;
     return {
       running: Boolean(this.server && this.server.isRunning()),
       host: this.config.host,
-      port: this.config.port,
+      port: effective.port,
+      requestedPort: this.config.port,
+      portFallbackActive: Boolean(fallbackInfo),
+      portFallbackInfo: fallbackInfo,
       toolProfile: this.config.toolProfile,
       autostart: this.config.autostart,
       projectPath: getProjectPath(),
       projectName: getProjectName(),
       cocosVersion: getCocosVersion(),
-      url: `http://${this.config.host}:${this.config.port}/`,
+      url: effective.url,
     };
   }
 
@@ -234,7 +256,7 @@ class ExtensionService {
   }
 
   getClientConfig() {
-    const url = `http://${this.config.host}:${this.config.port}/`;
+    const { url } = this.getEffectiveServerConnection();
     return {
       url,
       codex: `[mcp_servers.funplay_cocos]\nurl = "${url}"\n`,
@@ -251,7 +273,21 @@ class ExtensionService {
   configureClient(targetId) {
     this.ensureRuntime();
     console.log(`${LOG_PREFIX} Configuring MCP client target: ${targetId}`);
-    const result = configureTarget(this.config, targetId);
+    const effective = this.getEffectiveServerConnection();
+    if (effective.port !== this.config.port) {
+      console.log(
+        `${LOG_PREFIX} Using actual running port ${effective.port} for MCP client configuration ` +
+        `(requested: ${this.config.port}).`
+      );
+    }
+    const result = configureTarget(
+      {
+        ...this.config,
+        host: effective.host,
+        port: effective.port,
+      },
+      targetId
+    );
     console.log(`${LOG_PREFIX} MCP client configured: ${result.name} -> ${result.configPath}`);
     return {
       ...result,

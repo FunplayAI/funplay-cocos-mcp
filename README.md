@@ -63,6 +63,8 @@ Funplay > MCP Server
 
 The server runs on `http://127.0.0.1:8765/` by default.
 
+If the configured port is already occupied, the extension automatically falls back to the next available local port and uses the actual running port for one-click MCP client configuration.
+
 The panel is intentionally small:
 
 - Enable or disable the MCP server
@@ -194,6 +196,7 @@ Try a higher-level prompt in your AI client:
 
 - This extension is **Editor-only**. It is meant to automate Cocos Creator, not to add runtime dependencies to your final game build.
 - The MCP server listens on `http://127.0.0.1:8765/` by default.
+- If the configured port is busy, the server automatically falls back to the next available port and the panel/client config use the actual running port.
 - The default `core` profile exposes 19 high-signal tools. Switch to `full` in the panel if you want all 67 tools exposed.
 - All exposed MCP tools execute directly. There is no extra approval toggle inside the Cocos extension.
 - The recommended workflow is `execute_javascript` first, then focused helper tools for screenshots, diagnostics, assets, and inspection.
