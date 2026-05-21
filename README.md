@@ -73,8 +73,10 @@ The panel is intentionally small:
 - Change the server port
 - Switch tool exposure between `core`, `full`, and `custom`
 - Check the installed version against the latest GitHub release
+- Inspect recent tool calls and runtime log previews
 - Tune tool exposure by category or individual tool
-- Configure AI clients with one click
+- Configure AI clients with one click and preview the selected client config
+- Copy quick `curl` commands for `/health` and `/tools`
 - Expand debug output only when needed
 
 ### 3. Configure Your AI Client
@@ -215,6 +217,13 @@ Open your AI client and try a few safe requests first:
 
 If these work, the MCP server, resources, prompts, and primary execution tool are connected correctly.
 
+For local transport debugging, the panel can copy these commands, or you can run them directly:
+
+```bash
+curl http://127.0.0.1:8765/health
+curl http://127.0.0.1:8765/tools
+```
+
 ### 5. Start Building
 
 Try a higher-level prompt in your AI client:
@@ -226,6 +235,7 @@ Try a higher-level prompt in your AI client:
 - This extension is **Editor-only**. It is meant to automate Cocos Creator, not to add runtime dependencies to your final game build.
 - The MCP server listens on `http://127.0.0.1:8765/` by default.
 - If the configured port is busy, the server automatically falls back to the next available port and the panel/client config use the actual running port.
+- `GET /health` and `GET /tools` are read-only debug endpoints for quick local checks outside an MCP client.
 - The default `core` profile exposes 34 high-signal tools. Switch to `full` for all 89 tools, or use `custom` to include/exclude tool categories and individual tools.
 - The panel includes a manual update check against the latest GitHub release.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
@@ -249,7 +259,7 @@ Try a higher-level prompt in your AI client:
 - **89 Built-in Tools** — Scene hierarchy, editor state, selection workflows, prefabs, assets, project instructions, UI creation, components, files, logs, script diagnostics, screenshots, runtime control, and input simulation
 - **Primary Unified Tool** — `execute_javascript` supports both `scene` and `editor` contexts
 - **Resources & Prompts** — Live project/log resources plus reusable workflows like script fixing, scene validation, and playable prototype creation
-- **Cocos Panel UI** — A minimal `Funplay > MCP Server` panel for service management, update checks, tool exposure, and MCP client setup
+- **Cocos Panel UI** — A compact `Funplay > MCP Server` panel for service management, update checks, tool exposure, recent activity, logs, curl diagnostics, and MCP client setup
 - **Screenshot and Input Support** — Capture editor/scene/game/preview screenshots and send Electron-level mouse/keyboard events
 - **Vendor Agnostic** — Works with any AI client that supports MCP over HTTP JSON-RPC
 
@@ -275,6 +285,8 @@ The current package exposes four capability layers:
 - **Primary execution** — `execute_javascript` for scene/runtime and editor/browser automation
 - **Prompts** — `fix_script_errors`, `create_playable_prototype`, `scene_validation`, and `auto_wire_scene`
 - **Resources** — project context, scene summaries, current selection, script diagnostics, asset selection, logs, and MCP interaction history
+
+For the generated tool reference, including categories, profiles, and read/mutation hints, see [docs/TOOLS.md](./docs/TOOLS.md).
 
 The default `core` set is intentionally small: `execute_javascript`, `execute_scene_script`, `execute_editor_script`, `get_editor_state`, `get_tool_catalog`, `check_for_updates`, `get_selection`, `list_project_instructions`, `read_project_instruction`, `set_selection`, `get_project_info`, `get_scene_info`, `get_hierarchy`, `list_scenes`, `open_scene`, `inspect_prefab`, `validate_prefab_references`, `inspect_prefab_instance`, `list_assets`, `inspect_asset`, `open_asset`, `select_asset`, `run_script_diagnostics`, `get_recent_logs`, `search_project_logs`, `clear_logs`, `validate_scene`, `get_performance_snapshot`, `get_script_diagnostic_context`, `get_runtime_state`, `capture_editor_screenshot`, `capture_scene_screenshot`, `capture_preview_screenshot`, and `list_editor_windows`.
 
@@ -385,7 +397,7 @@ Cocos Creator Extension
         └─ server, resources, prompts, tool registry
 ```
 
-The server speaks MCP-style HTTP JSON-RPC 2.0 and supports tools, resources, resource templates, prompts, and health checks.
+The server speaks MCP-style HTTP JSON-RPC 2.0 and supports tools, resources, resource templates, prompts, health checks, and a read-only `/tools` debug endpoint.
 
 ## Development
 
@@ -394,8 +406,15 @@ Run checks before publishing changes:
 ```bash
 npm run check
 npm test
+npm run docs:check
 npm run release:check
 npm run pack:dry-run
+```
+
+Regenerate the tool reference after changing `lib/tool-registry.js`:
+
+```bash
+npm run docs:generate
 ```
 
 To generate a GitHub Release-ready extension package:

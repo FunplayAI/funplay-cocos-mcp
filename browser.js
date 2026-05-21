@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const manifest = require('./package.json');
-const { configureTarget, getTargetStatuses } = require('./lib/client-config');
+const { SERVER_NAME, buildTargets, configureTarget, getTargetStatuses } = require('./lib/client-config');
 const { loadConfig, getProjectPath, getProjectName, getCocosVersion } = require('./lib/config');
 const { McpServer } = require('./lib/server');
 const { createToolRegistry } = require('./lib/tool-registry');
@@ -304,7 +304,21 @@ class ExtensionService {
   }
 
   getClientConfig() {
-    const { url } = this.getEffectiveServerConnection();
+    const effective = this.getEffectiveServerConnection();
+    const { url } = effective;
+    const targetConfig = {
+      ...this.config,
+      host: effective.host,
+      port: effective.port,
+    };
+    const targets = buildTargets(targetConfig).map((target) => ({
+      id: target.id,
+      name: target.name,
+      configPath: target.configPath,
+      isToml: Boolean(target.isToml),
+      preview: this.formatClientTargetPreview(target),
+    }));
+    const baseUrl = url.replace(/\/$/, '');
     return {
       url,
       codex: `[mcp_servers.funplay_cocos]\nurl = "${url}"\n`,
@@ -315,7 +329,26 @@ class ExtensionService {
           },
         },
       }, null, 2),
+      targets,
+      curl: {
+        health: `curl ${baseUrl}/health`,
+        tools: `curl ${baseUrl}/tools`,
+        catalog: `curl ${baseUrl}/tools?catalog=1`,
+      },
     };
+  }
+
+  formatClientTargetPreview(target) {
+    if (target.isToml) {
+      return `[mcp_servers.${SERVER_NAME}]\nurl = "${target.url}"\n`;
+    }
+
+    const rootKey = target.rootKey || 'mcpServers';
+    return JSON.stringify({
+      [rootKey]: {
+        [SERVER_NAME]: target.entry,
+      },
+    }, null, 2);
   }
 
   configureClient(targetId) {

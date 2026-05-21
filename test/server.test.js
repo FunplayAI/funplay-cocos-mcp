@@ -66,6 +66,33 @@ function httpJson(port, payload, headers = {}) {
   });
 }
 
+function httpGet(port, path = '/', headers = {}) {
+  return new Promise((resolve, reject) => {
+    const request = http.request(
+      {
+        host: '127.0.0.1',
+        port,
+        method: 'GET',
+        path,
+        headers,
+      },
+      (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          resolve({
+            statusCode: response.statusCode,
+            headers: response.headers,
+            body: Buffer.concat(chunks).toString('utf8'),
+          });
+        });
+      }
+    );
+    request.on('error', reject);
+    request.end();
+  });
+}
+
 test('initialize negotiates the current MCP protocol version by default', async () => {
   const server = createServer();
   const response = await server.handleRpcRequest({
@@ -217,6 +244,43 @@ test('HTTP notifications return 202 Accepted with no body', async () => {
 
     assert.equal(response.statusCode, 202);
     assert.equal(response.body, '');
+  } finally {
+    await server.stop();
+  }
+});
+
+test('HTTP GET /tools returns debug tool metadata and curl examples', async () => {
+  const server = createServer({
+    listTools: () => [
+      {
+        name: 'get_project_info',
+        description: 'Return project info.',
+        inputSchema: { type: 'object', properties: {} },
+      },
+    ],
+    listToolCatalog: () => [
+      {
+        name: 'get_project_info',
+        description: 'Return project info.',
+        category: 'project',
+        profile: 'core',
+        enabled: true,
+      },
+    ],
+  }, { port: 0 });
+  await server.start();
+  try {
+    const response = await httpGet(server.getPort(), '/tools?catalog=1');
+    const payload = JSON.parse(response.body);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.name, 'test-server');
+    assert.equal(payload.version, '0.0.0-test');
+    assert.equal(payload.count, 1);
+    assert.equal(payload.tools[0].category, 'project');
+    assert.match(payload.examples.health, /curl http:\/\/127\.0\.0\.1:\d+\/health/);
+    assert.match(payload.examples.tools, /curl http:\/\/127\.0\.0\.1:\d+\/tools/);
   } finally {
     await server.stop();
   }

@@ -1,7 +1,7 @@
 {
   "name": "funplay-cocos-mcp",
   "package_version": 2,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Embedded MCP server for Cocos Creator with scene script execution, project resources, prompts, and file/scene tools.",
   "author": "Funplay",
   "license": "MIT",
@@ -31,6 +31,7 @@
   },
   "files": [
     "bin/",
+    "docs/",
     "lib/",
     "panel/",
     "browser.js",
@@ -48,11 +49,13 @@
     "access": "public"
   },
   "scripts": {
-    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check bin/funplay-cocos-mcp.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-registry.js && node --check lib/update-checker.js && node --check lib/utils.js && node --check scripts/release.js",
+    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check bin/funplay-cocos-mcp.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-registry.js && node --check lib/tools/files.js && node --check lib/update-checker.js && node --check lib/utils.js && node --check scripts/generate-tool-docs.js && node --check scripts/release.js",
     "test": "node --test",
+    "docs:generate": "node scripts/generate-tool-docs.js",
+    "docs:check": "node scripts/generate-tool-docs.js --check",
     "pack:dry-run": "npm pack --dry-run",
     "registry:validate": "mcp-publisher validate server.json",
-    "release:check": "node scripts/release.js check",
+    "release:check": "node scripts/release.js check && npm run docs:check",
     "release:package": "node scripts/release.js package",
     "release:verify": "npm run check && npm test && npm run release:check && npm run pack:dry-run && npm run release:package"
   },

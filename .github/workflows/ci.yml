@@ -76,6 +76,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Check generated docs
+        run: npm run docs:check
+
       - name: Run release metadata checks
         run: npm run release:check
 

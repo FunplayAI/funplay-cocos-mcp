@@ -53,12 +53,14 @@ Update:
 3. `server.json`
    - top-level `"version"`
    - npm package `"version"`
+4. `docs/TOOLS.md`
+   - regenerate with `npm run docs:generate` after tool registry changes
 
 Optional but recommended:
 
-4. `README.md`
-5. `README_CN.md`
-6. GitHub Release notes text
+5. `README.md`
+6. `README_CN.md`
+7. GitHub Release notes text
 
 ## Release Steps
 
@@ -90,6 +92,7 @@ This runs:
 
 - JavaScript syntax checks
 - Node.js tests
+- generated tool documentation validation
 - release metadata validation
 - npm package dry-run validation
 - release package generation

@@ -34,6 +34,8 @@ module.exports = Editor.Panel.define({
           </label>
           <ui-button id="restartBtn">Restart</ui-button>
           <ui-button id="copyUrlBtn">Copy URL</ui-button>
+          <ui-button id="copyHealthCurlBtn">Copy Health Curl</ui-button>
+          <ui-button id="copyToolsCurlBtn">Copy Tools Curl</ui-button>
           <ui-button id="checkUpdatesBtn">Check Updates</ui-button>
         </div>
         <div class="grid">
@@ -67,6 +69,20 @@ module.exports = Editor.Panel.define({
           <label>Disabled Categories <ui-textarea id="disabledCategoriesInput"></ui-textarea></label>
           <label>Enabled Tools <ui-textarea id="enabledToolsInput"></ui-textarea></label>
           <label>Disabled Tools <ui-textarea id="disabledToolsInput"></ui-textarea></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Activity</h2>
+        <div class="activity-grid">
+          <div class="activity-column">
+            <h3>Recent Calls</h3>
+            <div id="recentCalls" class="mini-list muted"></div>
+          </div>
+          <div class="activity-column">
+            <h3>Log Preview</h3>
+            <div id="recentLogs" class="mini-list muted"></div>
+          </div>
         </div>
       </section>
 
@@ -113,6 +129,12 @@ module.exports = Editor.Panel.define({
     h2 {
       margin: 0 0 10px 0;
       font-size: 15px;
+    }
+    h3 {
+      margin: 0 0 6px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-normal-contrast-weak);
     }
     p {
       margin: 4px 0 0 0;
@@ -199,6 +221,46 @@ module.exports = Editor.Panel.define({
       white-space: pre-wrap;
       word-break: break-all;
     }
+    .activity-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .mini-list {
+      min-height: 74px;
+      max-height: 158px;
+      overflow: auto;
+      box-sizing: border-box;
+      border: 1px solid var(--color-normal-border);
+      border-radius: 6px;
+      padding: 8px;
+      background: rgba(0,0,0,0.12);
+      line-height: 1.35;
+    }
+    .mini-item {
+      padding: 0 0 8px 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .mini-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .mini-title {
+      color: var(--color-normal-contrast);
+      font-weight: 600;
+      word-break: break-word;
+    }
+    .mini-meta {
+      margin-top: 2px;
+      color: var(--color-normal-contrast-weakest);
+      font-size: 11px;
+    }
+    .mini-body {
+      margin-top: 2px;
+      word-break: break-word;
+    }
     details {
       display: block;
     }
@@ -232,6 +294,11 @@ module.exports = Editor.Panel.define({
     .primary {
       border-color: #4aa3ff;
     }
+    @media (max-width: 620px) {
+      .activity-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   `,
   $: {
     root: '.mcp-root',
@@ -244,6 +311,8 @@ module.exports = Editor.Panel.define({
     sessionsInput: '#sessionsInput',
     restartBtn: '#restartBtn',
     copyUrlBtn: '#copyUrlBtn',
+    copyHealthCurlBtn: '#copyHealthCurlBtn',
+    copyToolsCurlBtn: '#copyToolsCurlBtn',
     checkUpdatesBtn: '#checkUpdatesBtn',
     updateStatus: '#updateStatus',
     toolSummary: '#toolSummary',
@@ -258,6 +327,8 @@ module.exports = Editor.Panel.define({
     configureClientBtn: '#configureClientBtn',
     clientTargetStatus: '#clientTargetStatus',
     clientConfigText: '#clientConfigText',
+    recentCalls: '#recentCalls',
+    recentLogs: '#recentLogs',
     output: '#output',
   },
   methods: {
@@ -295,9 +366,8 @@ module.exports = Editor.Panel.define({
       this.$.disabledToolsInput.value = this.formatList(config.disabledTools);
       this.renderUpdateStatus();
       this.renderToolSummary();
-
-      this.$.clientConfigText.value = state.clientConfig ? state.clientConfig.codex : '';
       this.renderClientTargets();
+      this.renderActivity();
     },
     formatList(value) {
       return Array.isArray(value) ? value.join('\n') : '';
@@ -329,6 +399,75 @@ module.exports = Editor.Panel.define({
       this.$.toolSummary.textContent =
         `Enabled ${enabled.length}/${catalog.length} tools  |  Categories: ${categories.join(', ')}`;
     },
+    renderActivity() {
+      const state = this.state || {};
+      this.renderMiniList(
+        this.$.recentCalls,
+        state.recentInteractions || [],
+        (entry) => ({
+          title: `${String(entry.status || '').toUpperCase()} ${entry.toolName || 'tool'}`,
+          meta: this.formatTimestamp(entry.timestamp),
+          body: entry.summary || '',
+        }),
+        'No recent MCP calls.'
+      );
+      this.renderMiniList(
+        this.$.recentLogs,
+        state.recentRuntimeLogs || [],
+        (entry) => ({
+          title: `${String(entry.level || 'info').toUpperCase()} ${entry.message || ''}`,
+          meta: this.formatTimestamp(entry.timestamp),
+          body: entry.details ? stringify(entry.details) : '',
+        }),
+        'No runtime logs yet.'
+      );
+    },
+    renderMiniList(container, entries, formatEntry, emptyText) {
+      container.innerHTML = '';
+      if (!entries.length) {
+        container.textContent = emptyText;
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      entries.slice(0, 6).forEach((entry) => {
+        const formatted = formatEntry(entry);
+        const item = document.createElement('div');
+        item.className = 'mini-item';
+
+        const title = document.createElement('div');
+        title.className = 'mini-title';
+        title.textContent = formatted.title;
+        item.appendChild(title);
+
+        if (formatted.meta) {
+          const meta = document.createElement('div');
+          meta.className = 'mini-meta';
+          meta.textContent = formatted.meta;
+          item.appendChild(meta);
+        }
+
+        if (formatted.body) {
+          const body = document.createElement('div');
+          body.className = 'mini-body';
+          body.textContent = formatted.body;
+          item.appendChild(body);
+        }
+
+        fragment.appendChild(item);
+      });
+      container.appendChild(fragment);
+    },
+    formatTimestamp(value) {
+      if (!value) {
+        return '';
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return String(value);
+      }
+      return date.toLocaleTimeString();
+    },
     renderClientTargets() {
       const targets = (this.state && this.state.clientTargets) || [];
       const preferred = this.state && this.state.config ? this.state.config.lastClientTargetId : '';
@@ -349,9 +488,29 @@ module.exports = Editor.Panel.define({
         return;
       }
       this.$.clientTargetStatus.textContent = `${target.configured ? 'Configured' : 'Not configured'}: ${target.configPath}`;
+      const previews = this.state && this.state.clientConfig && Array.isArray(this.state.clientConfig.targets)
+        ? this.state.clientConfig.targets
+        : [];
+      const preview = previews.find((item) => item.id === target.id);
+      this.$.clientConfigText.value = preview && preview.preview
+        ? preview.preview
+        : (this.state && this.state.clientConfig ? this.state.clientConfig.codex : '');
     },
     showOutput(value) {
       this.$.output.textContent = stringify(value);
+    },
+    copyText(text, successMessage) {
+      if (!text) {
+        this.showOutput('Nothing to copy.');
+        return;
+      }
+      navigator.clipboard.writeText(text)
+        .then(() => this.showOutput(successMessage))
+        .catch(() => this.showOutput(text));
+    },
+    getCurlCommand(key) {
+      const curl = this.state && this.state.clientConfig && this.state.clientConfig.curl;
+      return curl && curl[key] ? curl[key] : '';
     },
     async persistConfig(options = {}) {
       const { showOutput = false } = options;
@@ -415,9 +574,13 @@ module.exports = Editor.Panel.define({
     this.$.copyUrlBtn.addEventListener('click', () => {
       const status = this.state && this.state.status;
       const text = status && status.url ? status.url : '';
-      navigator.clipboard.writeText(text)
-        .then(() => this.showOutput('Copied URL to clipboard.'))
-        .catch(() => this.showOutput(text));
+      this.copyText(text, 'Copied URL to clipboard.');
+    });
+    this.$.copyHealthCurlBtn.addEventListener('click', () => {
+      this.copyText(this.getCurlCommand('health'), 'Copied health curl command.');
+    });
+    this.$.copyToolsCurlBtn.addEventListener('click', () => {
+      this.copyText(this.getCurlCommand('tools'), 'Copied tools curl command.');
     });
     this.$.checkUpdatesBtn.addEventListener('click', () => this.runAction(() => request('check-updates')));
     this.$.enabledInput.addEventListener('change', () => this.handleEnableToggle());

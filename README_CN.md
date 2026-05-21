@@ -73,8 +73,10 @@ Funplay > MCP Server
 - 修改服务端口
 - 在 `core` / `full` / `custom` 工具暴露模式之间切换
 - 检查当前安装版本是否落后于 GitHub 最新 Release
+- 查看最近工具调用和运行日志预览
 - 按工具分类或单个工具调整暴露范围
-- 一键配置 AI 客户端
+- 一键配置 AI 客户端，并随目标客户端预览对应配置
+- 复制 `/health` 和 `/tools` 的快速 `curl` 排障命令
 - 需要时再展开 Debug Output
 
 ### 3. 配置 AI 客户端
@@ -215,6 +217,13 @@ npm install -g funplay-cocos-mcp
 
 如果这些都正常返回，说明 MCP server、resources、prompts 和主执行工具已经连通。
 
+如果要排查本地传输链路，面板可以直接复制下面的命令，也可以手动执行：
+
+```bash
+curl http://127.0.0.1:8765/health
+curl http://127.0.0.1:8765/tools
+```
+
 ### 5. 开始构建
 
 可以在 AI 客户端里尝试：
@@ -226,6 +235,7 @@ npm install -g funplay-cocos-mcp
 - 这是一个 **仅限 Editor** 的扩展，用于自动化 Cocos Creator，不会给最终游戏包添加运行时依赖。
 - MCP Server 默认监听 `http://127.0.0.1:8765/`。
 - 如果配置端口被占用，服务会自动回退到下一个可用端口，面板与一键客户端配置会使用实际运行端口。
+- `GET /health` 和 `GET /tools` 是只读调试端点，方便不用 MCP 客户端也能快速检查本地服务。
 - 默认 `core` profile 暴露 34 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 89 个工具；也可以用 `custom` 按分类或工具名增删。
 - 面板提供手动更新检查，会对比当前安装版本和 GitHub 最新 Release。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
@@ -249,7 +259,7 @@ npm install -g funplay-cocos-mcp
 - **89 个内置工具** — 覆盖场景层级、编辑器状态、选择工作流、Prefab、资产、项目指令、UI 创建、组件、文件、日志、脚本诊断、截图、运行态控制和输入模拟
 - **统一主工具** — `execute_javascript` 同时支持 `scene` 和 `editor` 两种上下文
 - **Resources 与 Prompts** — 实时项目/日志资源，以及脚本修复、场景验证、可玩原型等可复用工作流
-- **Cocos 图形面板** — `Funplay > MCP Server` 提供服务管理、更新检查、工具暴露和 MCP 客户端配置
+- **Cocos 图形面板** — `Funplay > MCP Server` 提供服务管理、更新检查、工具暴露、最近活动、日志、curl 排障和 MCP 客户端配置
 - **截图与输入支持** — 支持编辑器/场景/Game/Preview 截图，以及 Electron 级鼠标键盘事件
 - **厂商无关** — 兼容任意支持 HTTP JSON-RPC MCP 的 AI 客户端
 
@@ -275,6 +285,8 @@ Funplay MCP for Cocos 延续 Funplay MCP for Unity 的设计原则，并针对 C
 - **Primary execution** — `execute_javascript` 用于场景/运行态和编辑器/browser 自动化
 - **Prompts** — `fix_script_errors`、`create_playable_prototype`、`scene_validation`、`auto_wire_scene`
 - **Resources** — 项目上下文、场景摘要、当前选择、脚本诊断、资产选择、日志和 MCP 交互历史
+
+自动生成的工具参考文档见 [docs/TOOLS.md](./docs/TOOLS.md)，里面包含工具分类、profile 和读写/变更提示。
 
 当前默认 `core` 工具集刻意保持精简，只包含：`execute_javascript`、`execute_scene_script`、`execute_editor_script`、`get_editor_state`、`get_tool_catalog`、`check_for_updates`、`get_selection`、`list_project_instructions`、`read_project_instruction`、`set_selection`、`get_project_info`、`get_scene_info`、`get_hierarchy`、`list_scenes`、`open_scene`、`inspect_prefab`、`validate_prefab_references`、`inspect_prefab_instance`、`list_assets`、`inspect_asset`、`open_asset`、`select_asset`、`run_script_diagnostics`、`get_recent_logs`、`search_project_logs`、`clear_logs`、`validate_scene`、`get_performance_snapshot`、`get_script_diagnostic_context`、`get_runtime_state`、`capture_editor_screenshot`、`capture_scene_screenshot`、`capture_preview_screenshot`、`list_editor_windows`。
 
@@ -385,7 +397,7 @@ Cocos Creator Extension
         └─ server, resources, prompts, tool registry
 ```
 
-服务使用 MCP 风格的 HTTP JSON-RPC 2.0，支持 tools、resources、resource templates、prompts 和 health check。
+服务使用 MCP 风格的 HTTP JSON-RPC 2.0，支持 tools、resources、resource templates、prompts、health check 和只读 `/tools` 调试端点。
 
 ## 开发
 
@@ -394,8 +406,15 @@ Cocos Creator Extension
 ```bash
 npm run check
 npm test
+npm run docs:check
 npm run release:check
 npm run pack:dry-run
+```
+
+修改 `lib/tool-registry.js` 后可以重新生成工具参考：
+
+```bash
+npm run docs:generate
 ```
 
 生成可上传到 GitHub Release 的扩展包：

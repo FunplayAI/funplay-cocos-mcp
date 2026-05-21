@@ -6,6 +6,23 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-05-20
+
+### Added
+
+- Added generated tool reference documentation in `docs/TOOLS.md`.
+- Added `docs:generate` and `docs:check` scripts to keep tool counts, profiles, categories, and descriptions synchronized with `lib/tool-registry.js`.
+- Added CI and release validation for generated tool documentation.
+- Added a read-only `GET /tools` debug endpoint with curl examples for quick local troubleshooting.
+- Added panel activity previews for recent tool calls and runtime logs.
+- Added panel curl copy actions for `/health` and `/tools`.
+
+### Changed
+
+- Refined tool category inference so `get_tool_catalog` is grouped with project/context tools.
+- Updated the MCP client config panel so the preview follows the selected client target.
+- Split file-system tools and asset refresh helpers into `lib/tools/files.js` as the first registry modularization step.
+
 ## [0.3.2] - 2026-05-20
 
 ### Added

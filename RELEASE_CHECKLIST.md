@@ -14,6 +14,7 @@ Use this checklist before publishing a new release of Funplay MCP for Cocos.
 
 - [ ] `npm run check` passes
 - [ ] `npm test` passes
+- [ ] `npm run docs:check` passes
 - [ ] `npm run release:check` passes
 - [ ] `npm run pack:dry-run` passes
 - [ ] `npm run registry:validate` passes when `mcp-publisher` is available
