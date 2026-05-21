@@ -5,6 +5,8 @@ This document records the release workflow for publishing Funplay MCP for Cocos 
 - Git tags
 - GitHub Releases
 - Downloadable Cocos Creator extension zip packages
+- npm stdio wrapper package
+- Official MCP Registry
 
 ## Published Identity
 
@@ -13,6 +15,9 @@ This document records the release workflow for publishing Funplay MCP for Cocos 
 - GitHub Release tag: `v<version>`
 - Extension package asset: `Funplay.CocosMcp.v<version>.zip`
 - Cocos extension folder name inside the zip: `funplay-cocos-mcp`
+- npm package id: `funplay-cocos-mcp`
+- npm command: `funplay-cocos-mcp`
+- MCP Registry server name: `io.github.FunplayAI/funplay-cocos-mcp`
 - Default local MCP endpoint: `http://127.0.0.1:8765/`
 
 ## Version Alignment Rule
@@ -25,6 +30,8 @@ Keep these versions aligned:
 - GitHub Release `v<version>`
 - `releases/<version>/release-manifest.json` `version`
 - Release zip filename `Funplay.CocosMcp.v<version>.zip`
+- `server.json` top-level version
+- `server.json` npm package version
 
 Example:
 
@@ -32,6 +39,8 @@ Example:
 - Git tag: `v0.3.1`
 - GitHub Release: `v0.3.1`
 - Release asset: `Funplay.CocosMcp.v0.3.1.zip`
+- npm package: `funplay-cocos-mcp@0.3.1`
+- MCP Registry: `0.3.1`
 
 ## Files To Update For A New Release
 
@@ -41,12 +50,15 @@ Update:
    - `"version": "<version>"`
 2. `CHANGELOG.md`
    - add a dated release notes block
+3. `server.json`
+   - top-level `"version"`
+   - npm package `"version"`
 
 Optional but recommended:
 
-3. `README.md`
-4. `README_CN.md`
-5. GitHub Release notes text
+4. `README.md`
+5. `README_CN.md`
+6. GitHub Release notes text
 
 ## Release Steps
 
@@ -79,6 +91,7 @@ This runs:
 - JavaScript syntax checks
 - Node.js tests
 - release metadata validation
+- npm package dry-run validation
 - release package generation
 
 The generated local artifacts are written to:
@@ -120,6 +133,19 @@ Verify checksums:
 ```bash
 cd releases/<version>
 shasum -a 256 -c SHA256SUMS.txt
+```
+
+### 4.5 Validate npm And MCP Registry Metadata
+
+```bash
+npm run pack:dry-run
+npm run registry:validate
+```
+
+The npm package must include the stdio wrapper command:
+
+```bash
+npx --yes ./funplay-cocos-mcp-<version>.tgz --version
 ```
 
 ### 5. Commit, Tag, And Push
@@ -175,7 +201,51 @@ gh release view v<version> \
 
 Confirm the release has all four assets.
 
-### 8. Post-Release Smoke Test
+### 8. Publish To npm
+
+```bash
+npm publish
+```
+
+Verify the published package:
+
+```bash
+npm view funplay-cocos-mcp@<version> version bin mcpName
+```
+
+Notes:
+
+- `package.json` `mcpName` must match `server.json` `name`.
+- If `npm publish` returns `ENEEDAUTH`, run `npm adduser` with a publishing account and retry.
+- If the package name already exists under another owner, choose a scoped package name and update both `package.json` and `server.json`.
+
+### 9. Publish To MCP Registry
+
+Log in if needed:
+
+```bash
+mcp-publisher login github
+```
+
+Publish:
+
+```bash
+mcp-publisher publish server.json
+```
+
+Verify latest:
+
+```bash
+curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.FunplayAI/funplay-cocos-mcp&version=latest"
+```
+
+Check a specific version:
+
+```bash
+curl "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.FunplayAI%2Ffunplay-cocos-mcp/versions/<version>"
+```
+
+### 10. Post-Release Smoke Test
 
 Test the package from the public GitHub Release:
 
@@ -186,12 +256,16 @@ Test the package from the public GitHub Release:
 5. Open `Funplay > MCP Server`.
 6. Start the MCP server.
 7. Connect an MCP client and call `get_project_info`.
+8. Install the npm wrapper with `npm install -g funplay-cocos-mcp`.
+9. Connect an MCP client through the `funplay-cocos-mcp` command and call `tools/list`.
 
 ## Current Verification Commands
 
 ```bash
 npm run release:verify
+npm run registry:validate
 gh release view v<version> -R FunplayAI/funplay-cocos-mcp --json url,assets
+npm view funplay-cocos-mcp@<version> version bin mcpName
 ```
 
 ## Common Failure Cases
@@ -226,3 +300,30 @@ Fix:
 
 - Rerun `npm run release:check`.
 - Confirm the command uses `releases/<version>/` and `v<version>`.
+
+### npm `ENEEDAUTH`
+
+Cause:
+
+- The local machine is not logged in to npm.
+
+Fix:
+
+```bash
+npm adduser
+npm publish
+```
+
+### MCP Registry `Package validation failed`
+
+Cause:
+
+- npm package has not been published yet.
+- `package.json` `mcpName` does not match `server.json` `name`.
+- `server.json` package version does not match the npm package version.
+
+Fix:
+
+- Publish the npm package first.
+- Rerun `npm run release:check`.
+- Rerun `npm run registry:validate`.

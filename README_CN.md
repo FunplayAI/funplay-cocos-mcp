@@ -179,6 +179,31 @@ url = "http://127.0.0.1:8765/"
 
 </details>
 
+### 可选：npm stdio Wrapper
+
+如果 MCP 客户端更适合使用本地 `stdio` 命令，可以在启动 Cocos 编辑器内置服务后安装 npm wrapper：
+
+```bash
+npm install -g funplay-cocos-mcp
+```
+
+示例 MCP 客户端配置：
+
+```json
+{
+  "mcpServers": {
+    "funplay_cocos": {
+      "command": "funplay-cocos-mcp",
+      "env": {
+        "FUNPLAY_COCOS_MCP_URL": "http://127.0.0.1:8765/"
+      }
+    }
+  }
+}
+```
+
+这个 wrapper 会把 stdio MCP 流量桥接到 Cocos 内置 HTTP endpoint。也可以直接运行 `npx funplay-cocos-mcp --url http://127.0.0.1:8765/`。
+
 ### 4. 验证连接
 
 先在 AI 客户端里试几个安全请求：
@@ -370,6 +395,7 @@ Cocos Creator Extension
 npm run check
 npm test
 npm run release:check
+npm run pack:dry-run
 ```
 
 生成可上传到 GitHub Release 的扩展包：
@@ -379,6 +405,12 @@ npm run release:package
 ```
 
 产物会写入 `releases/<version>/`，包含 zip、manifest、checksum 和 release README。完整流程见 [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) 和 [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md)。
+
+发布 MCP Registry 前可以验证元数据：
+
+```bash
+npm run registry:validate
+```
 
 ## 协议
 

@@ -179,6 +179,31 @@ url = "http://127.0.0.1:8765/"
 
 </details>
 
+### Optional: npm stdio Wrapper
+
+If your MCP client prefers a local `stdio` command, install the npm wrapper after starting the Cocos editor server:
+
+```bash
+npm install -g funplay-cocos-mcp
+```
+
+Example MCP client entry:
+
+```json
+{
+  "mcpServers": {
+    "funplay_cocos": {
+      "command": "funplay-cocos-mcp",
+      "env": {
+        "FUNPLAY_COCOS_MCP_URL": "http://127.0.0.1:8765/"
+      }
+    }
+  }
+}
+```
+
+The wrapper bridges stdio MCP traffic to the embedded Cocos HTTP endpoint. You can also run it with `npx funplay-cocos-mcp --url http://127.0.0.1:8765/`.
+
 ### 4. Verify the Connection
 
 Open your AI client and try a few safe requests first:
@@ -370,6 +395,7 @@ Run checks before publishing changes:
 npm run check
 npm test
 npm run release:check
+npm run pack:dry-run
 ```
 
 To generate a GitHub Release-ready extension package:
@@ -379,6 +405,12 @@ npm run release:package
 ```
 
 The package is written to `releases/<version>/` with a zip, manifest, checksum file, and release README. See [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) and [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) for the full process.
+
+Validate MCP Registry metadata before publishing:
+
+```bash
+npm run registry:validate
+```
 
 ## License
 

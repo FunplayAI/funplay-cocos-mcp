@@ -1,17 +1,60 @@
 {
   "name": "funplay-cocos-mcp",
   "package_version": 2,
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Embedded MCP server for Cocos Creator with scene script execution, project resources, prompts, and file/scene tools.",
   "author": "Funplay",
   "license": "MIT",
   "main": "browser.js",
+  "bin": {
+    "funplay-cocos-mcp": "bin/funplay-cocos-mcp.js"
+  },
+  "mcpName": "io.github.FunplayAI/funplay-cocos-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FunplayAI/funplay-cocos-mcp.git"
+  },
+  "homepage": "https://github.com/FunplayAI/funplay-cocos-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/FunplayAI/funplay-cocos-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "cocos",
+    "cocos-creator",
+    "funplay",
+    "model-context-protocol",
+    "ai"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "panel/",
+    "browser.js",
+    "scene.js",
+    "server.json",
+    "README.md",
+    "README_CN.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "RELEASE_WORKFLOW.md",
+    "RELEASE_CHECKLIST.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-registry.js && node --check lib/update-checker.js && node --check lib/utils.js && node --check scripts/release.js",
+    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check bin/funplay-cocos-mcp.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-registry.js && node --check lib/update-checker.js && node --check lib/utils.js && node --check scripts/release.js",
     "test": "node --test",
+    "pack:dry-run": "npm pack --dry-run",
+    "registry:validate": "mcp-publisher validate server.json",
     "release:check": "node scripts/release.js check",
     "release:package": "node scripts/release.js package",
-    "release:verify": "npm run check && npm test && npm run release:check && npm run release:package"
+    "release:verify": "npm run check && npm test && npm run release:check && npm run pack:dry-run && npm run release:package"
   },
   "panels": {
     "default": {

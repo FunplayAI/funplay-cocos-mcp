@@ -22,6 +22,8 @@ const REQUIRED_REPO_FILES = [
   'CHANGELOG.md',
   'CONTRIBUTING.md',
   'LICENSE',
+  'server.json',
+  'bin/funplay-cocos-mcp.js',
   'browser.js',
   'scene.js',
   'panel/index.js',
@@ -36,6 +38,8 @@ const PACKAGE_INCLUDES = [
   'CHANGELOG.md',
   'CONTRIBUTING.md',
   'LICENSE',
+  'server.json',
+  'bin',
   'browser.js',
   'scene.js',
   'panel',
@@ -150,8 +154,38 @@ function checkRelease(options = {}) {
     errors.push('package.json main must point to an existing file.');
   }
 
+  if (!packageJson.bin || packageJson.bin['funplay-cocos-mcp'] !== 'bin/funplay-cocos-mcp.js') {
+    errors.push('package.json bin.funplay-cocos-mcp must point to bin/funplay-cocos-mcp.js.');
+  }
+
   if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
     errors.push(`package.json version must be semver-like, got: ${version}`);
+  }
+
+  const serverJson = readJson(path.join(ROOT, 'server.json'), errors);
+  if (serverJson) {
+    if (serverJson.name !== packageJson.mcpName) {
+      errors.push('server.json name must match package.json mcpName.');
+    }
+    if (serverJson.version !== version) {
+      errors.push(`server.json version ${serverJson.version} must match package.json version ${version}.`);
+    }
+    const npmPackage = Array.isArray(serverJson.packages)
+      ? serverJson.packages.find((entry) => entry && entry.registryType === 'npm')
+      : null;
+    if (!npmPackage) {
+      errors.push('server.json must include an npm package entry.');
+    } else {
+      if (npmPackage.identifier !== packageJson.name) {
+        errors.push(`server.json npm identifier ${npmPackage.identifier} must match package.json name ${packageJson.name}.`);
+      }
+      if (npmPackage.version !== version) {
+        errors.push(`server.json npm package version ${npmPackage.version} must match package.json version ${version}.`);
+      }
+      if (!npmPackage.transport || npmPackage.transport.type !== 'stdio') {
+        errors.push('server.json npm package transport must be stdio.');
+      }
+    }
   }
 
   for (const relative of REQUIRED_REPO_FILES) {

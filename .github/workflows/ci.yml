@@ -78,3 +78,6 @@ jobs:
 
       - name: Run release metadata checks
         run: npm run release:check
+
+      - name: Run npm package dry-run
+        run: npm run pack:dry-run

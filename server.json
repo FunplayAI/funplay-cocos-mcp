@@ -1,0 +1,37 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.FunplayAI/funplay-cocos-mcp",
+  "title": "Funplay Cocos MCP",
+  "description": "stdio bridge for the local Cocos Creator Editor MCP server from FunplayAI/funplay-cocos-mcp.",
+  "repository": {
+    "url": "https://github.com/FunplayAI/funplay-cocos-mcp",
+    "source": "github"
+  },
+  "version": "0.3.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "funplay-cocos-mcp",
+      "version": "0.3.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "FUNPLAY_COCOS_MCP_URL",
+          "description": "Optional local Cocos MCP HTTP endpoint. Defaults to http://127.0.0.1:8765/.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "FUNPLAY_COCOS_MCP_TIMEOUT_SECONDS",
+          "description": "Optional HTTP timeout per request in seconds. Defaults to 120.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

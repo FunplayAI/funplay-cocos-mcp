@@ -6,6 +6,14 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-05-20
+
+### Added
+
+- Added an npm-installable `funplay-cocos-mcp` stdio wrapper that bridges MCP clients to the local Cocos HTTP endpoint.
+- Added MCP Registry metadata in `server.json`, including npm package ownership metadata via `mcpName`.
+- Added wrapper tests, npm pack dry-run verification, and registry validation scripts.
+
 ## [0.3.1] - 2026-05-20
 
 ### Added
