@@ -2,4 +2,4 @@
 
 const { createPanel } = require('./shared');
 
-module.exports = createPanel('dashboard');
+module.exports = createPanel('tool-exposure');

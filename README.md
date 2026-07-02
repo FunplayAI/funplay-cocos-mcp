@@ -73,15 +73,13 @@ If the configured port is already occupied, the extension first checks whether t
 The panel is intentionally small:
 
 - Enable or disable the MCP server
-- Change the server port
-- Switch tool exposure between `core`, `full`, and `custom`
-- Save, apply, import, and export named tool profiles
-- Check the installed version against the latest GitHub release
-- Inspect recent tool calls and runtime log previews
-- Tune tool exposure by category controls or individual tool names
+- Open focused Tool Exposure, MCP Settings, and Activity windows
+- Automatically check the installed version against the latest GitHub release
+- Open the release page or install verified release packages from the panel
 - Configure AI clients with one click and preview the selected client config
-- Copy quick `curl` commands for `/health` and `/tools`
-- Expand debug output only when needed
+- Keep advanced tool profile editing, transport settings, diagnostics, and logs out of the main server window
+
+The separate Tool Exposure window uses grouped tool lists with per-tool toggles and category select/clear actions. The Activity window uses a single recent-call stream with `OK` / `ERR` / `INT` badges, matching the simpler Funplay Unity MCP information architecture instead of putting every maintenance workflow into the main server panel.
 
 ### 3. Configure Your AI Client
 
@@ -240,8 +238,9 @@ Try a higher-level prompt in your AI client:
 - The MCP server listens on `http://127.0.0.1:8765/` by default.
 - If the configured port is busy, the server automatically falls back to the next available port and the panel/client config use the actual running port.
 - `GET /health` and `GET /tools` are read-only debug endpoints for quick local checks outside an MCP client.
-- The default `core` profile exposes 37 high-signal tools. Switch to `full` for all 101 tools, or use `custom` to include/exclude tool categories and individual tools.
-- The panel includes a manual update check against the latest GitHub release.
+- The default `core` profile exposes 37 high-signal tools. Switch to `full` for all 102 tools, or use `custom` to include/exclude tool categories and individual tools.
+- The panel checks GitHub releases automatically and also supports manual checks.
+- One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -261,10 +260,10 @@ Try a higher-level prompt in your AI client:
 
 ## Highlights
 
-- **101 Built-in Tools** — Scene hierarchy, editor state, selection workflows, prefabs, assets, asset dependencies, project instructions, UI creation, components, files, logs, script diagnostics, screenshots, runtime control, build/preview helpers, editor preferences, event binding, and input simulation
+- **102 Built-in Tools** — Scene hierarchy, editor state, selection workflows, prefabs, assets, asset dependencies, project instructions, UI creation, components, files, logs, script diagnostics, screenshots, runtime control, build/preview helpers, editor preferences, event binding, and input simulation
 - **Primary Unified Tool** — `execute_javascript` supports both `scene` and `editor` contexts
 - **Resources & Prompts** — Live project/log resources plus reusable workflows like script fixing, scene validation, and playable prototype creation
-- **Cocos Panel UI** — A compact `Funplay > MCP Server` panel for service management, update checks, tool exposure, recent activity, logs, curl diagnostics, and MCP client setup
+- **Cocos Panel UI** — A compact `Funplay > MCP Server` dashboard plus focused Tool Exposure, MCP Settings, and Activity windows for larger workflows
 - **Screenshot and Input Support** — Capture editor/scene/game/preview screenshots and send Electron-level mouse/keyboard events
 - **Vendor Agnostic** — Works with any AI client that supports MCP over HTTP JSON-RPC
 
@@ -279,14 +278,14 @@ Funplay MCP for Cocos follows the same design principles as Funplay MCP for Unit
 | Primary execution tool | `execute_javascript` | `execute_code` |
 | Primary language | JavaScript in scene/editor contexts | C# in Unity editor/runtime contexts |
 | Default profile | `core` with 37 tools | `core` focused tool profile |
-| Full profile | 101 tools plus `custom` exposure | 79 tools |
+| Full profile | 102 tools plus `custom` exposure | 79 tools |
 | Client setup | One-click config panel | One-click config window |
 
 ## MCP Capabilities
 
 The current package exposes four capability layers:
 
-- **Tools** — 37 tools in `core`, 101 tools in `full`, plus `custom` include/exclude rules and saved tool profiles
+- **Tools** — 37 tools in `core`, 102 tools in `full`, plus `custom` include/exclude rules and saved tool profiles
 - **Primary execution** — `execute_javascript` for scene/runtime and editor/browser automation
 - **Prompts** — `fix_script_errors`, `create_playable_prototype`, `scene_validation`, and `auto_wire_scene`
 - **Resources** — project context, scene summaries, current selection, script diagnostics, asset selection, logs, and MCP interaction history
@@ -312,7 +311,7 @@ The default `core` set is intentionally small: `execute_javascript`, `execute_sc
 
 ## Built-in Tools
 
-Funplay MCP for Cocos currently ships with **101 tool functions** in the `full` profile:
+Funplay MCP for Cocos currently ships with **102 tool functions** in the `full` profile:
 
 | Category | Tools |
 |----------|-------|
@@ -321,7 +320,7 @@ Funplay MCP for Cocos currently ships with **101 tool functions** in the `full` 
 | **Project Instructions** | `list_project_instructions`, `read_project_instruction`, `write_project_instruction`, `create_project_skill`, `create_cocos_mcp_project_skill` |
 | **Project & Scene** | `get_project_info`, `get_scene_info`, `get_hierarchy`, `find_nodes`, `inspect_node`, `list_scenes`, `open_scene`, `run_scene_asset` |
 | **Node Editing** | `create_node`, `delete_node`, `set_node_transform` |
-| **Assets & Prefabs** | `list_assets`, `inspect_asset`, `inspect_asset_dependencies`, `validate_asset_dependencies`, `open_asset`, `select_asset`, `delete_asset`, `list_prefabs`, `inspect_prefab`, `validate_prefab_references`, `duplicate_prefab`, `edit_prefab_json`, `create_prefab_instance`, `inspect_prefab_instance`, `apply_prefab_instance`, `revert_prefab_instance`, `instantiate_prefab` |
+| **Assets & Prefabs** | `list_assets`, `inspect_asset`, `inspect_asset_dependencies`, `validate_asset_dependencies`, `open_asset`, `select_asset`, `delete_asset`, `list_prefabs`, `inspect_prefab`, `validate_prefab_references`, `duplicate_prefab`, `edit_prefab_json`, `create_prefab_from_node`, `create_prefab_instance`, `inspect_prefab_instance`, `apply_prefab_instance`, `revert_prefab_instance`, `instantiate_prefab` |
 | **Components** | `list_components`, `inspect_component`, `add_component`, `remove_component`, `set_component_property`, `reset_component_property` |
 | **UI** | `create_canvas`, `create_label`, `create_button`, `create_sprite` |
 | **Camera** | `list_cameras`, `create_camera`, `set_camera_properties` |
@@ -400,7 +399,9 @@ Cocos Creator Extension
     ├─ scene.js
     │   └─ Scene/runtime execution bridge
     ├─ panel/index.js
-    │   └─ Minimal MCP Server panel
+    │   └─ Minimal MCP Server dashboard
+    ├─ panel/tool-exposure.js, panel/settings.js, panel/activity.js
+    │   └─ Focused maintenance windows
     └─ lib/
         ├─ assets, diagnostics, screenshots, input
         ├─ tool-profiles, javascript-safety

@@ -13,11 +13,13 @@ const { PromptProvider } = require('./lib/prompts');
 const { InteractionLog } = require('./lib/interaction-log');
 const { RuntimeLog } = require('./lib/runtime-log');
 const { checkForUpdate } = require('./lib/update-checker');
+const { installLatestUpdate } = require('./lib/updater');
 const { normalizeSavedToolProfiles } = require('./lib/tool-profiles');
 
 const EXTENSION_NAME = manifest.name || 'funplay-cocos-mcp';
 const LOG_PREFIX = '[Funplay Cocos MCP]';
 const REPOSITORY_URL = 'https://github.com/FunplayAI/funplay-cocos-mcp';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 class ExtensionService {
@@ -30,6 +32,7 @@ class ExtensionService {
     this.interactionLog = new InteractionLog();
     this.runtimeLog = new RuntimeLog();
     this.lastUpdateInfo = null;
+    this.lastInstallInfo = null;
   }
 
   log(level, message, details) {
@@ -49,12 +52,19 @@ class ExtensionService {
   load() {
     this.log('info', 'Extension loading...');
     this.reloadRuntime();
+    let result;
     if (this.config.autostart) {
       this.log('info', 'Autostart is enabled, starting MCP server.');
-      return this.startServer();
+      result = this.startServer();
+    } else {
+      this.log('info', 'Autostart is disabled. MCP server is idle.');
+      result = this.getStatus();
     }
-    this.log('info', 'Autostart is disabled. MCP server is idle.');
-    return this.getStatus();
+
+    Promise.resolve(result)
+      .then(() => this.autoCheckUpdates({ reason: 'startup', silent: true }))
+      .catch((error) => this.log('warn', `Automatic update check skipped: ${error.message}`));
+    return result;
   }
 
   unload() {
@@ -66,11 +76,15 @@ class ExtensionService {
     this.log('info', 'Extension unloaded.');
   }
 
-  openPanel() {
+  openPanel(panelName) {
     if (!global.Editor || !Editor.Panel || typeof Editor.Panel.open !== 'function') {
       throw new Error('Editor.Panel.open is unavailable in this Cocos extension host.');
     }
-    return Editor.Panel.open(EXTENSION_NAME);
+    const normalized = String(panelName || 'default').trim();
+    const panelId = !normalized || normalized === 'default'
+      ? EXTENSION_NAME
+      : `${EXTENSION_NAME}.${normalized}`;
+    return Editor.Panel.open(panelId);
   }
 
   reloadRuntime() {
@@ -233,6 +247,7 @@ class ExtensionService {
       recentRuntimeLogs: this.runtimeLog.list(20),
       config: this.config,
       updateInfo: this.lastUpdateInfo,
+      installInfo: this.lastInstallInfo,
       clientConfig: this.getClientConfig(),
       clientTargets: getTargetStatuses(this.config),
     };
@@ -249,10 +264,13 @@ class ExtensionService {
     return await this.toolRegistry.callTool(name, args || {});
   }
 
-  async checkUpdates() {
+  async checkUpdates(options = {}) {
     this.ensureRuntime();
     this.log('info', 'Checking GitHub for newer Funplay Cocos MCP releases.');
-    this.lastUpdateInfo = await checkForUpdate({ currentVersion: manifest.version || '0.0.0' });
+    this.lastUpdateInfo = await checkForUpdate({
+      currentVersion: manifest.version || '0.0.0',
+      timeoutMs: Number.isFinite(options.timeoutMs) ? options.timeoutMs : 5000,
+    });
     if (this.lastUpdateInfo.ok) {
       this.log(
         'info',
@@ -262,6 +280,120 @@ class ExtensionService {
       this.log('warn', `Update check failed: ${this.lastUpdateInfo.error}`);
     }
     return this.getPanelState();
+  }
+
+  async autoCheckUpdates(options = {}) {
+    this.ensureRuntime();
+    const now = Date.now();
+    const lastCheckedAt = this.lastUpdateInfo && this.lastUpdateInfo.checkedAt
+      ? new Date(this.lastUpdateInfo.checkedAt).getTime()
+      : 0;
+    const fresh = Number.isFinite(lastCheckedAt) && lastCheckedAt > 0
+      && now - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS;
+    if (!options.force && fresh) {
+      return this.getPanelState();
+    }
+
+    if (!options.silent) {
+      this.log('info', `Running automatic update check (${options.reason || 'panel'}).`);
+    }
+    return await this.checkUpdates({ timeoutMs: options.timeoutMs });
+  }
+
+  async installUpdate(options = {}) {
+    this.ensureRuntime();
+    let updateInfo = this.lastUpdateInfo;
+    if (!updateInfo || !updateInfo.ok || options.forceCheck) {
+      await this.checkUpdates({ timeoutMs: options.timeoutMs });
+      updateInfo = this.lastUpdateInfo;
+    }
+    if (!updateInfo || !updateInfo.ok) {
+      throw new Error(updateInfo && updateInfo.error ? updateInfo.error : 'Update check failed.');
+    }
+    if (!updateInfo.updateAvailable && !options.force) {
+      throw new Error(`Already up to date: ${updateInfo.currentVersion}.`);
+    }
+
+    const installResult = await installLatestUpdate({
+      releaseInfo: updateInfo,
+      currentVersion: manifest.version || '0.0.0',
+      packagePath: path.dirname(__filename),
+      timeoutMs: Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000,
+      log: (level, message, details) => this.log(level, message, details),
+    });
+    const reload = options.skipReload ? { scheduled: false, reason: 'skipReload requested' } : this.scheduleExtensionReload();
+    this.lastInstallInfo = {
+      ...installResult,
+      installedAt: new Date().toISOString(),
+      reload,
+    };
+    this.log(
+      'info',
+      `Installed Funplay Cocos MCP ${installResult.installedVersion}; ` +
+      (reload.scheduled ? 'extension reload scheduled.' : `reload not scheduled: ${reload.reason}`)
+    );
+    return this.getPanelState();
+  }
+
+  openUpdateRelease(url) {
+    const update = this.lastUpdateInfo || {};
+    const targetUrl = String(url || update.releaseUrl || REPOSITORY_URL).trim();
+    const parsed = new URL(targetUrl);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new Error(`Refusing to open non-HTTP URL: ${targetUrl}`);
+    }
+
+    try {
+      const electron = require('electron');
+      if (electron && electron.shell && typeof electron.shell.openExternal === 'function') {
+        electron.shell.openExternal(targetUrl);
+        return { opened: true, url: targetUrl, method: 'electron.shell.openExternal' };
+      }
+    } catch (error) {
+      // Fall through to Editor or platform open commands.
+    }
+
+    if (global.Editor && Editor.Utils && Editor.Utils.Shell && typeof Editor.Utils.Shell.openExternal === 'function') {
+      Editor.Utils.Shell.openExternal(targetUrl);
+      return { opened: true, url: targetUrl, method: 'Editor.Utils.Shell.openExternal' };
+    }
+
+    const childProcess = require('child_process');
+    const command = process.platform === 'darwin'
+      ? 'open'
+      : process.platform === 'win32'
+        ? 'cmd'
+        : 'xdg-open';
+    const args = process.platform === 'win32' ? ['/c', 'start', '', targetUrl] : [targetUrl];
+    const child = childProcess.spawn(command, args, {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+    return { opened: true, url: targetUrl, method: command };
+  }
+
+  scheduleExtensionReload(delayMs = 1200) {
+    if (!global.Editor || !Editor.Package) {
+      return { scheduled: false, reason: 'Editor.Package is unavailable' };
+    }
+    const canReload = typeof Editor.Package.reload === 'function';
+    if (!canReload) {
+      return {
+        scheduled: false,
+        reason: 'Cocos Creator does not expose a reliable package reload API; restart Cocos Creator to load the updated extension',
+      };
+    }
+
+    setTimeout(async () => {
+      try {
+        this.log('info', 'Reloading Funplay Cocos MCP after update installation.');
+        await Editor.Package.reload(EXTENSION_NAME);
+      } catch (error) {
+        this.log('error', `Extension reload after update failed: ${error.message}`);
+      }
+    }, delayMs);
+    return { scheduled: true, delayMs };
   }
 
   async executeEditorScript(payload, runtimeContext) {
@@ -490,8 +622,17 @@ module.exports = {
     return service.unload();
   },
   methods: {
-    openPanel() {
-      return service.openPanel();
+    openPanel(panelName) {
+      return service.openPanel(panelName);
+    },
+    openToolExposurePanel() {
+      return service.openPanel('tool-exposure');
+    },
+    openSettingsPanel() {
+      return service.openPanel('settings');
+    },
+    openActivityPanel() {
+      return service.openPanel('activity');
     },
     startServer() {
       return service.startServer();
@@ -519,6 +660,15 @@ module.exports = {
     },
     checkUpdates() {
       return service.checkUpdates();
+    },
+    autoCheckUpdates() {
+      return service.autoCheckUpdates({ reason: 'panel' });
+    },
+    installUpdate(options) {
+      return service.installUpdate(options);
+    },
+    openUpdateRelease(url) {
+      return service.openUpdateRelease(url);
     },
     readResourceFromPanel(uri) {
       return service.readResourceFromPanel(uri);

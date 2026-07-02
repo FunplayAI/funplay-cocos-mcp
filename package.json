@@ -1,7 +1,7 @@
 {
   "name": "funplay-cocos-mcp",
   "package_version": 2,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Embedded MCP server for Cocos Creator with scene script execution, project resources, prompts, and file/scene tools.",
   "author": "Funplay",
   "license": "MIT",
@@ -49,7 +49,7 @@
     "access": "public"
   },
   "scripts": {
-    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check bin/funplay-cocos-mcp.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/javascript-safety.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-profiles.js && node --check lib/tool-registry.js && node --check lib/tools/assets-advanced.js && node --check lib/tools/cocos-project.js && node --check lib/tools/files.js && node --check lib/tools/scene-events.js && node --check lib/update-checker.js && node --check lib/utils.js && node --check scripts/generate-tool-docs.js && node --check scripts/release.js",
+    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check panel/shared.js && node --check panel/tool-exposure.js && node --check panel/settings.js && node --check panel/activity.js && node --check bin/funplay-cocos-mcp.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/javascript-safety.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-profiles.js && node --check lib/tool-registry.js && node --check lib/tools/assets-advanced.js && node --check lib/tools/cocos-project.js && node --check lib/tools/files.js && node --check lib/tools/scene-events.js && node --check lib/update-checker.js && node --check lib/updater.js && node --check lib/utils.js && node --check scripts/generate-tool-docs.js && node --check scripts/release.js",
     "test": "node --test",
     "docs:generate": "node scripts/generate-tool-docs.js",
     "docs:check": "node scripts/generate-tool-docs.js --check",
@@ -61,14 +61,47 @@
   },
   "panels": {
     "default": {
-      "title": "Funplay Cocos MCP",
+      "title": "MCP Server",
       "type": "dockable",
       "main": "panel/index.js",
       "size": {
-        "min-width": 520,
-        "min-height": 480,
+        "min-width": 420,
+        "min-height": 360,
+        "width": 560,
+        "height": 620
+      }
+    },
+    "tool-exposure": {
+      "title": "Tool Exposure",
+      "type": "dockable",
+      "main": "panel/tool-exposure.js",
+      "size": {
+        "min-width": 560,
+        "min-height": 460,
         "width": 760,
-        "height": 720
+        "height": 760
+      }
+    },
+    "settings": {
+      "title": "MCP Settings",
+      "type": "dockable",
+      "main": "panel/settings.js",
+      "size": {
+        "min-width": 460,
+        "min-height": 360,
+        "width": 620,
+        "height": 620
+      }
+    },
+    "activity": {
+      "title": "MCP Activity",
+      "type": "dockable",
+      "main": "panel/activity.js",
+      "size": {
+        "min-width": 560,
+        "min-height": 420,
+        "width": 780,
+        "height": 640
       }
     }
   },
@@ -78,12 +111,42 @@
         "path": "Funplay",
         "label": "MCP Server",
         "message": "open-panel"
+      },
+      {
+        "path": "Funplay",
+        "label": "Tool Exposure",
+        "message": "open-tool-exposure"
+      },
+      {
+        "path": "Funplay",
+        "label": "MCP Settings",
+        "message": "open-settings"
+      },
+      {
+        "path": "Funplay",
+        "label": "MCP Activity",
+        "message": "open-activity"
       }
     ],
     "messages": {
       "open-panel": {
         "methods": [
           "openPanel"
+        ]
+      },
+      "open-tool-exposure": {
+        "methods": [
+          "openToolExposurePanel"
+        ]
+      },
+      "open-settings": {
+        "methods": [
+          "openSettingsPanel"
+        ]
+      },
+      "open-activity": {
+        "methods": [
+          "openActivityPanel"
         ]
       },
       "start-server": {
@@ -129,6 +192,21 @@
       "check-updates": {
         "methods": [
           "checkUpdates"
+        ]
+      },
+      "auto-check-updates": {
+        "methods": [
+          "autoCheckUpdates"
+        ]
+      },
+      "install-update": {
+        "methods": [
+          "installUpdate"
+        ]
+      },
+      "open-update-release": {
+        "methods": [
+          "openUpdateRelease"
         ]
       },
       "read-resource": {

@@ -194,6 +194,15 @@ function findNode(input) {
   return findNodeByUuid(input.uuid) || findNodeByPath(input.path) || findNodeByName(input.name);
 }
 
+function getCceSerializer() {
+  const cceGlobal = typeof globalThis !== 'undefined' ? globalThis.cce : undefined;
+  const serializer = cceGlobal && cceGlobal.Utils && cceGlobal.Utils.serialize;
+  if (typeof serializer !== 'function') {
+    throw new Error('cce.Utils.serialize is unavailable. Prefab serialization must run in the Cocos scene process.');
+  }
+  return serializer.bind(cceGlobal.Utils);
+}
+
 function resolveComponentClass(componentName) {
   if (!componentName) {
     return null;
@@ -961,6 +970,51 @@ exports.methods = {
         uuid: node.uuid,
       },
     };
+  },
+
+  async serializePrefabFromNode(options = {}) {
+    const node = findNode(options);
+    if (!node) {
+      throw new Error('Target node was not found.');
+    }
+
+    const serialize = getCceSerializer();
+    const prefab = new Prefab();
+    if (typeof options.prefabName === 'string') {
+      prefab.name = options.prefabName;
+    }
+
+    const root = instantiate(node);
+    try {
+      root.parent = null;
+      if (options.rootName) {
+        root.name = String(options.rootName);
+      }
+
+      prefab.data = root;
+      const serialized = serialize(prefab);
+      const content = typeof serialized === 'string'
+        ? serialized
+        : JSON.stringify(serialized, null, 2);
+
+      JSON.parse(content);
+      return {
+        serialized: true,
+        source: {
+          name: node.name,
+          path: getNodePath(node),
+          uuid: node.uuid,
+        },
+        root: {
+          name: root.name,
+        },
+        content,
+      };
+    } finally {
+      if (root && typeof root.destroy === 'function') {
+        root.destroy();
+      }
+    }
   },
 
   async runSceneAsset(options = {}) {

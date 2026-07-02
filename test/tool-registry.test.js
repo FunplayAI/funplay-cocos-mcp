@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createToolRegistry } = require('../lib/tool-registry');
@@ -36,9 +38,10 @@ test('core profile exposes the documented focused tool set', () => {
 
 test('full profile exposes all built-in tools', () => {
   const tools = createRegistry('full').listTools();
-  assert.equal(tools.length, 101);
+  assert.equal(tools.length, 102);
   assert.equal(tools.some((tool) => tool.name === 'write_file'), true);
   assert.equal(tools.some((tool) => tool.name === 'edit_prefab_json'), true);
+  assert.equal(tools.some((tool) => tool.name === 'create_prefab_from_node'), true);
   assert.equal(tools.some((tool) => tool.name === 'create_project_skill'), true);
   assert.equal(tools.some((tool) => tool.name === 'create_cocos_mcp_project_skill'), true);
   assert.equal(tools.some((tool) => tool.name === 'bind_button_click_event'), true);
@@ -91,6 +94,44 @@ test('callToolDetailed preserves structured values and text output', async () =>
   assert.equal(result.value.data.projectPath, path.resolve('/tmp/funplay-cocos-test-project'));
   assert.match(result.value.callId, /^fp_/);
   assert.match(result.text, /projectPath/);
+});
+
+test('create_prefab_from_node serializes through scene bridge and writes asset file', async (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-prefab-'));
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(tmp, 'assets'), { recursive: true });
+
+  const calls = [];
+  const registry = createRegistry('full', tmp, {}, {
+    sceneBridge: {
+      call: async (method, payload) => {
+        calls.push({ method, payload });
+        return {
+          source: { name: 'SourceNode', path: 'Canvas/SourceNode', uuid: 'source-uuid' },
+          root: { name: payload.rootName || 'SourceNode' },
+          content: '[{"__type__":"cc.Prefab","data":{"__id__":1}},{"__type__":"cc.Node","_name":"SourceNode"}]',
+        };
+      },
+    },
+  });
+
+  const result = await registry.callToolDetailed('create_prefab_from_node', {
+    name: 'SourceNode',
+    rootName: 'LoginPanel',
+    target: 'Prefabs/LoginPanel',
+  });
+
+  assert.equal(calls[0].method, 'serializePrefabFromNode');
+  assert.deepEqual(calls[0].payload, {
+    path: undefined,
+    uuid: undefined,
+    name: 'SourceNode',
+    rootName: 'LoginPanel',
+    prefabName: undefined,
+  });
+  assert.equal(result.value.data.created, true);
+  assert.equal(result.value.data.path, 'assets/Prefabs/LoginPanel.prefab');
+  assert.equal(fs.existsSync(path.join(tmp, 'assets', 'Prefabs', 'LoginPanel.prefab')), true);
 });
 
 test('callToolDetailed preserves screenshot image text while keeping structured envelope small', async () => {

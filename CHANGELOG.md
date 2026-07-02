@@ -6,6 +6,21 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-02
+
+### Added
+
+- Added `create_prefab_from_node`, a Cocos Creator 3.8.x-friendly prefab creation tool that serializes a scene node in the scene process and persists the prefab through asset-db instead of relying on the brittle `scene:create-prefab` message.
+- Added automatic release checks and panel actions for opening the latest GitHub Release or installing a verified update package.
+- Added a checksum-verified one-click updater that downloads the release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces package files, and reloads the extension when the Cocos package API supports it.
+- Added focused Cocos panel windows for Tool Exposure, MCP Settings, and Activity & Logs, with the main MCP Server panel reduced to a dashboard-style workflow.
+- Added a Unity MCP-style Tool Exposure window with grouped tool lists, per-tool toggles, category select/clear actions, and a single-card Recent Activity stream with status badges.
+
+### Fixed
+
+- Treat undefined editor message responses as inconclusive for prefab creation and verify the resulting prefab file/asset before reporting success.
+- Refuse one-click updates for symlink or git-worktree extension installs so local development checkouts are not overwritten accidentally.
+
 ## [0.4.0] - 2026-06-11
 
 ### Added
