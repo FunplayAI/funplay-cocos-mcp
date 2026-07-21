@@ -78,8 +78,11 @@ The panel is intentionally small:
 - Open the release page or install verified release packages from the panel
 - Configure AI clients with one click and preview the selected client config
 - Keep advanced tool profile editing, transport settings, diagnostics, and logs out of the main server window
+- Follow the Cocos Creator interface language automatically, or select Chinese/English per project in MCP Settings
 
 The separate Tool Exposure window uses grouped tool lists with per-tool toggles and category select/clear actions. The Activity window uses a single recent-call stream with `OK` / `ERR` / `INT` badges, matching the simpler Funplay Unity MCP information architecture instead of putting every maintenance workflow into the main server panel.
+
+The extension menu and native panel titles follow the Cocos Creator interface language. Panel controls, tool descriptions, status messages, prompts, and empty states support English and Chinese; open `Funplay > MCP Settings` to follow Creator or set a project-specific content-language override. MCP tool IDs and schemas remain in English so client integrations stay stable.
 
 ### 3. Configure Your AI Client
 

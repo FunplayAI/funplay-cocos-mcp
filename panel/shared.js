@@ -1,6 +1,12 @@
 'use strict';
 
+const EN = require('../i18n/en');
+const ZH = require('../i18n/zh');
+const { detectEditorLanguage, resolveLanguage, translate } = require('../lib/i18n');
+const { localizeToolDescription } = require('./tool-description-i18n');
+
 const PKG = 'funplay-cocos-mcp';
+const DICTIONARIES = { en: EN, zh: ZH };
 
 function request(message, ...args) {
   return Editor.Message.request(PKG, message, ...args);
@@ -20,7 +26,7 @@ function statusMarkup() {
         <h1>Funplay Cocos MCP</h1>
         <div id="versionText" class="subtle">Version</div>
       </div>
-      <div id="statusPill" class="status-pill">Unknown</div>
+      <div id="statusPill" class="status-pill" data-i18n="common.unknown">Unknown</div>
     </header>
     <div id="statusText" class="status-line"></div>
   `;
@@ -30,7 +36,7 @@ function outputMarkup() {
   return `
     <section class="section output-section">
       <details>
-        <summary>Output</summary>
+        <summary data-i18n="common.output">Output</summary>
         <pre id="output"></pre>
       </details>
     </section>
@@ -44,10 +50,10 @@ function dashboardTemplate() {
       <div id="updateStatus" class="update-strip"></div>
 
       <section class="section">
-        <div class="section-title">Service</div>
+        <div class="section-title" data-i18n="dashboard.service">Service</div>
         <div class="service-grid">
-          <label>Server Port <ui-num-input id="portInput"></ui-num-input></label>
-          <label>Tool Exposure
+          <label><span data-i18n="dashboard.server_port">Server Port</span> <ui-num-input id="portInput"></ui-num-input></label>
+          <label><span data-i18n="dashboard.tool_exposure">Tool Exposure</span>
             <ui-select id="profileSelect">
               <option value="core">core</option>
               <option value="full">full</option>
@@ -59,35 +65,35 @@ function dashboardTemplate() {
         <div class="toolbar">
           <label class="checkbox-inline">
             <ui-checkbox id="enabledInput"></ui-checkbox>
-            Enable MCP Server
+            <span data-i18n="dashboard.enable_server">Enable MCP Server</span>
           </label>
-          <ui-button id="restartBtn">Restart</ui-button>
-          <ui-button id="copyUrlBtn">Copy URL</ui-button>
-          <ui-button id="checkUpdatesBtn">Check Updates</ui-button>
-          <ui-button id="openReleaseBtn">Open Release</ui-button>
-          <ui-button id="installUpdateBtn">Install Update</ui-button>
-          <ui-button id="openToolsBtn">Edit Tools</ui-button>
-          <ui-button id="openSettingsBtn">Settings</ui-button>
+          <ui-button id="restartBtn" data-i18n="dashboard.restart">Restart</ui-button>
+          <ui-button id="copyUrlBtn" data-i18n="common.copy_url">Copy URL</ui-button>
+          <ui-button id="checkUpdatesBtn" data-i18n="dashboard.check_updates">Check Updates</ui-button>
+          <ui-button id="openReleaseBtn" data-i18n="dashboard.open_release">Open Release</ui-button>
+          <ui-button id="installUpdateBtn" data-i18n="dashboard.install_update">Install Update</ui-button>
+          <ui-button id="openToolsBtn" data-i18n="dashboard.edit_tools">Edit Tools</ui-button>
+          <ui-button id="openSettingsBtn" data-i18n="dashboard.settings">Settings</ui-button>
         </div>
       </section>
 
       <section class="section">
-        <div class="section-title">MCP Client</div>
+        <div class="section-title" data-i18n="dashboard.mcp_client">MCP Client</div>
         <div class="toolbar">
           <ui-select id="clientTargetSelect"></ui-select>
-          <ui-button id="configureClientBtn" class="primary">One-Click Configure</ui-button>
+          <ui-button id="configureClientBtn" class="primary" data-i18n="dashboard.configure_client">One-Click Configure</ui-button>
         </div>
         <div id="clientTargetStatus" class="inline-status"></div>
         <details class="preview-details">
-          <summary>Preview selected config</summary>
+          <summary data-i18n="dashboard.preview_config">Preview selected config</summary>
           <ui-textarea id="clientConfigText" class="client-preview"></ui-textarea>
         </details>
       </section>
 
       <section class="section">
         <div class="section-heading">
-          <div class="section-title">Recent Activity</div>
-          <ui-button id="openActivityBtn">Open Activity</ui-button>
+          <div class="section-title" data-i18n="dashboard.recent_activity">Recent Activity</div>
+          <ui-button id="openActivityBtn" data-i18n="dashboard.open_activity">Open Activity</ui-button>
         </div>
         <div id="recentCalls" class="mini-list compact-list"></div>
       </section>
@@ -101,16 +107,16 @@ function toolExposureTemplate() {
   return `
     <div class="mcp-root">
       <header class="plain-header">
-        <h1>Tool Exposure</h1>
-        <div class="hint-line">Edit exactly which tools MCP clients can see. Changes restart the running server automatically.</div>
+        <h1 data-i18n="tools.title">Tool Exposure</h1>
+        <div class="hint-line" data-i18n="tools.hint">Edit exactly which tools MCP clients can see. Changes restart the running server automatically.</div>
       </header>
       <section class="section">
         <div class="section-heading">
-          <div class="section-title">Edit Tool List</div>
+          <div class="section-title" data-i18n="tools.edit_list">Edit Tool List</div>
           <div id="toolSummary" class="inline-status"></div>
         </div>
         <div class="service-grid">
-          <label>Tool Exposure
+          <label><span data-i18n="dashboard.tool_exposure">Tool Exposure</span>
             <ui-select id="profileSelect">
               <option value="core">core</option>
               <option value="full">full</option>
@@ -118,20 +124,20 @@ function toolExposureTemplate() {
             </ui-select>
           </label>
           <div class="toolbar inline-toolbar">
-            <ui-button id="useCoreBtn">Core</ui-button>
-            <ui-button id="useFullBtn">Full</ui-button>
-            <ui-button id="useCustomBtn">Custom</ui-button>
+            <ui-button id="useCoreBtn" data-i18n="tools.profile_core">Core</ui-button>
+            <ui-button id="useFullBtn" data-i18n="tools.profile_full">Full</ui-button>
+            <ui-button id="useCustomBtn" data-i18n="tools.profile_custom">Custom</ui-button>
           </div>
         </div>
       </section>
 
       <section class="section">
         <div class="section-heading">
-          <div class="section-title">Tools</div>
+          <div class="section-title" data-i18n="tools.tools">Tools</div>
           <div class="toolbar compact">
-            <ui-button id="selectAllToolsBtn">Select All</ui-button>
-            <ui-button id="clearToolsBtn">Clear</ui-button>
-            <ui-button id="useDefaultToolsBtn">Use Default</ui-button>
+            <ui-button id="selectAllToolsBtn" data-i18n="tools.select_all">Select All</ui-button>
+            <ui-button id="clearToolsBtn" data-i18n="common.clear">Clear</ui-button>
+            <ui-button id="useDefaultToolsBtn" data-i18n="tools.use_default">Use Default</ui-button>
           </div>
         </div>
         <div id="toolList" class="tool-list"></div>
@@ -139,15 +145,15 @@ function toolExposureTemplate() {
 
       <section class="section">
         <details>
-          <summary>Named Profiles</summary>
+          <summary data-i18n="tools.named_profiles">Named Profiles</summary>
           <div class="toolbar profile-row">
-            <ui-input id="toolProfileNameInput" placeholder="Profile name"></ui-input>
+            <ui-input id="toolProfileNameInput" placeholder="Profile name" data-i18n-placeholder="tools.profile_name"></ui-input>
             <ui-select id="savedToolProfileSelect"></ui-select>
-            <ui-button id="saveToolProfileBtn">Save</ui-button>
-            <ui-button id="applyToolProfileBtn">Apply</ui-button>
-            <ui-button id="deleteToolProfileBtn">Delete</ui-button>
-            <ui-button id="exportToolProfilesBtn">Export</ui-button>
-            <ui-button id="importToolProfilesBtn">Import</ui-button>
+            <ui-button id="saveToolProfileBtn" data-i18n="common.save">Save</ui-button>
+            <ui-button id="applyToolProfileBtn" data-i18n="common.apply">Apply</ui-button>
+            <ui-button id="deleteToolProfileBtn" data-i18n="common.delete">Delete</ui-button>
+            <ui-button id="exportToolProfilesBtn" data-i18n="common.export">Export</ui-button>
+            <ui-button id="importToolProfilesBtn" data-i18n="common.import">Import</ui-button>
           </div>
           <ui-textarea id="toolProfileImportText" class="short-textarea"></ui-textarea>
         </details>
@@ -155,12 +161,12 @@ function toolExposureTemplate() {
 
       <section class="section">
         <details>
-          <summary>Raw Include / Exclude Lists</summary>
+          <summary data-i18n="tools.raw_lists">Raw Include / Exclude Lists</summary>
           <div class="tool-config-grid">
-            <label>Enabled Categories <ui-textarea id="enabledCategoriesInput"></ui-textarea></label>
-            <label>Disabled Categories <ui-textarea id="disabledCategoriesInput"></ui-textarea></label>
-            <label>Enabled Tools <ui-textarea id="enabledToolsInput"></ui-textarea></label>
-            <label>Disabled Tools <ui-textarea id="disabledToolsInput"></ui-textarea></label>
+            <label><span data-i18n="tools.enabled_categories">Enabled Categories</span> <ui-textarea id="enabledCategoriesInput"></ui-textarea></label>
+            <label><span data-i18n="tools.disabled_categories">Disabled Categories</span> <ui-textarea id="disabledCategoriesInput"></ui-textarea></label>
+            <label><span data-i18n="tools.enabled_tools">Enabled Tools</span> <ui-textarea id="enabledToolsInput"></ui-textarea></label>
+            <label><span data-i18n="tools.disabled_tools">Disabled Tools</span> <ui-textarea id="disabledToolsInput"></ui-textarea></label>
           </div>
         </details>
       </section>
@@ -174,37 +180,50 @@ function settingsTemplate() {
   return `
     <div class="mcp-root">
       <header class="plain-header">
-        <h1>MCP Settings</h1>
-        <div class="hint-line">Project-level defaults for transport, JavaScript safety, and local diagnostics.</div>
+        <h1 data-i18n="settings.title">MCP Settings</h1>
+        <div class="hint-line" data-i18n="settings.hint">Project-level defaults for interface, transport, JavaScript safety, and local diagnostics.</div>
       </header>
       <section class="section">
-        <div class="section-title">Safety</div>
+        <div class="section-title" data-i18n="settings.interface">Interface</div>
+        <div class="settings-grid">
+          <label><span data-i18n="settings.language">Language</span>
+            <ui-select id="languageSelect">
+              <option value="auto">Auto / 跟随 Cocos Creator</option>
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+            </ui-select>
+          </label>
+        </div>
+        <div id="languageHint" class="hint-line"></div>
+      </section>
+      <section class="section">
+        <div class="section-title" data-i18n="settings.safety">Safety</div>
         <div class="settings-grid">
           <label class="checkbox-line">
             <ui-checkbox id="javascriptSafetyInput"></ui-checkbox>
-            Default JavaScript safety checks
+            <span data-i18n="settings.javascript_safety">Default JavaScript safety checks</span>
           </label>
         </div>
-        <div class="hint-line">Default for execute_javascript calls when safety_checks is omitted. Explicit safety_checks=false can still bypass this for trusted local calls.</div>
+        <div class="hint-line" data-i18n="settings.javascript_safety_hint">Default for execute_javascript calls when safety_checks is omitted. Explicit safety_checks=false can still bypass this for trusted local calls.</div>
       </section>
 
       <section class="section">
-        <div class="section-title">Transport</div>
+        <div class="section-title" data-i18n="settings.transport">Transport</div>
         <div class="settings-grid">
           <label class="checkbox-line">
             <ui-checkbox id="sessionsInput"></ui-checkbox>
-            MCP Sessions
+            <span data-i18n="settings.sessions">MCP Sessions</span>
           </label>
         </div>
-        <div class="hint-line">Direct HTTP is the default. Sessions add MCP-Session-Id handling for clients that require session-aware Streamable HTTP.</div>
+        <div class="hint-line" data-i18n="settings.sessions_hint">Direct HTTP is the default. Sessions add MCP-Session-Id handling for clients that require session-aware Streamable HTTP.</div>
       </section>
 
       <section class="section">
-        <div class="section-title">Diagnostics</div>
+        <div class="section-title" data-i18n="settings.diagnostics">Diagnostics</div>
         <div class="toolbar">
-          <ui-button id="copyUrlBtn">Copy URL</ui-button>
-          <ui-button id="copyHealthCurlBtn">Copy Health Curl</ui-button>
-          <ui-button id="copyToolsCurlBtn">Copy Tools Curl</ui-button>
+          <ui-button id="copyUrlBtn" data-i18n="common.copy_url">Copy URL</ui-button>
+          <ui-button id="copyHealthCurlBtn" data-i18n="common.copy_health_curl">Copy Health Curl</ui-button>
+          <ui-button id="copyToolsCurlBtn" data-i18n="common.copy_tools_curl">Copy Tools Curl</ui-button>
         </div>
       </section>
 
@@ -217,24 +236,24 @@ function activityTemplate() {
   return `
     <div class="mcp-root">
       <header class="plain-header">
-        <h1>Recent Activity</h1>
-        <div class="hint-line">Recent MCP calls, results, and runtime traces for troubleshooting.</div>
+        <h1 data-i18n="activity.title">Recent Activity</h1>
+        <div class="hint-line" data-i18n="activity.hint">Recent MCP calls, results, and runtime traces for troubleshooting.</div>
       </header>
       <section class="section">
         <div class="section-heading">
-          <div class="section-title">Tool Calls</div>
+          <div class="section-title" data-i18n="activity.tool_calls">Tool Calls</div>
           <div class="toolbar compact">
-            <ui-button id="refreshBtn">Refresh</ui-button>
-            <ui-button id="clearActivityBtn">Clear</ui-button>
-            <ui-button id="copyHealthCurlBtn">Copy Health Curl</ui-button>
-            <ui-button id="copyToolsCurlBtn">Copy Tools Curl</ui-button>
+            <ui-button id="refreshBtn" data-i18n="common.refresh">Refresh</ui-button>
+            <ui-button id="clearActivityBtn" data-i18n="common.clear">Clear</ui-button>
+            <ui-button id="copyHealthCurlBtn" data-i18n="common.copy_health_curl">Copy Health Curl</ui-button>
+            <ui-button id="copyToolsCurlBtn" data-i18n="common.copy_tools_curl">Copy Tools Curl</ui-button>
           </div>
         </div>
         <div id="recentCalls" class="mini-list"></div>
       </section>
       <section class="section">
         <details>
-          <summary>Runtime Logs</summary>
+          <summary data-i18n="activity.runtime_logs">Runtime Logs</summary>
           <div id="recentLogs" class="mini-list log-list"></div>
         </details>
       </section>
@@ -549,8 +568,8 @@ const STYLE = `
   }
   .mini-top {
     display: grid;
-    grid-template-columns: 54px minmax(0, 1fr) auto;
-    gap: 7px;
+    grid-template-columns: max-content minmax(0, 1fr) auto;
+    column-gap: 9px;
     align-items: center;
   }
   .mini-time {
@@ -582,9 +601,10 @@ const STYLE = `
     background: #d89a3a;
   }
   .mini-title {
+    min-width: 0;
     color: var(--color-normal-contrast);
     font-weight: 600;
-    word-break: break-word;
+    overflow-wrap: anywhere;
   }
   .mini-meta {
     margin-top: 2px;
@@ -649,6 +669,8 @@ const SELECTORS = {
   profileSelect: '#profileSelect',
   sessionsInput: '#sessionsInput',
   javascriptSafetyInput: '#javascriptSafetyInput',
+  languageSelect: '#languageSelect',
+  languageHint: '#languageHint',
   restartBtn: '#restartBtn',
   copyUrlBtn: '#copyUrlBtn',
   copyHealthCurlBtn: '#copyHealthCurlBtn',
@@ -701,6 +723,9 @@ function createPanel(mode) {
     ready() {
       this.mode = mode;
       this.state = null;
+      this.detectedLanguage = detectEditorLanguage(global.Editor);
+      this.language = resolveLanguage('auto', this.detectedLanguage);
+      this.applyStaticTranslations();
       this.bindEvents();
       this.refresh()
         .then(() => {
@@ -709,7 +734,7 @@ function createPanel(mode) {
           }
           return null;
         })
-        .catch((error) => this.showOutput(`Refresh failed: ${error.message}`));
+        .catch((error) => this.showOutput(this.t('errors.refresh_failed', { error: error.message })));
     },
     close() {},
   });
@@ -722,8 +747,55 @@ function createMethods(mode) {
         this.state = await request('get-panel-state');
         this.renderState();
       } catch (error) {
-        this.showOutput(`Refresh failed: ${error.message}`);
+        this.showOutput(this.t('errors.refresh_failed', { error: error.message }));
         throw error;
+      }
+    },
+    t(key, replacements) {
+      return translate(DICTIONARIES, this.language || 'en', key, replacements);
+    },
+    getPanelRoot() {
+      const anchor = Object.values(this.$ || {}).find((element) => (
+        element && typeof element.getRootNode === 'function'
+      ));
+      if (anchor) {
+        return anchor.getRootNode();
+      }
+      if (this.shadowRoot) {
+        return this.shadowRoot;
+      }
+      return typeof document !== 'undefined' ? document : null;
+    },
+    applyStaticTranslations() {
+      const root = this.getPanelRoot();
+      if (!root || typeof root.querySelectorAll !== 'function') {
+        return;
+      }
+      root.querySelectorAll('[data-i18n]').forEach((element) => {
+        element.textContent = this.t(element.dataset.i18n);
+      });
+      root.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+        element.setAttribute('placeholder', this.t(element.dataset.i18nPlaceholder));
+      });
+      const panelRoot = root.querySelector('.mcp-root');
+      if (panelRoot) {
+        panelRoot.setAttribute('lang', this.language || 'en');
+      }
+    },
+    syncLanguage() {
+      const state = this.state || {};
+      const config = state.config || {};
+      const localization = state.localization || {};
+      this.detectedLanguage = localization.detectedLanguage || detectEditorLanguage(global.Editor);
+      this.language = resolveLanguage(config.language, this.detectedLanguage);
+      this.applyStaticTranslations();
+      this.setControlValue('languageSelect', config.language || 'auto');
+      if (this.$.languageHint) {
+        const languageName = this.t(`settings.language_name_${this.language}`);
+        const key = (config.language || 'auto') === 'auto'
+          ? 'settings.language_auto_hint'
+          : 'settings.language_override_hint';
+        this.$.languageHint.textContent = this.t(key, { language: languageName });
       }
     },
     renderState() {
@@ -732,20 +804,21 @@ function createMethods(mode) {
       const config = state.config || {};
       const isRunning = Boolean(status.running);
 
-      this.setText('versionText', `Version ${status.version || 'unknown'}`);
+      this.syncLanguage();
+      this.setText('versionText', this.t('dashboard.version', { version: status.version || 'unknown' }));
       if (this.$.statusPill) {
-        this.$.statusPill.textContent = isRunning ? 'Running' : 'Stopped';
+        this.$.statusPill.textContent = isRunning ? this.t('dashboard.running') : this.t('dashboard.stopped');
         this.$.statusPill.classList.toggle('running', isRunning);
         this.$.statusPill.classList.toggle('stopped', !isRunning);
       }
 
       const portText = status.portFallbackActive
-        ? ` | Port fallback: ${status.requestedPort} -> ${status.port}`
+        ? ` | ${this.t('dashboard.port_fallback', { requested: status.requestedPort, actual: status.port })}`
         : '';
-      const attachText = status.attachedToExisting ? ' | Attached listener' : '';
+      const attachText = status.attachedToExisting ? ` | ${this.t('dashboard.attached_listener')}` : '';
       this.setText(
         'statusText',
-        `${status.url || ''} | Project: ${status.projectName || ''} | Cocos ${status.cocosVersion || ''}${portText}${attachText}`
+        `${status.url || ''} | ${this.t('dashboard.project')}: ${status.projectName || ''} | Cocos ${status.cocosVersion || ''}${portText}${attachText}`
       );
 
       this.setText('endpointMetric', status.url || '-');
@@ -809,10 +882,15 @@ function createMethods(mode) {
 
       if (install && install.installed) {
         const reload = install.reload && install.reload.scheduled
-          ? `Reload scheduled in ${install.reload.delayMs}ms`
-          : `Reload not scheduled: ${install.reload && install.reload.reason || 'unknown'}`;
-        this.$.updateStatus.textContent =
-          `Installed ${install.installedVersion}. ${reload}. Backup: ${install.backupDir}`;
+          ? this.t('updates.reload_scheduled', { delay: install.reload.delayMs })
+          : this.t('updates.reload_not_scheduled', {
+            reason: install.reload && install.reload.reason || this.t('common.unknown'),
+          });
+        this.$.updateStatus.textContent = this.t('updates.installed', {
+          version: install.installedVersion,
+          reload,
+          backup: install.backupDir,
+        });
         this.$.updateStatus.classList.add('status');
         return;
       }
@@ -821,14 +899,19 @@ function createMethods(mode) {
         return;
       }
       if (!update.ok) {
-        this.$.updateStatus.textContent = `Update check failed: ${update.error}`;
+        this.$.updateStatus.textContent = this.t('updates.check_failed', { error: update.error });
         this.$.updateStatus.classList.add('error');
         return;
       }
-      const published = update.publishedAt ? `, published ${update.publishedAt.slice(0, 10)}` : '';
+      const published = update.publishedAt
+        ? this.t('updates.published', { date: update.publishedAt.slice(0, 10) })
+        : '';
       this.$.updateStatus.textContent = update.updateAvailable
-        ? `Update available: ${update.latestVersion}${published}. ` +
-          (update.downloadAvailable ? 'Ready to install.' : 'Release assets are incomplete; install manually.')
+        ? this.t('updates.available', {
+          version: update.latestVersion,
+          published,
+          status: update.downloadAvailable ? this.t('updates.ready') : this.t('updates.incomplete'),
+        })
         : '';
       if (update.updateAvailable) {
         this.$.updateStatus.classList.add('has-update');
@@ -843,14 +926,23 @@ function createMethods(mode) {
       const config = this.state && this.state.config ? this.state.config : {};
       const status = this.state && this.state.status ? this.state.status : {};
       const profile = config.toolProfile || status.toolProfile || 'core';
-      const savedName = config.activeToolProfileName ? ` | Profile: ${config.activeToolProfileName}` : '';
+      const profileLabel = this.t(`tools.profile_${profile}`);
+      const savedName = config.activeToolProfileName
+        ? ` | ${this.t('tools.saved_profile', { name: config.activeToolProfileName })}`
+        : '';
       if (mode === 'dashboard') {
         const hint = profile === 'full'
-          ? 'full exposes every registered tool.'
+          ? this.t('tools.full_hint')
           : profile === 'custom'
-            ? 'custom uses your include/exclude rules.'
-            : 'core keeps the client tool list focused.';
-        this.$.toolSummary.textContent = `Active: ${profile}${savedName} | ${enabled.length}/${catalog.length} tools. ${hint}`;
+            ? this.t('tools.custom_hint')
+            : this.t('tools.core_hint');
+        this.$.toolSummary.textContent = this.t('tools.dashboard_summary', {
+          profile: profileLabel,
+          saved: savedName,
+          enabled: enabled.length,
+          total: catalog.length,
+          hint,
+        });
         return;
       }
       const hasOverrides = Boolean(
@@ -859,13 +951,19 @@ function createMethods(mode) {
         (config.enabledToolCategories && config.enabledToolCategories.length) ||
         (config.disabledToolCategories && config.disabledToolCategories.length)
       );
-      const source = hasOverrides ? 'with overrides' : 'default list';
-      this.$.toolSummary.textContent = `Active: ${profile}${savedName} | ${enabled.length}/${catalog.length} tools (${source})`;
+      const source = hasOverrides ? this.t('tools.with_overrides') : this.t('tools.default_list');
+      this.$.toolSummary.textContent = this.t('tools.exposure_summary', {
+        profile: profileLabel,
+        saved: savedName,
+        enabled: enabled.length,
+        total: catalog.length,
+        source,
+      });
     },
     normalizeToolProfile(profile) {
       const name = String(profile && profile.name || '').trim();
       if (!name) {
-        throw new Error('Profile name is required.');
+        throw new Error(this.t('tools.profile_name_required'));
       }
       const profileMode = String(profile.toolProfile || 'core').toLowerCase();
       return {
@@ -923,7 +1021,7 @@ function createMethods(mode) {
       } else {
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = 'No saved profiles';
+        option.textContent = this.t('tools.no_saved_profiles');
         this.$.savedToolProfileSelect.appendChild(option);
       }
       this.$.savedToolProfileSelect.value = selected;
@@ -967,9 +1065,9 @@ function createMethods(mode) {
         const actions = document.createElement('div');
         actions.className = 'category-actions';
         [
-          ['enable', 'Enable'],
-          ['disable', 'Disable'],
-          ['clear', 'Clear'],
+          ['enable', this.t('common.enable')],
+          ['disable', this.t('common.disable')],
+          ['clear', this.t('common.clear')],
         ].forEach(([action, label]) => {
           const button = document.createElement('ui-button');
           button.textContent = label;
@@ -1012,8 +1110,8 @@ function createMethods(mode) {
         const actions = document.createElement('div');
         actions.className = 'tool-group-actions';
         [
-          ['enable', 'Select'],
-          ['disable', 'Clear'],
+          ['enable', this.t('common.select')],
+          ['disable', this.t('common.clear')],
         ].forEach(([action, label]) => {
           const button = document.createElement('ui-button');
           button.textContent = label;
@@ -1041,7 +1139,7 @@ function createMethods(mode) {
           if (tool.description) {
             const description = document.createElement('div');
             description.className = 'tool-desc';
-            description.textContent = tool.description;
+            description.textContent = localizeToolDescription(tool, this.language);
             text.appendChild(description);
           }
 
@@ -1074,10 +1172,11 @@ function createMethods(mode) {
       const targets = (this.state && this.state.clientTargets) || [];
       const target = targets.find((item) => item.id === this.$.clientTargetSelect.value) || targets[0];
       if (!target) {
-        this.$.clientTargetStatus.textContent = 'No client targets available.';
+        this.$.clientTargetStatus.textContent = this.t('client.no_targets');
         return;
       }
-      this.$.clientTargetStatus.textContent = `${target.configured ? 'Configured' : 'Not configured'}: ${target.configPath}`;
+      const configured = target.configured ? this.t('client.configured') : this.t('client.not_configured');
+      this.$.clientTargetStatus.textContent = `${configured}: ${target.configPath}`;
       const previews = this.state && this.state.clientConfig && Array.isArray(this.state.clientConfig.targets)
         ? this.state.clientConfig.targets
         : [];
@@ -1094,23 +1193,23 @@ function createMethods(mode) {
         this.$.recentCalls,
         state.recentInteractions || [],
         (entry) => ({
-          title: entry.toolName || 'tool',
+          title: entry.toolName || this.t('activity.tool_fallback'),
           status: entry.status || 'info',
           badge: this.statusBadgeText(entry.status),
           meta: this.formatTimestamp(entry.timestamp),
           body: entry.summary || '',
         }),
-        'No recent MCP calls.'
+        this.t('activity.no_calls')
       );
       this.renderMiniList(
         this.$.recentLogs,
         state.recentRuntimeLogs || [],
         (entry) => ({
-          title: `${String(entry.level || 'info').toUpperCase()} ${entry.message || ''}`,
+          title: `${String(entry.level || this.t('activity.info_fallback')).toUpperCase()} ${entry.message || ''}`,
           meta: this.formatTimestamp(entry.timestamp),
           body: entry.details ? stringify(entry.details) : '',
         }),
-        'No runtime logs yet.'
+        this.t('activity.no_logs')
       );
     },
     renderMiniList(container, entries, formatEntry, emptyText) {
@@ -1201,7 +1300,7 @@ function createMethods(mode) {
       if (normalized === 'error') {
         return 'ERR';
       }
-      return normalized.slice(0, 3).toUpperCase() || 'LOG';
+      return normalized.slice(0, 3).toUpperCase() || this.t('activity.log_badge');
     },
     getControlValue(key, fallback) {
       return this.$[key] ? this.$[key].value : fallback;
@@ -1242,6 +1341,7 @@ function createMethods(mode) {
           ? (this.$.toolProfileNameInput.value || '')
           : (config.activeToolProfileName || ''),
         savedToolProfiles: this.getSavedToolProfiles(),
+        language: this.getControlValue('languageSelect', config.language || 'auto'),
       };
     },
     async persistConfig(options = {}) {
@@ -1251,11 +1351,11 @@ function createMethods(mode) {
         this.state = panelState;
         this.renderState();
         if (showOutput) {
-          this.showOutput('Configuration saved.');
+          this.showOutput(this.t('common.configuration_saved'));
         }
         return panelState;
       } catch (error) {
-        this.showOutput(`Save config failed: ${error.message}`);
+        this.showOutput(this.t('common.save_failed', { error: error.message }));
         throw error;
       }
     },
@@ -1265,7 +1365,7 @@ function createMethods(mode) {
         this.showOutput(result);
         await this.refresh();
       } catch (error) {
-        this.showOutput(`Error: ${error.message}`);
+        this.showOutput(this.t('common.error', { error: error.message }));
       }
     },
     showOutput(value) {
@@ -1275,7 +1375,7 @@ function createMethods(mode) {
     },
     copyText(text, successMessage) {
       if (!text) {
-        this.showOutput('Nothing to copy.');
+        this.showOutput(this.t('common.nothing_to_copy'));
         return;
       }
       navigator.clipboard.writeText(text)
@@ -1332,7 +1432,7 @@ function createMethods(mode) {
       const name = this.$.savedToolProfileSelect.value;
       const profile = this.getSavedToolProfiles().find((item) => item.name === name);
       if (!profile) {
-        this.showOutput('Select a saved profile first.');
+        this.showOutput(this.t('tools.no_profile_selected'));
         return;
       }
       this.setControlValue('profileSelect', profile.toolProfile);
@@ -1347,7 +1447,7 @@ function createMethods(mode) {
     async deleteSavedToolProfile() {
       const name = this.$.savedToolProfileSelect.value;
       if (!name) {
-        this.showOutput('Select a saved profile first.');
+        this.showOutput(this.t('tools.no_profile_selected'));
         return;
       }
       this.state.config.savedToolProfiles = this.getSavedToolProfiles()
@@ -1361,7 +1461,7 @@ function createMethods(mode) {
     exportSavedToolProfiles() {
       const payload = JSON.stringify({ version: 1, profiles: this.getSavedToolProfiles() }, null, 2);
       this.setControlValue('toolProfileImportText', payload);
-      this.copyText(payload, 'Copied tool profiles to clipboard.');
+      this.copyText(payload, this.t('tools.profiles_copied'));
     },
     async importSavedToolProfiles() {
       try {
@@ -1372,7 +1472,7 @@ function createMethods(mode) {
             ? payload.profiles
             : [];
         if (!incoming.length) {
-          throw new Error('No profiles found.');
+          throw new Error(this.t('tools.no_profiles_found'));
         }
         this.state.config.savedToolProfiles = this.normalizeToolProfiles([
           ...this.getSavedToolProfiles(),
@@ -1380,7 +1480,7 @@ function createMethods(mode) {
         ]);
         await this.persistConfig({ showOutput: true });
       } catch (error) {
-        this.showOutput(`Import profiles failed: ${error.message}`);
+        this.showOutput(this.t('tools.import_failed', { error: error.message }));
       }
     },
     async setCategoryExposure(category, action) {
@@ -1419,7 +1519,10 @@ function createMethods(mode) {
       this.setControlValue('enabledToolsInput', Array.from(enabled).sort().join('\n'));
       this.setControlValue('disabledToolsInput', Array.from(disabled).sort().join('\n'));
       await this.persistConfig({ showOutput: false });
-      this.showOutput(`Tool exposure saved: ${name} ${exposed ? 'enabled' : 'disabled'}.`);
+      this.showOutput(this.t('tools.exposure_saved', {
+        name,
+        state: exposed ? this.t('tools.enabled') : this.t('tools.disabled'),
+      }));
     },
     async setAllToolExposure(exposed) {
       const catalog = (this.state && this.state.toolCatalog) || [];
@@ -1461,18 +1564,18 @@ function createMethods(mode) {
         this.state = panelState;
         this.renderState();
       } catch (error) {
-        this.showOutput(`Automatic update check failed: ${error.message}`);
+        this.showOutput(this.t('updates.auto_check_failed', { error: error.message }));
       }
     },
     async installUpdate() {
       const update = this.state && this.state.updateInfo;
       if (!(update && update.ok && update.updateAvailable && update.downloadAvailable)) {
-        this.showOutput('No installable update is available.');
+        this.showOutput(this.t('updates.none_installable'));
         return;
       }
       const message =
-        `Install Funplay Cocos MCP ${update.latestVersion} now?\n\n` +
-        'The updater will verify SHA256SUMS.txt, back up the current extension, replace the package files, and reload the extension when Cocos supports it.';
+        `${this.t('updates.confirm_title', { version: update.latestVersion })}\n\n` +
+        this.t('updates.confirm_body');
       if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) {
         return;
       }
@@ -1483,13 +1586,13 @@ function createMethods(mode) {
       this.on(this.$.refreshBtn, 'click', () => this.refresh());
       this.on(this.$.copyUrlBtn, 'click', () => {
         const status = this.state && this.state.status;
-        this.copyText(status && status.url ? status.url : '', 'Copied URL to clipboard.');
+        this.copyText(status && status.url ? status.url : '', this.t('client.url_copied'));
       });
       this.on(this.$.copyHealthCurlBtn, 'click', () => {
-        this.copyText(this.getCurlCommand('health'), 'Copied health curl command.');
+        this.copyText(this.getCurlCommand('health'), this.t('client.health_copied'));
       });
       this.on(this.$.copyToolsCurlBtn, 'click', () => {
-        this.copyText(this.getCurlCommand('tools'), 'Copied tools curl command.');
+        this.copyText(this.getCurlCommand('tools'), this.t('client.tools_copied'));
       });
       this.on(this.$.checkUpdatesBtn, 'click', () => this.runAction(() => request('check-updates')));
       this.on(this.$.openReleaseBtn, 'click', () => this.runAction(() => request('open-update-release')));
@@ -1503,6 +1606,7 @@ function createMethods(mode) {
       this.on(this.$.profileSelect, 'change', () => this.persistConfig({ showOutput: true }));
       this.on(this.$.sessionsInput, 'change', () => this.persistConfig({ showOutput: true }));
       this.on(this.$.javascriptSafetyInput, 'change', () => this.persistConfig({ showOutput: true }));
+      this.on(this.$.languageSelect, 'change', () => this.handleLanguageChange());
       this.on(this.$.enabledCategoriesInput, 'change', () => this.persistConfig({ showOutput: true }));
       this.on(this.$.disabledCategoriesInput, 'change', () => this.persistConfig({ showOutput: true }));
       this.on(this.$.enabledToolsInput, 'change', () => this.persistConfig({ showOutput: true }));
@@ -1515,7 +1619,7 @@ function createMethods(mode) {
       this.on(this.$.configureClientBtn, 'click', () => {
         const targetId = this.$.clientTargetSelect.value;
         if (!targetId) {
-          this.showOutput('Select a client target first.');
+          this.showOutput(this.t('client.select_first'));
           return;
         }
         this.runAction(() => request('configure-client', targetId));
@@ -1563,6 +1667,9 @@ function createMethods(mode) {
         const exposed = target.value === true || target.value === 'true' || target.checked === true;
         this.setToolExposure(target.dataset.toolName, exposed);
       });
+      if (typeof window !== 'undefined') {
+        this.on(window, 'focus', () => this.refresh().catch(() => {}));
+      }
     },
     on(element, event, handler) {
       if (element) {
@@ -1578,6 +1685,15 @@ function createMethods(mode) {
         this.setControlValue('disabledToolsInput', '');
       }
       this.persistConfig({ showOutput: true });
+    },
+    async handleLanguageChange() {
+      if (!this.state) {
+        return;
+      }
+      this.state.config.language = this.getControlValue('languageSelect', 'auto');
+      this.syncLanguage();
+      this.renderState();
+      await this.persistConfig({ showOutput: true });
     },
   };
 }

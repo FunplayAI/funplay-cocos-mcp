@@ -6,6 +6,23 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-07-20
+
+### Added
+
+- Added English and Chinese localization for extension menus, panel titles, controls, status messages, prompts, and empty states.
+- Added a project-level language setting with `Auto / 跟随 Cocos Creator`, `中文`, and `English` options.
+- Added Chinese descriptions and localized profile labels for all 105 tools shown in the Tool Exposure window while preserving MCP tool IDs and schemas in English.
+
+### Optimized
+
+- Kept the four focused management windows on one shared localization layer so language changes remain consistent across dashboard, tool exposure, settings, and activity workflows.
+- Prevented interface-only configuration changes, including language selection, from rebuilding MCP runtime state or clearing activity logs.
+
+### Fixed
+
+- Fixed 12-hour timestamps such as `11:37:12 PM` overlapping tool names in the Activity window.
+
 ## [0.4.3] - 2026-07-16
 
 ### Added

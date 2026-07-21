@@ -5,7 +5,14 @@ const fs = require('fs');
 const os = require('os');
 const manifest = require('./package.json');
 const { SERVER_NAME, buildTargets, configureTarget, getTargetStatuses } = require('./lib/client-config');
-const { loadConfig, getProjectPath, getProjectName, getProjectIdentity, getCocosVersion } = require('./lib/config');
+const {
+  loadConfig,
+  getProjectPath,
+  getProjectName,
+  getProjectIdentity,
+  getCocosVersion,
+  hasRuntimeConfigChanges,
+} = require('./lib/config');
 const { McpServer } = require('./lib/server');
 const { createToolRegistry } = require('./lib/tool-registry');
 const { ResourceProvider } = require('./lib/resources');
@@ -15,6 +22,7 @@ const { RuntimeLog } = require('./lib/runtime-log');
 const { checkForUpdate } = require('./lib/update-checker');
 const { installLatestUpdate } = require('./lib/updater');
 const { normalizeSavedToolProfiles } = require('./lib/tool-profiles');
+const { detectEditorLanguage, normalizeLanguagePreference, resolveLanguage } = require('./lib/i18n');
 
 const EXTENSION_NAME = manifest.name || 'funplay-cocos-mcp';
 const LOG_PREFIX = '[Funplay Cocos MCP]';
@@ -218,6 +226,7 @@ class ExtensionService {
       autostart: this.config.autostart,
       activeToolProfileName: this.config.activeToolProfileName,
       savedToolProfiles: this.config.savedToolProfiles,
+      language: this.config.language,
       version: manifest.version || '0.0.0',
       projectPath: getProjectPath(),
       projectName: getProjectName(),
@@ -237,6 +246,7 @@ class ExtensionService {
     const resources = this.resourceProvider.listResources();
     const prompts = this.promptProvider.listPrompts();
 
+    const detectedLanguage = detectEditorLanguage(global.Editor);
     return {
       status,
       tools,
@@ -250,6 +260,11 @@ class ExtensionService {
       installInfo: this.lastInstallInfo,
       clientConfig: this.getClientConfig(),
       clientTargets: getTargetStatuses(this.config),
+      localization: {
+        preference: this.config.language,
+        detectedLanguage,
+        resolvedLanguage: resolveLanguage(this.config.language, detectedLanguage),
+      },
     };
   }
 
@@ -579,28 +594,28 @@ class ExtensionService {
       savedToolProfiles: partialConfig && Array.isArray(partialConfig.savedToolProfiles)
         ? normalizeSavedToolProfiles(partialConfig.savedToolProfiles)
         : this.config.savedToolProfiles,
+      language: partialConfig && partialConfig.language !== undefined
+        ? normalizeLanguagePreference(partialConfig.language)
+        : this.config.language,
     };
 
     const configPath = this.config.configPath;
     fs.writeFileSync(configPath, JSON.stringify(nextConfig, null, 2) + '\n', 'utf8');
     const wasRunning = Boolean(this.server && this.server.isRunning());
-    const requiresRestart = wasRunning && (
-      nextConfig.host !== this.config.host ||
-      nextConfig.port !== this.config.port ||
-      nextConfig.toolProfile !== this.config.toolProfile ||
-      nextConfig.enableSessions !== this.config.enableSessions ||
-      nextConfig.executeJavascriptSafetyChecks !== this.config.executeJavascriptSafetyChecks ||
-      JSON.stringify(nextConfig.enabledTools) !== JSON.stringify(this.config.enabledTools) ||
-      JSON.stringify(nextConfig.disabledTools) !== JSON.stringify(this.config.disabledTools) ||
-      JSON.stringify(nextConfig.enabledToolCategories) !== JSON.stringify(this.config.enabledToolCategories) ||
-      JSON.stringify(nextConfig.disabledToolCategories) !== JSON.stringify(this.config.disabledToolCategories)
-    );
+    const runtimeConfigChanged = hasRuntimeConfigChanges(this.config, nextConfig);
+    const requiresRestart = wasRunning && runtimeConfigChanged;
     if (requiresRestart) {
       await this.stopServer();
-    }
-    this.reloadRuntime();
-    if (requiresRestart) {
       await this.startServer();
+    } else if (runtimeConfigChanged) {
+      this.reloadRuntime();
+    } else {
+      this.config = {
+        ...this.config,
+        ...nextConfig,
+        configPath,
+        configError: '',
+      };
     }
     return this.getPanelState();
   }

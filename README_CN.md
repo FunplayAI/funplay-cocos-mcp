@@ -78,8 +78,11 @@ Funplay > MCP Server
 - 从面板打开 Release 页面，或安装已校验的 Release 包
 - 一键配置 AI 客户端，并随目标客户端预览对应配置
 - 把高级工具 profile 编辑、传输设置、诊断和日志从主窗口拆出去
+- 自动跟随 Cocos Creator 的界面语言，或在 MCP Settings 中为项目指定中文/英文
 
 独立的 Tool Exposure 窗口使用按分类分组的工具列表，支持单个工具开关和分类 Select/Clear。Activity 窗口使用单列最近调用流，并显示 `OK` / `ERR` / `INT` 状态徽标，整体信息架构更接近 Funplay Unity MCP，而不是把所有维护流程都塞进主窗口。
+
+扩展菜单和原生窗口标题会跟随 Cocos Creator 的界面语言。窗口内的控件、工具描述、状态提示、确认信息和空状态支持中文与英文；打开 `Funplay > MCP Settings` 可以跟随 Creator，也可以为当前项目固定内容语言。MCP 工具 ID 和 schema 保持英文，确保客户端集成稳定。
 
 ### 3. 配置 AI 客户端
 

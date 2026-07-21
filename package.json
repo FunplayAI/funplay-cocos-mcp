@@ -1,7 +1,8 @@
 {
   "name": "funplay-cocos-mcp",
+  "title": "i18n:funplay-cocos-mcp.title",
   "package_version": 2,
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Embedded MCP server for Cocos Creator with scene script execution, project resources, prompts, and file/scene tools.",
   "author": "Funplay",
   "license": "MIT",
@@ -33,6 +34,7 @@
     "bin/",
     "docs/",
     "lib/",
+    "i18n/",
     "panel/",
     "browser.js",
     "scene.js",
@@ -49,7 +51,7 @@
     "access": "public"
   },
   "scripts": {
-    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check panel/shared.js && node --check panel/tool-exposure.js && node --check panel/settings.js && node --check panel/activity.js && node --check bin/funplay-cocos-mcp.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/javascript-safety.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/scenes.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-profiles.js && node --check lib/tool-registry.js && node --check lib/tools/assets-advanced.js && node --check lib/tools/cocos-project.js && node --check lib/tools/files.js && node --check lib/tools/scene-events.js && node --check lib/update-checker.js && node --check lib/updater.js && node --check lib/utils.js && node --check scripts/generate-tool-docs.js && node --check scripts/release.js",
+    "check": "node --check browser.js && node --check scene.js && node --check panel/index.js && node --check panel/shared.js && node --check panel/tool-description-i18n.js && node --check panel/tool-exposure.js && node --check panel/settings.js && node --check panel/activity.js && node --check bin/funplay-cocos-mcp.js && node --check i18n/en.js && node --check i18n/zh.js && node --check lib/assets.js && node --check lib/client-config.js && node --check lib/config.js && node --check lib/diagnostics.js && node --check lib/electron-tools.js && node --check lib/i18n.js && node --check lib/input.js && node --check lib/interaction-log.js && node --check lib/javascript-safety.js && node --check lib/logs.js && node --check lib/path-safety.js && node --check lib/prefabs.js && node --check lib/project-instructions.js && node --check lib/prompts.js && node --check lib/resources.js && node --check lib/runtime-log.js && node --check lib/scenes.js && node --check lib/screenshots.js && node --check lib/server.js && node --check lib/tool-profiles.js && node --check lib/tool-registry.js && node --check lib/tools/assets-advanced.js && node --check lib/tools/cocos-project.js && node --check lib/tools/files.js && node --check lib/tools/scene-events.js && node --check lib/update-checker.js && node --check lib/updater.js && node --check lib/utils.js && node --check scripts/generate-tool-docs.js && node --check scripts/release.js",
     "test": "node --test",
     "docs:generate": "node scripts/generate-tool-docs.js",
     "docs:check": "node scripts/generate-tool-docs.js --check",
@@ -61,7 +63,7 @@
   },
   "panels": {
     "default": {
-      "title": "MCP Server",
+      "title": "i18n:funplay-cocos-mcp.panel_server",
       "type": "dockable",
       "main": "panel/index.js",
       "size": {
@@ -72,7 +74,7 @@
       }
     },
     "tool-exposure": {
-      "title": "Tool Exposure",
+      "title": "i18n:funplay-cocos-mcp.panel_tool_exposure",
       "type": "dockable",
       "main": "panel/tool-exposure.js",
       "size": {
@@ -83,7 +85,7 @@
       }
     },
     "settings": {
-      "title": "MCP Settings",
+      "title": "i18n:funplay-cocos-mcp.panel_settings",
       "type": "dockable",
       "main": "panel/settings.js",
       "size": {
@@ -94,7 +96,7 @@
       }
     },
     "activity": {
-      "title": "MCP Activity",
+      "title": "i18n:funplay-cocos-mcp.panel_activity",
       "type": "dockable",
       "main": "panel/activity.js",
       "size": {
@@ -109,22 +111,22 @@
     "menu": [
       {
         "path": "Funplay",
-        "label": "MCP Server",
+        "label": "i18n:funplay-cocos-mcp.menu_server",
         "message": "open-panel"
       },
       {
         "path": "Funplay",
-        "label": "Tool Exposure",
+        "label": "i18n:funplay-cocos-mcp.menu_tool_exposure",
         "message": "open-tool-exposure"
       },
       {
         "path": "Funplay",
-        "label": "MCP Settings",
+        "label": "i18n:funplay-cocos-mcp.menu_settings",
         "message": "open-settings"
       },
       {
         "path": "Funplay",
-        "label": "MCP Activity",
+        "label": "i18n:funplay-cocos-mcp.menu_activity",
         "message": "open-activity"
       }
     ],
