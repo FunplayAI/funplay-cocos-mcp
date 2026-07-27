@@ -47,7 +47,7 @@ const ZH_TOOL_DESCRIPTIONS = {
   duplicate_prefab: '复制现有 Prefab 文件创建新 Prefab 资源，但不复制其 .meta UUID。',
   edit_prefab_json: '通过 JSON 路径赋值或文本查找替换编辑 Prefab JSON 文件，然后验证引用。',
   create_prefab_from_node: '通过场景进程序列化和 asset-db 持久化，从现有场景节点创建 Prefab 资源。在 Cocos Creator 3.8.x 中使用此工具替代原始 scene:create-prefab。',
-  create_prefab_instance: '在可用时使用 Cocos 场景 create-node 消息，在编辑器层级中创建关联的 Prefab 实例。',
+  create_prefab_instance: '在可用时使用 Cocos 场景 create-node 消息，在编辑器层级中创建并验证关联的 Prefab 实例。',
   inspect_prefab_instance: '检查场景节点是否关联到 Prefab 实例，并在可用时返回 Prefab 元数据。',
   apply_prefab_instance: '使用 Cocos 编辑器场景 apply-prefab 消息，将场景中的 Prefab 实例改动应用回关联资源。',
   revert_prefab_instance: '使用可用的 Cocos 编辑器 Prefab 还原消息，将场景 Prefab 实例还原为关联资源状态。',

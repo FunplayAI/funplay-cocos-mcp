@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-07-27
+
+### Fixed
+
+- Fixed [#5](https://github.com/FunplayAI/funplay-cocos-mcp/issues/5): create and verify genuinely linked Prefab instances, include the required `cc.Prefab` node type, and clean up nodes that fail post-creation linkage checks.
+
 ## [0.4.4] - 2026-07-20
 
 ### Added

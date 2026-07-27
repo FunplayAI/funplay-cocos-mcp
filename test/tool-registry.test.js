@@ -21,6 +21,22 @@ function createRegistry(profile, projectPath = path.resolve('/tmp/funplay-cocos-
   });
 }
 
+function mockEditorRequests(t, handler) {
+  const previousEditor = global.Editor;
+  global.Editor = {
+    Message: {
+      request: handler,
+    },
+  };
+  t.after(() => {
+    if (previousEditor === undefined) {
+      delete global.Editor;
+    } else {
+      global.Editor = previousEditor;
+    }
+  });
+}
+
 test('core profile exposes the documented focused tool set', () => {
   const tools = createRegistry('core').listTools();
   assert.equal(tools.length, 39);
@@ -175,6 +191,171 @@ test('create_prefab_from_node serializes through scene bridge and writes asset f
   assert.equal(result.value.data.created, true);
   assert.equal(result.value.data.path, 'assets/Prefabs/LoginPanel.prefab');
   assert.equal(fs.existsSync(path.join(tmp, 'assets', 'Prefabs', 'LoginPanel.prefab')), true);
+});
+
+test('create_prefab_instance creates a cc.Prefab node and verifies its linkage', async (t) => {
+  const editorRequests = [];
+  mockEditorRequests(t, async (channel, method, payload) => {
+    editorRequests.push({ channel, method, payload });
+    if (channel === 'asset-db' && method === 'query-asset-info') {
+      return { uuid: 'prefab-uuid' };
+    }
+    if (channel === 'scene' && method === 'create-node') {
+      return 'created-node-uuid';
+    }
+    throw new Error(`Unexpected editor request: ${channel}:${method}`);
+  });
+
+  const sceneCalls = [];
+  const registry = createRegistry('full', path.resolve('/tmp/funplay-cocos-test-project'), {}, {
+    sceneBridge: {
+      call: async (method, payload) => {
+        sceneCalls.push({ method, payload });
+        if (method === 'inspectNode') {
+          return { uuid: 'parent-node-uuid' };
+        }
+        if (method === 'getPrefabInstanceInfo') {
+          return {
+            node: { name: 'LinkedPanel', path: 'Canvas/LinkedPanel', uuid: 'created-node-uuid' },
+            prefab: {
+              linked: true,
+              fileId: 'linked-file-id',
+              asset: { name: 'Panel', uuid: 'prefab-uuid' },
+              instance: { root: 'created-node-uuid' },
+            },
+          };
+        }
+        throw new Error(`Unexpected scene call: ${method}`);
+      },
+    },
+  });
+
+  const result = await registry.callToolDetailed('create_prefab_instance', {
+    prefabUuid: 'db://assets/Prefabs/Panel.prefab',
+    parentPath: 'Canvas',
+    name: 'LinkedPanel',
+  });
+
+  assert.deepEqual(editorRequests[1], {
+    channel: 'scene',
+    method: 'create-node',
+    payload: {
+      assetUuid: 'prefab-uuid',
+      type: 'cc.Prefab',
+      unlinkPrefab: false,
+      parent: 'parent-node-uuid',
+      name: 'LinkedPanel',
+    },
+  });
+  assert.deepEqual(sceneCalls, [
+    { method: 'inspectNode', payload: { path: 'Canvas' } },
+    { method: 'getPrefabInstanceInfo', payload: { uuid: 'created-node-uuid' } },
+  ]);
+  assert.equal(result.value.data.linkedPrefab, true);
+  assert.equal(result.value.data.verified, true);
+  assert.equal(result.value.data.creationMethod, 'scene:create-node');
+  assert.deepEqual(result.value.data.verification, {
+    nodeUuidMatches: true,
+    linked: true,
+    assetUuidMatches: true,
+    fileIdPresent: true,
+    instancePresent: true,
+  });
+});
+
+test('create_prefab_instance removes an unverified node and does not fall back', async (t) => {
+  mockEditorRequests(t, async (channel, method) => {
+    if (channel === 'asset-db' && method === 'query-asset-info') {
+      return { uuid: 'expected-prefab-uuid' };
+    }
+    if (channel === 'scene' && method === 'create-node') {
+      return 'unlinked-node-uuid';
+    }
+    throw new Error(`Unexpected editor request: ${channel}:${method}`);
+  });
+
+  const sceneCalls = [];
+  const registry = createRegistry('full', path.resolve('/tmp/funplay-cocos-test-project'), {}, {
+    sceneBridge: {
+      call: async (method, payload) => {
+        sceneCalls.push({ method, payload });
+        if (method === 'getPrefabInstanceInfo') {
+          return {
+            node: { uuid: 'unlinked-node-uuid' },
+            prefab: {
+              linked: false,
+              fileId: '',
+              asset: { uuid: 'wrong-prefab-uuid' },
+              instance: null,
+            },
+          };
+        }
+        if (method === 'deleteNode') {
+          return { deleted: true, uuid: payload.uuid };
+        }
+        throw new Error(`Unexpected scene call: ${method}`);
+      },
+    },
+  });
+
+  await assert.rejects(
+    () => registry.callToolDetailed('create_prefab_instance', { prefabUuid: 'expected-prefab-uuid' }),
+    /failed linked Prefab verification \(linked, assetUuidMatches, fileIdPresent, instancePresent\).*created node was removed/
+  );
+  assert.deepEqual(sceneCalls, [
+    { method: 'getPrefabInstanceInfo', payload: { uuid: 'unlinked-node-uuid' } },
+    { method: 'deleteNode', payload: { uuid: 'unlinked-node-uuid' } },
+  ]);
+});
+
+test('create_prefab_instance verifies the scene fallback when create-node is unavailable', async (t) => {
+  mockEditorRequests(t, async (channel, method) => {
+    if (channel === 'asset-db' && method === 'query-asset-info') {
+      return { uuid: 'prefab-uuid' };
+    }
+    if (channel === 'scene' && method === 'create-node') {
+      throw new Error('create-node unavailable');
+    }
+    throw new Error(`Unexpected editor request: ${channel}:${method}`);
+  });
+
+  const sceneCalls = [];
+  const registry = createRegistry('full', path.resolve('/tmp/funplay-cocos-test-project'), {}, {
+    sceneBridge: {
+      call: async (method, payload) => {
+        sceneCalls.push({ method, payload });
+        if (method === 'instantiatePrefab') {
+          return {
+            instantiated: true,
+            prefabUuid: payload.prefabUuid,
+            node: { name: 'Panel', path: 'Panel', uuid: 'fallback-node-uuid' },
+          };
+        }
+        if (method === 'getPrefabInstanceInfo') {
+          return {
+            node: { name: 'Panel', path: 'Panel', uuid: 'fallback-node-uuid' },
+            prefab: {
+              linked: true,
+              fileId: 'fallback-file-id',
+              asset: { name: 'Panel', uuid: 'prefab-uuid' },
+              instance: {},
+            },
+          };
+        }
+        throw new Error(`Unexpected scene call: ${method}`);
+      },
+    },
+  });
+
+  const result = await registry.callToolDetailed('create_prefab_instance', { prefabUuid: 'prefab-uuid' });
+
+  assert.equal(result.value.data.linkedPrefab, true);
+  assert.equal(result.value.data.verified, true);
+  assert.equal(result.value.data.creationMethod, 'scene:instantiatePrefab');
+  assert.deepEqual(sceneCalls.map((call) => call.method), [
+    'instantiatePrefab',
+    'getPrefabInstanceInfo',
+  ]);
 });
 
 test('callToolDetailed preserves screenshot image text while keeping structured envelope small', async () => {
