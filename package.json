@@ -2,7 +2,7 @@
   "name": "funplay-cocos-mcp",
   "title": "i18n:funplay-cocos-mcp.title",
   "package_version": 2,
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Embedded MCP server for Cocos Creator with scene script execution, project resources, prompts, and file/scene tools.",
   "author": "Funplay",
   "license": "MIT",

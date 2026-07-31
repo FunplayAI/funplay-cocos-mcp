@@ -52,9 +52,9 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 | Tool | Profiles | Access | Description |
 |---|---|---|---|
 | `get_build_status` | `core`, `full` | read-only | [specialist] Query Cocos build/preview status using known builder message variants. |
-| `get_preview_mode` | `core`, `full` | read-only | [specialist] Query the active Cocos Creator preview mode and browser preview URL. Modes are browser, gameView, and simulator. |
+| `get_preview_mode` | `core`, `full` | read-only | [specialist] Query the active Cocos Creator preview mode. Browser results use a same-host loopback url/localUrl and preserve Creator's reported LAN address as networkUrl. |
 | `open_build_panel` | `full` | stateful | [core] Open the Cocos build panel, defaulting to the builder panel id. |
-| `run_project_preview` | `full` | stateful | [core] Start Cocos Creator 3.8.x preview in browser, editor Game View, or simulator mode and return the effective mode and browser URL when available. |
+| `run_project_preview` | `full` | stateful | [core] Start Cocos Creator 3.8.x preview in browser, editor Game View, or simulator mode. Browser results use a same-host loopback url/localUrl and preserve Creator's reported LAN address as networkUrl. |
 | `save_current_scene` | `full` | stateful | [core] Save the currently open Cocos scene using available editor scene messages. |
 | `set_preview_mode` | `full` | mutating | [core] Switch Cocos Creator preview mode using the supported 3.8.x Preview profile and toolbar message. |
 

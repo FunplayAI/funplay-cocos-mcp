@@ -303,11 +303,20 @@ Creator 3.8.x 的预览自动化使用与内置预览工具栏相同的模式和
 
 | 模式 | 行为 |
 |------|------|
-| `browser` | 在系统浏览器中打开场景；可用时，`get_preview_mode` 和 `run_project_preview` 会返回预览 URL。 |
+| `browser` | 在系统浏览器中打开场景；可用时，`get_preview_mode` 和 `run_project_preview` 会分别返回同机和局域网预览 URL。 |
 | `gameView` | 在 Cocos Creator 的 Game View 中启动场景。 |
 | `simulator` | 在原生模拟器中启动场景。 |
 
 使用 `get_preview_mode` 查询当前模式，使用 `set_preview_mode` 切换模式，使用 `run_project_preview` 启动预览。`run_project_preview` 仍兼容旧的 `platform` 参数，但该参数已弃用，推荐改用 `mode`。
+
+浏览器预览结果会区分同机自动化与局域网访问：
+
+| 字段 | 含义 |
+|------|------|
+| `url` / `localUrl` | 供与 Cocos Creator 运行在同一台电脑上的 MCP 客户端或浏览器使用的 loopback 地址。 |
+| `networkUrl` | 供同一局域网内其他设备使用的 Creator 原始非 loopback 地址；当 Creator 返回 loopback 或通配主机时为空。 |
+| `reportedUrl` | Cocos Creator 返回且尚未规范化的原始 URL 字符串。 |
+| `urlWarning` | 仅当原始值无法按绝对 HTTP(S) URL 规范化时返回非空警告。 |
 
 ## 内置 Resources
 

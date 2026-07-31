@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-07-30
+
+### Fixed
+
+- Fixed [#6](https://github.com/FunplayAI/funplay-cocos-mcp/issues/6): browser preview results now default `url` and `localUrl` to a same-host loopback address while preserving Cocos Creator's reported LAN address in `networkUrl` and `reportedUrl`.
+
 ## [0.4.5] - 2026-07-27
 
 ### Fixed

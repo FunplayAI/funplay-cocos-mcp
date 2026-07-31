@@ -7,6 +7,7 @@ const {
   getEditorPreference,
   getPreviewMode,
   normalizePreviewMode,
+  resolvePreviewUrls,
   runProjectPreview,
   setEditorPreference,
   setPreviewMode,
@@ -100,14 +101,64 @@ test('normalizePreviewMode accepts documented modes and compatibility aliases', 
   assert.throws(() => normalizePreviewMode('windows'), /Unsupported preview mode/);
 });
 
-test('getPreviewMode reads the Creator 3.8 preview profile and browser URL', async () => {
+test('resolvePreviewUrls separates same-host and LAN browser preview addresses', () => {
+  const result = resolvePreviewUrls('http://192.168.16.119:7456/preview/?scene=main#ready');
+
+  assert.deepEqual(result, {
+    url: 'http://localhost:7456/preview/?scene=main#ready',
+    localUrl: 'http://localhost:7456/preview/?scene=main#ready',
+    networkUrl: 'http://192.168.16.119:7456/preview/?scene=main#ready',
+    reportedUrl: 'http://192.168.16.119:7456/preview/?scene=main#ready',
+    urlAvailable: true,
+    urlWarning: '',
+  });
+});
+
+test('resolvePreviewUrls preserves loopback URLs and normalizes wildcard hosts', () => {
+  const loopback = resolvePreviewUrls('http://127.20.30.40:7456/');
+  assert.equal(loopback.url, 'http://127.20.30.40:7456/');
+  assert.equal(loopback.localUrl, loopback.url);
+  assert.equal(loopback.networkUrl, '');
+
+  const ipv6 = resolvePreviewUrls('http://[::1]:7456/');
+  assert.equal(ipv6.url, 'http://[::1]:7456/');
+  assert.equal(ipv6.networkUrl, '');
+
+  const wildcard = resolvePreviewUrls('http://0.0.0.0:7456/');
+  assert.equal(wildcard.url, 'http://localhost:7456/');
+  assert.equal(wildcard.localUrl, wildcard.url);
+  assert.equal(wildcard.networkUrl, '');
+});
+
+test('resolvePreviewUrls leaves unsupported or malformed values unchanged with a warning', () => {
+  for (const value of ['preview://192.168.1.10:7456/', 'not a URL']) {
+    const result = resolvePreviewUrls(value);
+    assert.equal(result.url, value);
+    assert.equal(result.localUrl, '');
+    assert.equal(result.networkUrl, '');
+    assert.equal(result.reportedUrl, value);
+    assert.equal(result.urlAvailable, true);
+    assert.notEqual(result.urlWarning, '');
+  }
+
+  assert.deepEqual(resolvePreviewUrls(''), {
+    url: '',
+    localUrl: '',
+    networkUrl: '',
+    reportedUrl: '',
+    urlAvailable: false,
+    urlWarning: '',
+  });
+});
+
+test('getPreviewMode reads the Creator 3.8 preview profile and separates LAN browser URLs', async () => {
   const profileCalls = [];
   const messageCalls = [];
   global.Editor = {
     Message: {
       request: async (...args) => {
         messageCalls.push(args);
-        return 'http://127.0.0.1:7456/';
+        return 'http://192.168.16.119:7456/';
       },
     },
     Profile: {
@@ -125,8 +176,12 @@ test('getPreviewMode reads the Creator 3.8 preview profile and browser URL', asy
     assert.deepEqual(profileCalls, [['preview', 'preview.current.platform', 'local']]);
     assert.deepEqual(messageCalls, [['preview', 'query-preview-url']]);
     assert.equal(result.mode, 'browser');
-    assert.equal(result.url, 'http://127.0.0.1:7456/');
+    assert.equal(result.url, 'http://localhost:7456/');
+    assert.equal(result.localUrl, 'http://localhost:7456/');
+    assert.equal(result.networkUrl, 'http://192.168.16.119:7456/');
+    assert.equal(result.reportedUrl, 'http://192.168.16.119:7456/');
     assert.equal(result.urlAvailable, true);
+    assert.equal(result.urlWarning, '');
     assert.deepEqual(result.supportedModes.map((item) => item.mode), ['browser', 'gameView', 'simulator']);
   } finally {
     delete global.Editor;
@@ -171,7 +226,7 @@ test('setPreviewMode stops Game View, persists the profile, and broadcasts the p
   }
 });
 
-test('runProjectPreview starts browser preview and returns its URL', async () => {
+test('runProjectPreview starts browser preview and returns local and network URLs', async () => {
   let currentMode = 'browser';
   const requests = [];
   global.Editor = {
@@ -179,7 +234,7 @@ test('runProjectPreview starts browser preview and returns its URL', async () =>
       request: async (...args) => {
         requests.push(args);
         if (args[0] === 'preview' && args[1] === 'query-preview-url') {
-          return 'http://127.0.0.1:7456/';
+          return 'http://192.168.16.119:7456/';
         }
         return true;
       },
@@ -203,7 +258,12 @@ test('runProjectPreview starts browser preview and returns its URL', async () =>
     assert.equal(result.started, true);
     assert.equal(result.mode, 'browser');
     assert.equal(result.method, 'preview.open-terminal');
-    assert.equal(result.url, 'http://127.0.0.1:7456/');
+    assert.equal(result.url, 'http://localhost:7456/');
+    assert.equal(result.localUrl, 'http://localhost:7456/');
+    assert.equal(result.networkUrl, 'http://192.168.16.119:7456/');
+    assert.equal(result.reportedUrl, 'http://192.168.16.119:7456/');
+    assert.equal(result.urlAvailable, true);
+    assert.equal(result.urlWarning, '');
   } finally {
     delete global.Editor;
   }

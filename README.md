@@ -303,11 +303,20 @@ Creator 3.8.x preview automation uses the same modes and editor APIs as the buil
 
 | Mode | Behavior |
 |------|----------|
-| `browser` | Opens the scene in the system browser; `get_preview_mode` and `run_project_preview` return the preview URL when available. |
+| `browser` | Opens the scene in the system browser; `get_preview_mode` and `run_project_preview` return same-host and network preview URLs when available. |
 | `gameView` | Starts the scene inside Cocos Creator's Game View. |
 | `simulator` | Starts the scene in the native simulator. |
 
 Use `get_preview_mode` to inspect the active mode, `set_preview_mode` to switch it, and `run_project_preview` to start it. `run_project_preview` still accepts `platform` as a deprecated alias for `mode`.
+
+Browser preview results distinguish same-host automation from LAN access:
+
+| Field | Meaning |
+|-------|---------|
+| `url` / `localUrl` | Loopback URL intended for an MCP client or browser running on the same computer as Cocos Creator. |
+| `networkUrl` | Original non-loopback URL for another device on the same network; empty when Creator reports a loopback or wildcard host. |
+| `reportedUrl` | Exact URL string reported by Cocos Creator before normalization. |
+| `urlWarning` | Non-empty only when the reported value cannot be normalized as an absolute HTTP(S) URL. |
 
 ## Built-in Resources
 
