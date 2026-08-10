@@ -476,7 +476,7 @@ To generate a GitHub Release-ready extension package:
 npm run release:package
 ```
 
-The package is written to `releases/<version>/` with a zip, manifest, checksum file, and release README. See [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) and [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) for the full process.
+The package is written to `releases/<version>/` with a zip, manifest, generated release notes, checksum file, and release README. Upload all five files so the public checksums can be verified. See [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) and [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) for the full process.
 
 Validate MCP Registry metadata before publishing:
 

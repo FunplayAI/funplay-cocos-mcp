@@ -476,7 +476,7 @@ npm run docs:generate
 npm run release:package
 ```
 
-产物会写入 `releases/<version>/`，包含 zip、manifest、checksum 和 release README。完整流程见 [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) 和 [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md)。
+产物会写入 `releases/<version>/`，包含 zip、manifest、生成的 release notes、checksum 和 release README。请上传全部五个文件，确保公开附件可以完整校验。完整流程见 [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) 和 [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md)。
 
 发布 MCP Registry 前可以验证元数据：
 

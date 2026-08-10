@@ -77,7 +77,8 @@ Use this checklist before publishing a new release of Funplay MCP for Cocos.
 - [ ] Release commit message is `Release v<version>`
 - [ ] Tag is `v<version>`
 - [ ] GitHub Release title is `v<version>`
-- [ ] GitHub Release includes the zip, manifest, checksum file, and release README
+- [ ] GitHub Release includes the zip, manifest, generated release notes, checksum file, and release README
+- [ ] Downloading all five public assets and running `shasum -a 256 -c SHA256SUMS.txt` succeeds
 - [ ] Public GitHub Release page uses `RELEASE_NOTES.md` and renders the release notes/assets correctly
 - [ ] Public GitHub Release notes link every GitHub issue resolved by the release
 

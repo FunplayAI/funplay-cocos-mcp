@@ -185,6 +185,7 @@ gh release create v<version> \
   --notes-file releases/<version>/RELEASE_NOTES.md \
   releases/<version>/Funplay.CocosMcp.v<version>.zip \
   releases/<version>/release-manifest.json \
+  releases/<version>/RELEASE_NOTES.md \
   releases/<version>/SHA256SUMS.txt \
   releases/<version>/README.md
 ```
@@ -197,6 +198,7 @@ gh release upload v<version> \
   --clobber \
   releases/<version>/Funplay.CocosMcp.v<version>.zip \
   releases/<version>/release-manifest.json \
+  releases/<version>/RELEASE_NOTES.md \
   releases/<version>/SHA256SUMS.txt \
   releases/<version>/README.md
 ```
@@ -217,7 +219,7 @@ gh release view v<version> \
   --json url,assets,isDraft,isPrerelease,publishedAt
 ```
 
-Confirm the release has all four assets and the public release body is organized by change type.
+Confirm the release has all five assets and the public release body is organized by change type. Download all five assets together and run `shasum -a 256 -c SHA256SUMS.txt` to verify the public files.
 
 ### 8. Publish To npm
 
