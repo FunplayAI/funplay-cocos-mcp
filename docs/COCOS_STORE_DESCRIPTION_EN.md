@@ -18,6 +18,7 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 - **Focused management windows**: Separate MCP Server, Tool Exposure, MCP Settings, and Activity windows keep service controls, tool exposure, client setup, calls, and logs organized.
 - **English and Chinese UI**: Menus and native panel titles follow Cocos Creator; panel controls and status messages can follow Creator or use a project-specific language override.
 - **Update checks and one-click updates**: Detect new GitHub Releases, download the extension package, and verify its SHA256 checksum before installation.
+- **Install once for every project**: Install a SHA256-verified release in the active Creator version's managed global extension directory so projects opened with that version load it automatically.
 - **Local operation and guardrails**: The server listens on `127.0.0.1` by default, file tools stay inside the active project, and risky `execute_javascript` patterns are checked by default.
 - **Open MCP compatibility**: Provides MCP Tools, Resources, and Prompts for clients using Streamable HTTP or a stdio MCP configuration.
 
@@ -43,13 +44,17 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 
    Install Funplay MCP for Cocos from Cocos Store into the target project, then open the project with Cocos Creator 3.8 or later.
 
-2. **Open the control panel**
+2. **Enable it for all projects (recommended)**
+
+   Open `Funplay > MCP Settings` and click **Install for All Projects** in the All Projects section. The package is verified with SHA256 before it is written to the active Creator version's managed global directory, then Creator scans and registers it. Projects subsequently opened or created with that Creator version load it automatically. The current project copy stays active until the project is reopened; if a duplicate-install warning appears, verify the global copy in a clean project before removing or disabling the project copy. Repeat once for each Creator version you use.
+
+3. **Open the control panel**
 
    From the Cocos Creator top menu, select:
 
    `Funplay > MCP Server`
 
-3. **Start the MCP Server**
+4. **Start the MCP Server**
 
    Check the server status in the panel and start it. The default endpoint is:
 
@@ -57,15 +62,15 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 
    If that port is already in use, use the active port displayed in the panel.
 
-4. **Select and configure an AI client**
+5. **Select and configure an AI client**
 
    Choose Claude Code, Cursor, Codex, VS Code, Trae, or Kiro in the client configuration section, then use one-click setup. You can also copy the generated configuration into another MCP-compatible client manually.
 
-5. **Confirm the connection**
+6. **Confirm the connection**
 
    Return to the AI client and confirm that `funplay-cocos-mcp` is connected and its tools are available. For a first test, call `get_project_info`, `get_scene_info`, or `get_hierarchy` to inspect the active project and scene.
 
-6. **Start working**
+7. **Start working**
 
    Example requests:
 
@@ -75,11 +80,11 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 
    > Switch to Browser Preview, launch the active scene, and return the preview URL.
 
-7. **Adjust tool exposure when needed**
+8. **Adjust tool exposure when needed**
 
    The default `core` profile is suitable for common inspection and development tasks. For file writes, complete scene editing, preview switching, and other advanced operations, open `Funplay > Tool Exposure` and select `full` or create a custom profile.
 
-8. **Check for updates**
+9. **Check for updates**
 
    Use the MCP Server panel to check for a new release. Standard Store installations can use one-click update. Git worktree or symlink development installations should continue using Git so the updater does not overwrite development files.
 

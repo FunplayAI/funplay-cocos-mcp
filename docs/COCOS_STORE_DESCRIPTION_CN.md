@@ -18,6 +18,7 @@ Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的�
 - **多窗口管理面板**：提供 MCP Server、Tool Exposure、MCP Settings、Activity 等独立窗口，用于管理服务、工具范围、客户端配置、调用记录和日志。
 - **中英文界面**：菜单和窗口标题跟随 Cocos Creator；窗口内控件与状态提示可跟随 Creator，也可按项目手动指定中文或英文。
 - **自动更新与一键更新**：可检查 GitHub Release 新版本，下载更新包并校验 SHA256；普通安装支持面板内更新。
+- **一次安装，所有项目可用**：可把经过 SHA256 校验的 Release 安装到当前 Creator 版本管理的全局扩展目录，由该版本打开或新建的项目都能自动加载。
 - **本地运行与安全边界**：服务默认只监听 `127.0.0.1`，文件工具限制在当前项目目录内，`execute_javascript` 默认启用高风险操作检查。
 - **开放兼容**：同时提供 MCP Tools、Resources 和 Prompts，兼容支持 Streamable HTTP 或 stdio MCP 配置的客户端。
 
@@ -43,13 +44,17 @@ Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的�
 
    从 Cocos Store 将 Funplay MCP for Cocos 安装到目标项目，然后使用 Cocos Creator 3.8 或更高版本打开该项目。
 
-2. **打开控制面板**
+2. **为所有项目启用（推荐）**
+
+   打开 `Funplay > MCP Settings`，在“所有项目”区域点击“为所有项目安装”。安装包通过 SHA256 校验后写入当前 Creator 版本管理的全局目录，并让 Creator 扫描和注册它；之后由该版本打开或新建的项目都可以自动加载。当前项目副本会继续运行，重新打开项目后再切换到全局副本；如出现重复安装提示，请先在干净项目中确认全局副本，再移除或禁用项目副本。同时使用多个 Creator 版本时，每个版本需要分别执行一次。
+
+3. **打开控制面板**
 
    在 Cocos Creator 顶部菜单中选择：
 
    `Funplay > MCP Server`
 
-3. **启动 MCP Server**
+4. **启动 MCP Server**
 
    在面板中确认服务状态并点击启动。默认地址为：
 
@@ -57,15 +62,15 @@ Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的�
 
    如果默认端口被占用，请以面板显示的实际运行端口为准。
 
-4. **选择并配置 AI 客户端**
+5. **选择并配置 AI 客户端**
 
    在客户端配置区域选择 Claude Code、Cursor、Codex、VS Code、Trae 或 Kiro，然后点击一键配置。也可以复制面板生成的配置，手动添加到其他支持 MCP 的客户端。
 
-5. **确认连接**
+6. **确认连接**
 
    回到 AI 客户端，确认 `funplay-cocos-mcp` 已连接并能看到工具列表。首次使用可以先调用 `get_project_info`、`get_scene_info` 或 `get_hierarchy` 检查项目和场景信息。
 
-6. **开始使用**
+7. **开始使用**
 
    例如可以向 AI 提出：
 
@@ -75,11 +80,11 @@ Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的�
 
    > 切换到浏览器预览模式，启动当前场景并返回预览地址。
 
-7. **按需调整工具范围**
+8. **按需调整工具范围**
 
    默认 `core` Profile 适合常用检查和开发任务。如果需要文件写入、完整场景编辑、预览切换等更多能力，可在 `Funplay > Tool Exposure` 中切换到 `full` 或创建自定义 Profile。
 
-8. **检查更新**
+9. **检查更新**
 
    在 MCP Server 面板中可以检查新版本。普通商店安装可使用一键更新；Git worktree 或软链接开发安装请继续使用 Git 更新，避免覆盖开发目录。
 

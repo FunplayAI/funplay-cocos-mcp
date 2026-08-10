@@ -72,9 +72,11 @@ function dashboardTemplate() {
           <ui-button id="checkUpdatesBtn" data-i18n="dashboard.check_updates">Check Updates</ui-button>
           <ui-button id="openReleaseBtn" data-i18n="dashboard.open_release">Open Release</ui-button>
           <ui-button id="installUpdateBtn" data-i18n="dashboard.install_update">Install Update</ui-button>
+          <ui-button id="installGlobalBtn" data-i18n="installation.install_all">Install for All Projects</ui-button>
           <ui-button id="openToolsBtn" data-i18n="dashboard.edit_tools">Edit Tools</ui-button>
           <ui-button id="openSettingsBtn" data-i18n="dashboard.settings">Settings</ui-button>
         </div>
+        <div id="globalInstallStatus" class="hint-line installation-status"></div>
       </section>
 
       <section class="section">
@@ -195,6 +197,17 @@ function settingsTemplate() {
           </label>
         </div>
         <div id="languageHint" class="hint-line"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-title" data-i18n="installation.title">All Projects</div>
+        <div id="globalInstallStatus" class="inline-status installation-status"></div>
+        <div id="globalInstallPath" class="hint-line path-line"></div>
+        <div class="toolbar">
+          <ui-button id="installGlobalBtn" class="primary" data-i18n="installation.install_all">Install for All Projects</ui-button>
+          <ui-button id="copyGlobalPathBtn" data-i18n="installation.copy_path">Copy Global Path</ui-button>
+        </div>
+        <div class="hint-line" data-i18n="installation.hint">Install one verified copy for this Cocos Creator version so projects opened with it can load the extension automatically.</div>
       </section>
       <section class="section">
         <div class="section-title" data-i18n="settings.safety">Safety</div>
@@ -641,6 +654,16 @@ const STYLE = `
   .primary {
     border-color: #4aa3ff;
   }
+  .installation-status.warning {
+    color: #d99b2b;
+  }
+  .installation-status.error {
+    color: #e86f6f;
+  }
+  .path-line {
+    margin: 5px 0 8px 0;
+    word-break: break-all;
+  }
   @media (max-width: 660px) {
     .summary-grid,
     .service-grid,
@@ -678,6 +701,10 @@ const SELECTORS = {
   checkUpdatesBtn: '#checkUpdatesBtn',
   openReleaseBtn: '#openReleaseBtn',
   installUpdateBtn: '#installUpdateBtn',
+  installGlobalBtn: '#installGlobalBtn',
+  copyGlobalPathBtn: '#copyGlobalPathBtn',
+  globalInstallStatus: '#globalInstallStatus',
+  globalInstallPath: '#globalInstallPath',
   openToolsBtn: '#openToolsBtn',
   openSettingsBtn: '#openSettingsBtn',
   openActivityBtn: '#openActivityBtn',
@@ -838,6 +865,7 @@ function createMethods(mode) {
       this.setControlValue('disabledToolsInput', this.formatList(config.disabledTools));
 
       this.renderUpdateStatus();
+      this.renderInstallationStatus();
       this.renderToolSummary();
       this.renderToolProfiles();
       this.renderCategoryControls();
@@ -916,6 +944,61 @@ function createMethods(mode) {
       if (update.updateAvailable) {
         this.$.updateStatus.classList.add('has-update');
       }
+    },
+    renderInstallationStatus() {
+      const installation = this.state && this.state.installation;
+      if (!installation) {
+        this.setDisabled(this.$.installGlobalBtn, true);
+        return;
+      }
+
+      const actionKey = installation.action === 'update'
+        ? 'installation.update_global'
+        : installation.globalInstalled
+          ? 'installation.installed_all'
+          : 'installation.install_all';
+      if (this.$.installGlobalBtn) {
+        this.$.installGlobalBtn.textContent = this.t(actionKey);
+      }
+      this.setDisabled(this.$.installGlobalBtn, !installation.canInstallGlobally);
+
+      if (this.$.globalInstallPath) {
+        this.$.globalInstallPath.textContent = this.t('installation.path', {
+          path: installation.globalPackagePath || '',
+        });
+      }
+
+      if (!this.$.globalInstallStatus) {
+        return;
+      }
+      this.$.globalInstallStatus.classList.remove('warning', 'error');
+      const scope = this.t(`installation.scope_${installation.scope || 'external'}`);
+      let status = this.t('installation.current_scope', { scope });
+      if (installation.globalInstallError) {
+        status += ` ${this.t('installation.global_invalid', {
+          error: installation.globalInstallError,
+        })}`;
+        this.$.globalInstallStatus.classList.add('error');
+      } else if (installation.globalInstalled) {
+        status += ` ${this.t('installation.global_ready', {
+          version: installation.globalVersion || this.t('common.unknown'),
+          editorVersion: installation.editorVersion || this.t('common.unknown'),
+        })}`;
+      } else {
+        status += ` ${this.t('installation.global_missing')}`;
+      }
+      if (installation.duplicateInstall) {
+        status += ` ${this.t('installation.duplicate', {
+          path: installation.projectPackagePath || '',
+        })}`;
+        this.$.globalInstallStatus.classList.add('warning');
+      }
+
+      const installInfo = this.state && this.state.globalInstallInfo;
+      if (installInfo && installInfo.installed && installInfo.restartRequired) {
+        status += ` ${this.t('installation.restart_required')}`;
+      }
+      this.$.globalInstallStatus.textContent = status;
     },
     renderToolSummary() {
       if (!this.$.toolSummary) {
@@ -1581,6 +1664,22 @@ function createMethods(mode) {
       }
       await this.runAction(() => request('install-update'));
     },
+    async installGlobally() {
+      const installation = this.state && this.state.installation;
+      if (!(installation && installation.canInstallGlobally)) {
+        this.showOutput(this.t('installation.already_available'));
+        return;
+      }
+      const message =
+        `${this.t('installation.confirm_title')}\n\n` +
+        this.t('installation.confirm_body', {
+          path: installation.globalPackagePath || '',
+        });
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) {
+        return;
+      }
+      await this.runAction(() => request('install-globally'));
+    },
     bindEvents() {
       this.on(this.$.restartBtn, 'click', () => this.runAction(() => request('restart-server')));
       this.on(this.$.refreshBtn, 'click', () => this.refresh());
@@ -1597,6 +1696,14 @@ function createMethods(mode) {
       this.on(this.$.checkUpdatesBtn, 'click', () => this.runAction(() => request('check-updates')));
       this.on(this.$.openReleaseBtn, 'click', () => this.runAction(() => request('open-update-release')));
       this.on(this.$.installUpdateBtn, 'click', () => this.installUpdate());
+      this.on(this.$.installGlobalBtn, 'click', () => this.installGlobally());
+      this.on(this.$.copyGlobalPathBtn, 'click', () => {
+        const installation = this.state && this.state.installation;
+        this.copyText(
+          installation && installation.globalPackagePath ? installation.globalPackagePath : '',
+          this.t('installation.path_copied')
+        );
+      });
       this.on(this.$.openToolsBtn, 'click', () => this.runAction(() => request('open-panel', 'tool-exposure')));
       this.on(this.$.openSettingsBtn, 'click', () => this.runAction(() => request('open-panel', 'settings')));
       this.on(this.$.openActivityBtn, 'click', () => this.runAction(() => request('open-panel', 'activity')));

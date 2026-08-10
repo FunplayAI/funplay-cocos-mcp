@@ -21,6 +21,11 @@ const { InteractionLog } = require('./lib/interaction-log');
 const { RuntimeLog } = require('./lib/runtime-log');
 const { checkForUpdate } = require('./lib/update-checker');
 const { installLatestUpdate } = require('./lib/updater');
+const {
+  activateGlobalExtension,
+  getGlobalInstallationState,
+  installGlobalExtension,
+} = require('./lib/global-install');
 const { normalizeSavedToolProfiles } = require('./lib/tool-profiles');
 const { detectEditorLanguage, normalizeLanguagePreference, resolveLanguage } = require('./lib/i18n');
 
@@ -41,6 +46,7 @@ class ExtensionService {
     this.runtimeLog = new RuntimeLog();
     this.lastUpdateInfo = null;
     this.lastInstallInfo = null;
+    this.lastGlobalInstallInfo = null;
   }
 
   log(level, message, details) {
@@ -236,6 +242,43 @@ class ExtensionService {
     };
   }
 
+  getInstallationState() {
+    return getGlobalInstallationState({
+      ...this.getGlobalInstallEnvironment(),
+      packagePath: path.dirname(__filename),
+      projectPath: getProjectPath(),
+      currentVersion: manifest.version || '0.0.0',
+      availableVersion: this.lastUpdateInfo && this.lastUpdateInfo.ok
+        ? this.lastUpdateInfo.latestVersion
+        : manifest.version || '0.0.0',
+    });
+  }
+
+  getGlobalInstallEnvironment() {
+    const editorApp = global.Editor && global.Editor.App ? global.Editor.App : null;
+    return {
+      editorHomePath: editorApp && editorApp.home ? editorApp.home : '',
+      editorVersion: editorApp && editorApp.version ? editorApp.version : getCocosVersion(),
+    };
+  }
+
+  async activateGlobalInstall(globalPackagePath) {
+    const activation = await activateGlobalExtension({
+      editor: global.Editor,
+      globalPackagePath,
+    });
+    if (activation.errors.length > 0) {
+      this.log('warn', activation.errors.join(' '));
+    }
+    if (activation.shadowedBy) {
+      this.log(
+        'info',
+        `The global extension was registered, but the active project copy has priority at ${activation.shadowedBy}.`
+      );
+    }
+    return activation;
+  }
+
   getPanelState() {
     this.ensureRuntime();
     const status = this.getStatus();
@@ -258,6 +301,8 @@ class ExtensionService {
       config: this.config,
       updateInfo: this.lastUpdateInfo,
       installInfo: this.lastInstallInfo,
+      installation: this.getInstallationState(),
+      globalInstallInfo: this.lastGlobalInstallInfo,
       clientConfig: this.getClientConfig(),
       clientTargets: getTargetStatuses(this.config),
       localization: {
@@ -346,6 +391,74 @@ class ExtensionService {
       'info',
       `Installed Funplay Cocos MCP ${installResult.installedVersion}; ` +
       (reload.scheduled ? 'extension reload scheduled.' : `reload not scheduled: ${reload.reason}`)
+    );
+    return this.getPanelState();
+  }
+
+  async installGlobally(options = {}) {
+    this.ensureRuntime();
+    const installation = this.getInstallationState();
+    if (installation.globalPathExists && !installation.globalInstalled) {
+      throw new Error(
+        `Global extension path is occupied by an invalid package: ${installation.globalPackagePath}. ` +
+        `${installation.globalInstallError || 'Remove or rename it before installing.'}`
+      );
+    }
+    if (!installation.canInstallGlobally && installation.globalInstalled && !options.force) {
+      const activation = await this.activateGlobalInstall(installation.globalPackagePath);
+      this.lastGlobalInstallInfo = {
+        ok: true,
+        installed: false,
+        alreadyInstalled: true,
+        installedVersion: installation.globalVersion,
+        globalPackagePath: installation.globalPackagePath,
+        duplicateInstall: installation.duplicateInstall,
+        restartRequired: !activation.enabled,
+        activation,
+        installedAt: new Date().toISOString(),
+      };
+      return this.getPanelState();
+    }
+
+    let updateInfo = this.lastUpdateInfo;
+    if (!updateInfo || !updateInfo.ok || !updateInfo.downloadAvailable || options.forceCheck) {
+      await this.checkUpdates({ timeoutMs: options.timeoutMs });
+      updateInfo = this.lastUpdateInfo;
+    }
+    if (!updateInfo || !updateInfo.ok) {
+      throw new Error(updateInfo && updateInfo.error ? updateInfo.error : 'Release check failed.');
+    }
+    if (!updateInfo.downloadAvailable) {
+      throw new Error('Latest release does not include the verified extension assets required for global install.');
+    }
+
+    const installResult = await installGlobalExtension({
+      ...this.getGlobalInstallEnvironment(),
+      releaseInfo: updateInfo,
+      packagePath: path.dirname(__filename),
+      projectPath: getProjectPath(),
+      currentVersion: manifest.version || '0.0.0',
+      availableVersion: updateInfo.latestVersion,
+      timeoutMs: Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000,
+      force: Boolean(options.force),
+      log: (level, message, details) => this.log(level, message, details),
+    });
+    const activation = await this.activateGlobalInstall(installResult.globalPackagePath);
+    this.lastGlobalInstallInfo = {
+      ...installResult,
+      restartRequired: installResult.restartRequired && !activation.enabled,
+      activation,
+      installedAt: new Date().toISOString(),
+    };
+    this.log(
+      'info',
+      installResult.alreadyInstalled
+        ? `Global Funplay Cocos MCP ${installResult.installedVersion} is already installed.`
+        : `Installed Funplay Cocos MCP ${installResult.installedVersion} for all projects at ` +
+          `${installResult.globalPackagePath}. ` +
+          (activation.enabled
+            ? 'Cocos Creator scanned and enabled the global copy.'
+            : 'Cocos Creator registered the global copy; reopen projects that are already running to activate it.')
     );
     return this.getPanelState();
   }
@@ -681,6 +794,9 @@ module.exports = {
     },
     installUpdate(options) {
       return service.installUpdate(options);
+    },
+    installGlobally(options) {
+      return service.installGlobally(options);
     },
     openUpdateRelease(url) {
       return service.openUpdateRelease(url);

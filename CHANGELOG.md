@@ -6,6 +6,17 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-08-10
+
+### Added
+
+- Added a checksum-verified **Install for All Projects** workflow that installs the latest release into the active Cocos Creator version's managed global extension directory, asks Creator to scan and register it without replacing a running project copy, detects conflicts, and makes it automatically available to projects opened with that Creator version.
+
+### Fixed
+
+- Targeted Cocos Creator 3.8's version-scoped `builtin-extensions/<version>` directory instead of the legacy user extension path.
+- Kept the active project copy running after global registration so MCP Settings can report the installed global version and duplicate-copy guidance without being unloaded mid-install.
+
 ## [0.4.6] - 2026-07-30
 
 ### Fixed

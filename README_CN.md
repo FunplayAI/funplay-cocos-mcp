@@ -56,7 +56,18 @@ git clone https://github.com/FunplayAI/funplay-cocos-mcp.git extensions/funplay-
 
 如果不想用 git 安装，可以从 GitHub Releases 下载 `Funplay.CocosMcp.v<version>.zip`，解压后把 `funplay-cocos-mcp` 目录移动到项目的 `extensions/` 目录。
 
-你也可以把目录复制到 Cocos Creator 的全局用户扩展目录中。
+#### 为所有项目安装（推荐）
+
+先在任意一个项目中安装并打开扩展，然后进入 `Funplay > MCP Settings`，在“所有项目”区域点击 **为所有项目安装**。扩展会下载最新 GitHub Release、校验 `SHA256SUMS.txt`，再安装到当前 Cocos Creator 版本管理的全局扩展目录：
+
+- macOS / Linux：`~/.CocosCreator/builtin-extensions/<Creator 版本>/funplay-cocos-mcp`
+- Windows：`%USERPROFILE%\.CocosCreator\builtin-extensions\<Creator 版本>\funplay-cocos-mcp`
+
+安装完成后，扩展会让 Cocos Creator 立即扫描并注册这份全局副本。之后由同一 Creator 版本打开或新建的项目都会自动加载它，MCP Server 仍默认自动启动；如果当前已打开项目的项目副本优先，请重新打开项目。不会向每个项目的 `extensions/` 目录重复复制文件。
+
+Cocos Creator 会按版本隔离全局扩展。如果同时使用多个 Creator 版本，需要在每个版本中分别执行一次“为所有项目安装”。
+
+为了避免覆盖开发代码，安装过程不会删除当前项目副本。如果当前项目同时存在同名扩展，设置窗口会显示重复安装提示；确认全局副本正常工作后，请移除或禁用项目副本，避免扩展冲突。
 
 ### 2. 启动 MCP Server
 
@@ -76,6 +87,7 @@ Funplay > MCP Server
 - 打开聚焦的 Tool Exposure、MCP Settings 和 Activity 子窗口
 - 自动检查当前安装版本是否落后于 GitHub 最新 Release
 - 从面板打开 Release 页面，或安装已校验的 Release 包
+- 一键安装到 Cocos Creator 全局扩展目录，让已有项目和新项目自动可用
 - 一键配置 AI 客户端，并随目标客户端预览对应配置
 - 把高级工具 profile 编辑、传输设置、诊断和日志从主窗口拆出去
 - 自动跟随 Cocos Creator 的界面语言，或在 MCP Settings 中为项目指定中文/英文
@@ -244,6 +256,7 @@ curl http://127.0.0.1:8765/tools
 - 默认 `core` profile 暴露 39 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 105 个工具；也可以用 `custom` 按分类或工具名增删。
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
+- “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。

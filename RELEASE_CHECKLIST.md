@@ -40,6 +40,9 @@ Use this checklist before publishing a new release of Funplay MCP for Cocos.
 - [ ] Test in a clean Cocos Creator `3.8+` project
 - [ ] Install from the generated zip into `<project>/extensions/funplay-cocos-mcp`
 - [ ] Restart Cocos Creator or reload extensions
+- [ ] Use **MCP Settings > Install for All Projects** and confirm the checksum-verified package is installed under `.CocosCreator/builtin-extensions/<Creator version>/funplay-cocos-mcp`
+- [ ] Confirm Creator scans/registers the package, then open a clean project without a project extension copy and verify the global extension loads and autostarts
+- [ ] Confirm a project copy plus a global copy produces the duplicate-install warning
 - [ ] Open `Funplay > MCP Server`
 - [ ] Start the MCP server successfully
 - [ ] If the configured port is already in use, verify automatic fallback is reported clearly

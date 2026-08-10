@@ -56,7 +56,18 @@ Then restart Cocos Creator or reload extensions from the editor.
 
 For a non-git install, download `Funplay.CocosMcp.v<version>.zip` from the GitHub Releases page, unzip it, and move the extracted `funplay-cocos-mcp` folder into your project `extensions/` directory.
 
-You can also install it globally by copying the folder into your Cocos Creator user extensions directory.
+#### Install for All Projects (Recommended)
+
+Install and open the extension in any project first. Then open `Funplay > MCP Settings` and click **Install for All Projects** in the All Projects section. The extension downloads the latest GitHub Release, verifies `SHA256SUMS.txt`, and installs it into the active Cocos Creator version's managed global extension directory:
+
+- macOS / Linux: `~/.CocosCreator/builtin-extensions/<Creator version>/funplay-cocos-mcp`
+- Windows: `%USERPROFILE%\.CocosCreator\builtin-extensions\<Creator version>\funplay-cocos-mcp`
+
+Cocos Creator scans and registers the installed copy immediately. Projects opened or created with that Creator version then load it automatically, and the MCP server keeps its default autostart behavior. Reopen an already-running project if its project-level copy has priority. No extension files are copied into each project's `extensions/` directory.
+
+Global extensions are isolated by Cocos Creator version. If you use multiple Creator versions, run **Install for All Projects** once from each version.
+
+The installer does not delete the current project copy, which protects development worktrees. If both copies exist, MCP Settings shows a duplicate-install warning. After confirming that the global copy works, remove or disable the project copy to avoid extension conflicts.
 
 ### 2. Start the MCP Server
 
@@ -76,6 +87,7 @@ The panel is intentionally small:
 - Open focused Tool Exposure, MCP Settings, and Activity windows
 - Automatically check the installed version against the latest GitHub release
 - Open the release page or install verified release packages from the panel
+- Install once in the Cocos Creator global extensions directory so existing and new projects can use it automatically
 - Configure AI clients with one click and preview the selected client config
 - Keep advanced tool profile editing, transport settings, diagnostics, and logs out of the main server window
 - Follow the Cocos Creator interface language automatically, or select Chinese/English per project in MCP Settings
@@ -244,6 +256,7 @@ Try a higher-level prompt in your AI client:
 - The default `core` profile exposes 39 high-signal tools. Switch to `full` for all 105 tools, or use `custom` to include/exclude tool categories and individual tools.
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
+- **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
