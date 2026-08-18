@@ -188,6 +188,7 @@ test('create_prefab_from_node serializes through scene bridge and writes asset f
             {
               __type__: 'cc.Node',
               _name: 'SourceNode',
+              _layer: 33554432,
               _components: [{ __id__: 2 }],
               _prefab: { __id__: 4 },
             },
@@ -232,6 +233,46 @@ test('create_prefab_from_node serializes through scene bridge and writes asset f
   assert.equal(fs.existsSync(path.join(tmp, 'assets', 'Prefabs', 'LoginPanel.prefab')), true);
 });
 
+test('create_prefab_from_node rejects non-UI_2D node layers before writing', async (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-prefab-layer-'));
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(tmp, 'assets'), { recursive: true });
+
+  const registry = createRegistry('full', tmp, {}, {
+    sceneBridge: {
+      call: async () => ({
+        source: { name: 'SourceNode', path: 'SourceNode', uuid: 'source-uuid' },
+        root: { name: 'SourceNode' },
+        content: JSON.stringify([
+          { __type__: 'cc.Prefab', data: { __id__: 1 } },
+          {
+            __type__: 'cc.Node',
+            _name: 'SourceNode',
+            _layer: 1,
+            _components: [],
+            _prefab: { __id__: 2 },
+          },
+          {
+            __type__: 'cc.PrefabInfo',
+            root: { __id__: 1 },
+            asset: { __id__: 0 },
+            fileId: 'node-file-id',
+          },
+        ]),
+      }),
+    },
+  });
+
+  await assert.rejects(
+    () => registry.callToolDetailed('create_prefab_from_node', {
+      name: 'SourceNode',
+      target: 'Prefabs/WrongLayer',
+    }),
+    /cc\.Node at index 1\._layer is 1, expected 33554432/
+  );
+  assert.equal(fs.existsSync(path.join(tmp, 'assets', 'Prefabs', 'WrongLayer.prefab')), false);
+});
+
 test('create_prefab_from_node rejects serialized output without PrefabInfo', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-invalid-prefab-'));
   t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
@@ -242,7 +283,7 @@ test('create_prefab_from_node rejects serialized output without PrefabInfo', asy
       call: async () => ({
         source: { name: 'SourceNode', path: 'Canvas/SourceNode', uuid: 'source-uuid' },
         root: { name: 'SourceNode' },
-        content: '[{"__type__":"cc.Prefab","data":{"__id__":1}},{"__type__":"cc.Node","_name":"SourceNode","_components":[],"_prefab":null}]',
+        content: '[{"__type__":"cc.Prefab","data":{"__id__":1}},{"__type__":"cc.Node","_name":"SourceNode","_layer":33554432,"_components":[],"_prefab":null}]',
       }),
     },
   });

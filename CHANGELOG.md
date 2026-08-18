@@ -6,6 +6,13 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-18
+
+### Fixed
+
+- Normalize every cloned node produced by `create_prefab_from_node` to Cocos Creator's `UI_2D` layer (`33554432`) before serialization, while leaving the source scene hierarchy unchanged.
+- Reject generated Prefab content whose serialized `cc.Node._layer` values do not match `UI_2D` before writing the asset.
+
 ## [0.5.0] - 2026-08-18
 
 ### Added

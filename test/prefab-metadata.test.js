@@ -3,9 +3,11 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const {
+  UI_2D_LAYER,
   assertSerializedPrefabMetadata,
   attachPrefabMetadata,
   createPrefabFileId,
+  normalizePrefabNodeLayers,
 } = require('../lib/prefab-metadata');
 
 class PrefabInfo {}
@@ -17,6 +19,7 @@ function validSerializedPrefab() {
     {
       __type__: 'cc.Node',
       _name: 'Root',
+      _layer: UI_2D_LAYER,
       _children: [{ __id__: 5 }],
       _components: [{ __id__: 2 }],
       _prefab: { __id__: 4 },
@@ -36,6 +39,7 @@ function validSerializedPrefab() {
     {
       __type__: 'cc.Node',
       _name: 'Child',
+      _layer: UI_2D_LAYER,
       _parent: { __id__: 1 },
       _children: [],
       _components: [],
@@ -57,6 +61,19 @@ test('createPrefabFileId returns Cocos-compatible compact ids', () => {
   assert.match(first, /^[A-Za-z0-9+/]{22}$/);
   assert.match(second, /^[A-Za-z0-9+/]{22}$/);
   assert.notEqual(first, second);
+});
+
+test('normalizePrefabNodeLayers assigns UI_2D to the entire cloned node tree', () => {
+  const grandchild = { layer: 4, children: [] };
+  const child = { layer: 1, children: [grandchild] };
+  const root = { layer: 0, children: [child] };
+
+  const result = normalizePrefabNodeLayers(root);
+
+  assert.deepEqual(result, { nodeCount: 3, layer: UI_2D_LAYER });
+  assert.equal(root.layer, UI_2D_LAYER);
+  assert.equal(child.layer, UI_2D_LAYER);
+  assert.equal(grandchild.layer, UI_2D_LAYER);
 });
 
 test('attachPrefabMetadata assigns root and asset references to every node and component', () => {
@@ -101,7 +118,9 @@ test('attachPrefabMetadata assigns root and asset references to every node and c
 });
 
 test('assertSerializedPrefabMetadata accepts complete node and component metadata', () => {
-  const validation = assertSerializedPrefabMetadata(JSON.stringify(validSerializedPrefab()));
+  const validation = assertSerializedPrefabMetadata(JSON.stringify(validSerializedPrefab()), {
+    expectedLayer: UI_2D_LAYER,
+  });
 
   assert.deepEqual(validation, {
     valid: true,
@@ -111,6 +130,16 @@ test('assertSerializedPrefabMetadata accepts complete node and component metadat
     componentCount: 1,
     fileIdCount: 3,
   });
+});
+
+test('assertSerializedPrefabMetadata rejects nodes outside the expected UI_2D layer', () => {
+  const serialized = validSerializedPrefab();
+  serialized[5]._layer = 1;
+
+  assert.throws(
+    () => assertSerializedPrefabMetadata(serialized, { expectedLayer: UI_2D_LAYER }),
+    /cc\.Node at index 5\._layer is 1, expected 33554432/
+  );
 });
 
 test('assertSerializedPrefabMetadata rejects null component metadata', () => {

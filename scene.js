@@ -3,7 +3,7 @@
 module.paths.push(Editor.App.path + '/node_modules');
 
 const cc = require('cc');
-const { attachPrefabMetadata } = require('./lib/prefab-metadata');
+const { attachPrefabMetadata, normalizePrefabNodeLayers } = require('./lib/prefab-metadata');
 
 const {
   Node,
@@ -993,6 +993,7 @@ exports.methods = {
         root.name = String(options.rootName);
       }
 
+      normalizePrefabNodeLayers(root);
       prefab.data = root;
       const metadata = attachPrefabMetadata(root, prefab, {
         prefabUtils: Prefab._utils,
