@@ -28,6 +28,13 @@ const {
 } = require('./lib/global-install');
 const { normalizeSavedToolProfiles } = require('./lib/tool-profiles');
 const { detectEditorLanguage, normalizeLanguagePreference, resolveLanguage } = require('./lib/i18n');
+const { createProjectSkill } = require('./lib/project-instructions');
+const {
+  getProjectSkillsState: readProjectSkillsState,
+  previewBuiltInProjectSkillUpdate,
+  restoreLatestBuiltInProjectSkillBackup,
+  updateBuiltInProjectSkill,
+} = require('./lib/project-skills');
 
 const EXTENSION_NAME = manifest.name || 'funplay-cocos-mcp';
 const LOG_PREFIX = '[Funplay Cocos MCP]';
@@ -303,6 +310,7 @@ class ExtensionService {
       installInfo: this.lastInstallInfo,
       installation: this.getInstallationState(),
       globalInstallInfo: this.lastGlobalInstallInfo,
+      projectSkills: this.getProjectSkillsState(),
       clientConfig: this.getClientConfig(),
       clientTargets: getTargetStatuses(this.config),
       localization: {
@@ -322,6 +330,94 @@ class ExtensionService {
     this.ensureRuntime();
     this.log('info', `Panel calling tool: ${name}`);
     return await this.toolRegistry.callTool(name, args || {});
+  }
+
+  getProjectSkillsState() {
+    return readProjectSkillsState(getProjectPath());
+  }
+
+  previewProjectSkillUpdate(options = {}) {
+    return previewBuiltInProjectSkillUpdate(getProjectPath(), options);
+  }
+
+  installOrUpdateProjectSkill(options = {}) {
+    const result = updateBuiltInProjectSkill(getProjectPath(), {
+      skillName: options.skillName,
+      allowModified: options.allowModified === true,
+      extensionVersion: manifest.version || '0.0.0',
+    });
+    this.log(
+      'info',
+      result.installed
+        ? `Installed recommended project skill at ${result.write.path}.`
+        : result.updated
+          ? `Updated recommended project skill at ${result.write.path}.`
+          : 'Recommended project skill is already current.'
+    );
+    return {
+      ...result,
+      projectSkills: this.getProjectSkillsState(),
+    };
+  }
+
+  restoreProjectSkillBackup(options = {}) {
+    const result = restoreLatestBuiltInProjectSkillBackup(getProjectPath(), options);
+    this.log('info', `Restored project skill backup ${result.source.path}.`);
+    return {
+      ...result,
+      projectSkills: this.getProjectSkillsState(),
+    };
+  }
+
+  createProjectSkillFromPanel(options = {}) {
+    const result = createProjectSkill(getProjectPath(), {
+      skillName: options.skillName,
+      title: options.title,
+      description: options.description,
+      instructions: options.instructions,
+      overwrite: false,
+    });
+    this.log('info', `Created project skill at ${result.path}.`);
+    return {
+      created: true,
+      ...result,
+      projectSkills: this.getProjectSkillsState(),
+    };
+  }
+
+  revealProjectSkill(target) {
+    const relativePath = String(target || '').trim();
+    const state = this.getProjectSkillsState();
+    const skill = state.skills.find((item) => item.path === relativePath);
+    if (!skill) {
+      throw new Error(`Project skill not found: ${relativePath}`);
+    }
+    const filePath = path.resolve(state.projectPath, skill.path);
+
+    try {
+      const electron = require('electron');
+      if (electron && electron.shell && typeof electron.shell.showItemInFolder === 'function') {
+        electron.shell.showItemInFolder(filePath);
+        return { opened: true, path: skill.path, method: 'electron.shell.showItemInFolder' };
+      }
+    } catch (error) {
+      // Fall through to a platform file manager.
+    }
+
+    const childProcess = require('child_process');
+    const command = process.platform === 'darwin'
+      ? 'open'
+      : process.platform === 'win32'
+        ? 'explorer'
+        : 'xdg-open';
+    const args = process.platform === 'darwin'
+      ? ['-R', filePath]
+      : process.platform === 'win32'
+        ? [`/select,${filePath}`]
+        : [path.dirname(filePath)];
+    const child = childProcess.spawn(command, args, { detached: true, stdio: 'ignore' });
+    child.unref();
+    return { opened: true, path: skill.path, method: command };
   }
 
   async checkUpdates(options = {}) {
@@ -762,6 +858,9 @@ module.exports = {
     openActivityPanel() {
       return service.openPanel('activity');
     },
+    openProjectSkillsPanel() {
+      return service.openPanel('project-skills');
+    },
     startServer() {
       return service.startServer();
     },
@@ -785,6 +884,24 @@ module.exports = {
     },
     callToolFromPanel(name, args) {
       return service.callToolFromPanel(name, args);
+    },
+    getProjectSkillsState() {
+      return service.getProjectSkillsState();
+    },
+    previewProjectSkillUpdate(options) {
+      return service.previewProjectSkillUpdate(options);
+    },
+    installOrUpdateProjectSkill(options) {
+      return service.installOrUpdateProjectSkill(options);
+    },
+    restoreProjectSkillBackup(options) {
+      return service.restoreProjectSkillBackup(options);
+    },
+    createProjectSkillFromPanel(options) {
+      return service.createProjectSkillFromPanel(options);
+    },
+    revealProjectSkill(target) {
+      return service.revealProjectSkill(target);
     },
     checkUpdates() {
       return service.checkUpdates();

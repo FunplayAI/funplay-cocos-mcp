@@ -3,6 +3,7 @@
 module.paths.push(Editor.App.path + '/node_modules');
 
 const cc = require('cc');
+const { attachPrefabMetadata } = require('./lib/prefab-metadata');
 
 const {
   Node,
@@ -993,6 +994,9 @@ exports.methods = {
       }
 
       prefab.data = root;
+      const metadata = attachPrefabMetadata(root, prefab, {
+        prefabUtils: Prefab._utils,
+      });
       const serialized = serialize(prefab);
       const content = typeof serialized === 'string'
         ? serialized
@@ -1009,6 +1013,7 @@ exports.methods = {
         root: {
           name: root.name,
         },
+        metadata,
         content,
       };
     } finally {

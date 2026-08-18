@@ -257,6 +257,7 @@ curl http://127.0.0.1:8765/tools
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
+- **项目 Skills** 会同时管理两个内置项目 Skill：用于编辑器自动化的 `funplay-cocos-mcp-workflow`，以及用于 Cocos 响应式 UI 的 `funplay-cocos-ui-composition`；也会列出自定义 `.codex/skills`。两个内置 Skill 分别维护版本、差异、本地修改、备份、更新和恢复状态。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。
@@ -279,7 +280,7 @@ curl http://127.0.0.1:8765/tools
 - **105 个内置工具** — 覆盖场景层级、编辑器状态、选择工作流、Prefab、资产、资产依赖、项目指令、UI 创建、组件、文件、日志、脚本诊断、截图、运行态控制、构建/预览辅助、编辑器偏好、事件绑定和输入模拟
 - **统一主工具** — `execute_javascript` 同时支持 `scene` 和 `editor` 两种上下文
 - **Resources 与 Prompts** — 实时项目/日志资源，以及脚本修复、场景验证、可玩原型等可复用工作流
-- **Cocos 图形面板** — `Funplay > MCP Server` 是精简 Dashboard，并提供 Tool Exposure、MCP Settings、Activity 子窗口承载复杂工作流
+- **Cocos 图形面板** — `Funplay > MCP Server` 是精简 Dashboard，并提供 Tool Exposure、MCP Settings、Project Skills、Activity 子窗口承载复杂工作流
 - **截图与输入支持** — 支持编辑器/场景/Game/Preview 截图，以及 Electron 级鼠标键盘事件
 - **厂商无关** — 兼容任意支持 HTTP JSON-RPC MCP 的 AI 客户端
 

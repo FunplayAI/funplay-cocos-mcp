@@ -257,6 +257,7 @@ Try a higher-level prompt in your AI client:
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
+- **Project Skills** manages two built-in project skills—`funplay-cocos-mcp-workflow` for editor automation and `funplay-cocos-ui-composition` for responsive Cocos UI—alongside custom `.codex/skills`. Each built-in skill has independent version, diff, local-modification, backup, update, and restore state.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -279,7 +280,7 @@ Try a higher-level prompt in your AI client:
 - **105 Built-in Tools** — Scene hierarchy, editor state, selection workflows, prefabs, assets, asset dependencies, project instructions, UI creation, components, files, logs, script diagnostics, screenshots, runtime control, build/preview helpers, editor preferences, event binding, and input simulation
 - **Primary Unified Tool** — `execute_javascript` supports both `scene` and `editor` contexts
 - **Resources & Prompts** — Live project/log resources plus reusable workflows like script fixing, scene validation, and playable prototype creation
-- **Cocos Panel UI** — A compact `Funplay > MCP Server` dashboard plus focused Tool Exposure, MCP Settings, and Activity windows for larger workflows
+- **Cocos Panel UI** — A compact `Funplay > MCP Server` dashboard plus focused Tool Exposure, MCP Settings, Project Skills, and Activity windows for larger workflows
 - **Screenshot and Input Support** — Capture editor/scene/game/preview screenshots and send Electron-level mouse/keyboard events
 - **Vendor Agnostic** — Works with any AI client that supports MCP over HTTP JSON-RPC
 

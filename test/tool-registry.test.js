@@ -72,6 +72,21 @@ test('full profile exposes all built-in tools', () => {
   assert.equal(tools.some((tool) => tool.name === 'set_selection'), true);
 });
 
+test('recommended project skill tool records managed template metadata', async (t) => {
+  const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-managed-skill-'));
+  t.after(() => fs.rmSync(projectPath, { recursive: true, force: true }));
+  const registry = createRegistry('full', projectPath);
+
+  const result = await registry.callToolDetailed('create_cocos_mcp_project_skill', {});
+
+  assert.equal(result.value.data.path, '.codex/skills/funplay-cocos-mcp-workflow/SKILL.md');
+  assert.equal(
+    result.value.data.manifest,
+    '.codex/skills/funplay-cocos-mcp-workflow/.funplay-cocos-mcp.json'
+  );
+  assert.equal(fs.existsSync(path.join(projectPath, result.value.data.manifest)), true);
+});
+
 test('create_scene serializes and persists a scene without an interactive save dialog', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-scene-'));
   t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
@@ -168,7 +183,23 @@ test('create_prefab_from_node serializes through scene bridge and writes asset f
         return {
           source: { name: 'SourceNode', path: 'Canvas/SourceNode', uuid: 'source-uuid' },
           root: { name: payload.rootName || 'SourceNode' },
-          content: '[{"__type__":"cc.Prefab","data":{"__id__":1}},{"__type__":"cc.Node","_name":"SourceNode"}]',
+          content: JSON.stringify([
+            { __type__: 'cc.Prefab', data: { __id__: 1 } },
+            {
+              __type__: 'cc.Node',
+              _name: 'SourceNode',
+              _components: [{ __id__: 2 }],
+              _prefab: { __id__: 4 },
+            },
+            { __type__: 'cc.UITransform', node: { __id__: 1 }, __prefab: { __id__: 3 } },
+            { __type__: 'cc.CompPrefabInfo', fileId: 'component-file-id' },
+            {
+              __type__: 'cc.PrefabInfo',
+              root: { __id__: 1 },
+              asset: { __id__: 0 },
+              fileId: 'node-file-id',
+            },
+          ]),
         };
       },
     },
@@ -190,7 +221,40 @@ test('create_prefab_from_node serializes through scene bridge and writes asset f
   });
   assert.equal(result.value.data.created, true);
   assert.equal(result.value.data.path, 'assets/Prefabs/LoginPanel.prefab');
+  assert.deepEqual(result.value.data.prefabMetadata, {
+    valid: true,
+    prefabIndex: 0,
+    rootIndex: 1,
+    nodeCount: 1,
+    componentCount: 1,
+    fileIdCount: 2,
+  });
   assert.equal(fs.existsSync(path.join(tmp, 'assets', 'Prefabs', 'LoginPanel.prefab')), true);
+});
+
+test('create_prefab_from_node rejects serialized output without PrefabInfo', async (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-invalid-prefab-'));
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(tmp, 'assets'), { recursive: true });
+
+  const registry = createRegistry('full', tmp, {}, {
+    sceneBridge: {
+      call: async () => ({
+        source: { name: 'SourceNode', path: 'Canvas/SourceNode', uuid: 'source-uuid' },
+        root: { name: 'SourceNode' },
+        content: '[{"__type__":"cc.Prefab","data":{"__id__":1}},{"__type__":"cc.Node","_name":"SourceNode","_components":[],"_prefab":null}]',
+      }),
+    },
+  });
+
+  await assert.rejects(
+    () => registry.callToolDetailed('create_prefab_from_node', {
+      name: 'SourceNode',
+      target: 'Prefabs/Invalid',
+    }),
+    /cc.Node at index 1\._prefab is not an object reference/
+  );
+  assert.equal(fs.existsSync(path.join(tmp, 'assets', 'Prefabs', 'Invalid.prefab')), false);
 });
 
 test('create_prefab_instance creates a cc.Prefab node and verifies its linkage', async (t) => {

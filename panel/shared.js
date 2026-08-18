@@ -75,8 +75,10 @@ function dashboardTemplate() {
           <ui-button id="installGlobalBtn" data-i18n="installation.install_all">Install for All Projects</ui-button>
           <ui-button id="openToolsBtn" data-i18n="dashboard.edit_tools">Edit Tools</ui-button>
           <ui-button id="openSettingsBtn" data-i18n="dashboard.settings">Settings</ui-button>
+          <ui-button id="openProjectSkillsBtn" data-i18n="dashboard.project_skills">Project Skills</ui-button>
         </div>
         <div id="globalInstallStatus" class="hint-line installation-status"></div>
+        <div id="projectSkillsNotice" class="skills-notice"></div>
       </section>
 
       <section class="section">
@@ -275,10 +277,62 @@ function activityTemplate() {
   `;
 }
 
+function projectSkillsTemplate() {
+  return `
+    <div class="mcp-root project-skills">
+      <header class="plain-header">
+        <h1 data-i18n="skills_manager.title">Project Skills</h1>
+        <div class="hint-line" data-i18n="skills_manager.hint">Manage Codex skills stored in this Cocos project without silently replacing local changes.</div>
+      </header>
+
+      <section class="section">
+        <div class="section-heading">
+          <div class="section-title" data-i18n="skills_manager.recommended">Built-in Funplay Skills</div>
+          <ui-button id="refreshBtn" data-i18n="common.refresh">Refresh</ui-button>
+        </div>
+        <div id="builtInSkillList" class="built-in-skill-list"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading">
+          <div class="section-title" data-i18n="skills_manager.installed">Project Skills</div>
+        </div>
+        <div id="projectSkillList" class="skill-list"></div>
+      </section>
+
+      <section class="section">
+        <details>
+          <summary data-i18n="skills_manager.create_custom">Create Custom Skill</summary>
+          <div class="create-skill-grid">
+            <label><span data-i18n="skills_manager.skill_name">Skill name</span>
+              <ui-input id="newSkillNameInput" placeholder="scene-qa" data-i18n-placeholder="skills_manager.skill_name_placeholder"></ui-input>
+            </label>
+            <label><span data-i18n="skills_manager.skill_title">Title</span>
+              <ui-input id="newSkillTitleInput" placeholder="Scene QA" data-i18n-placeholder="skills_manager.skill_title_placeholder"></ui-input>
+            </label>
+          </div>
+          <label class="stacked-field"><span data-i18n="skills_manager.skill_description">Trigger description</span>
+            <ui-textarea id="newSkillDescriptionInput" class="short-textarea"></ui-textarea>
+          </label>
+          <label class="stacked-field"><span data-i18n="skills_manager.skill_instructions">Instructions</span>
+            <ui-textarea id="newSkillInstructionsInput" class="skill-instructions"></ui-textarea>
+          </label>
+          <div class="toolbar">
+            <ui-button id="createProjectSkillBtn" class="primary" data-i18n="skills_manager.create">Create Skill</ui-button>
+          </div>
+        </details>
+      </section>
+
+      ${outputMarkup()}
+    </div>
+  `;
+}
+
 function templateForMode(mode) {
   if (mode === 'tool-exposure') return toolExposureTemplate();
   if (mode === 'settings') return settingsTemplate();
   if (mode === 'activity') return activityTemplate();
+  if (mode === 'project-skills') return projectSkillsTemplate();
   return dashboardTemplate();
 }
 
@@ -660,6 +714,125 @@ const STYLE = `
   .installation-status.error {
     color: #e86f6f;
   }
+  .skills-notice {
+    display: none;
+    margin-top: 8px;
+    border-left: 3px solid #d28a2d;
+    border-radius: 5px;
+    padding: 7px 8px;
+    background: rgba(210,138,45,0.12);
+    color: var(--color-normal-contrast);
+    white-space: pre-wrap;
+  }
+  .skills-notice.visible {
+    display: block;
+  }
+  .skills-notice.modified {
+    border-left-color: #4a91cf;
+    background: rgba(74,145,207,0.12);
+  }
+  .skill-status-pill {
+    border-radius: 999px;
+    padding: 3px 8px;
+    background: #666;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .skill-status-pill.current {
+    background: #23884f;
+  }
+  .skill-status-pill.update-available {
+    background: #b67623;
+  }
+  .skill-status-pill.modified {
+    background: #397aa9;
+  }
+  .skill-status-pill.missing {
+    background: #777;
+  }
+  .built-in-skill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .built-in-skill-card {
+    border: 1px solid var(--color-normal-border);
+    border-radius: 6px;
+    padding: 9px;
+    background: rgba(0,0,0,0.10);
+  }
+  .built-in-skill-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .built-in-skill-title {
+    color: var(--color-normal-contrast);
+    font-weight: 700;
+    word-break: break-word;
+  }
+  .built-in-skill-description {
+    margin-top: 4px;
+    color: var(--color-normal-contrast-weak);
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .skill-backup-line {
+    margin-top: 7px;
+  }
+  .skill-diff-details {
+    margin-top: 9px;
+  }
+  pre.skill-diff {
+    min-height: 160px;
+    max-height: 420px;
+    color: #d9e7ff;
+  }
+  .skill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .skill-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--color-normal-border);
+    border-radius: 5px;
+    padding: 8px;
+    background: rgba(0,0,0,0.10);
+  }
+  .skill-card-title {
+    color: var(--color-normal-contrast);
+    font-weight: 700;
+    word-break: break-word;
+  }
+  .skill-card-description,
+  .skill-card-meta {
+    margin-top: 3px;
+    color: var(--color-normal-contrast-weakest);
+    font-size: 11px;
+    word-break: break-word;
+  }
+  .skill-format-warning {
+    color: #d99b2b;
+  }
+  .create-skill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .stacked-field {
+    margin-top: 8px;
+  }
+  .skill-instructions {
+    min-height: 130px;
+  }
   .path-line {
     margin: 5px 0 8px 0;
     word-break: break-all;
@@ -670,7 +843,8 @@ const STYLE = `
     .settings-grid,
     .tool-config-grid,
     .category-controls,
-    .activity-grid {
+    .activity-grid,
+    .create-skill-grid {
       grid-template-columns: 1fr;
     }
     .category-row {
@@ -705,9 +879,11 @@ const SELECTORS = {
   copyGlobalPathBtn: '#copyGlobalPathBtn',
   globalInstallStatus: '#globalInstallStatus',
   globalInstallPath: '#globalInstallPath',
+  projectSkillsNotice: '#projectSkillsNotice',
   openToolsBtn: '#openToolsBtn',
   openSettingsBtn: '#openSettingsBtn',
   openActivityBtn: '#openActivityBtn',
+  openProjectSkillsBtn: '#openProjectSkillsBtn',
   openDashboardBtn: '#openDashboardBtn',
   refreshBtn: '#refreshBtn',
   clientTargetSelect: '#clientTargetSelect',
@@ -738,6 +914,13 @@ const SELECTORS = {
   recentCalls: '#recentCalls',
   recentLogs: '#recentLogs',
   clearActivityBtn: '#clearActivityBtn',
+  builtInSkillList: '#builtInSkillList',
+  projectSkillList: '#projectSkillList',
+  newSkillNameInput: '#newSkillNameInput',
+  newSkillTitleInput: '#newSkillTitleInput',
+  newSkillDescriptionInput: '#newSkillDescriptionInput',
+  newSkillInstructionsInput: '#newSkillInstructionsInput',
+  createProjectSkillBtn: '#createProjectSkillBtn',
   output: '#output',
 };
 
@@ -750,6 +933,7 @@ function createPanel(mode) {
     ready() {
       this.mode = mode;
       this.state = null;
+      this.skillDiffs = {};
       this.detectedLanguage = detectEditorLanguage(global.Editor);
       this.language = resolveLanguage('auto', this.detectedLanguage);
       this.applyStaticTranslations();
@@ -866,6 +1050,8 @@ function createMethods(mode) {
 
       this.renderUpdateStatus();
       this.renderInstallationStatus();
+      this.renderProjectSkillsNotice();
+      this.renderProjectSkills();
       this.renderToolSummary();
       this.renderToolProfiles();
       this.renderCategoryControls();
@@ -999,6 +1185,183 @@ function createMethods(mode) {
         status += ` ${this.t('installation.restart_required')}`;
       }
       this.$.globalInstallStatus.textContent = status;
+    },
+    renderProjectSkillsNotice() {
+      if (!this.$.projectSkillsNotice) {
+        return;
+      }
+      const projectSkills = this.state && this.state.projectSkills;
+      const builtIns = projectSkills && Array.isArray(projectSkills.builtIns)
+        ? projectSkills.builtIns
+        : projectSkills && projectSkills.official
+          ? [projectSkills.official]
+          : [];
+      const attention = builtIns.filter((skill) => skill.status !== 'current');
+      this.$.projectSkillsNotice.classList.remove('visible', 'modified');
+      if (!attention.length) {
+        this.$.projectSkillsNotice.textContent = '';
+        return;
+      }
+      this.$.projectSkillsNotice.textContent = this.t('skills_manager.notice_summary', {
+        count: attention.length,
+        total: builtIns.length,
+      });
+      this.$.projectSkillsNotice.classList.add('visible');
+      if (attention.some((skill) => skill.status === 'modified')) {
+        this.$.projectSkillsNotice.classList.add('modified');
+      }
+    },
+    renderProjectSkills() {
+      if (!this.$.builtInSkillList && !this.$.projectSkillList) {
+        return;
+      }
+      const projectSkills = this.state && this.state.projectSkills;
+      const builtIns = projectSkills && Array.isArray(projectSkills.builtIns)
+        ? projectSkills.builtIns
+        : projectSkills && projectSkills.official
+          ? [projectSkills.official]
+          : [];
+
+      if (this.$.builtInSkillList) {
+        this.$.builtInSkillList.innerHTML = '';
+        if (!builtIns.length) {
+          this.$.builtInSkillList.textContent = this.t('skills_manager.no_built_in_skills');
+        } else {
+          const builtInFragment = document.createDocumentFragment();
+          builtIns.forEach((skill) => {
+            const card = document.createElement('article');
+            card.className = 'built-in-skill-card';
+            card.dataset.skillName = skill.skillName;
+
+            const heading = document.createElement('div');
+            heading.className = 'built-in-skill-heading';
+            const headingMain = document.createElement('div');
+            const title = document.createElement('div');
+            title.className = 'built-in-skill-title';
+            title.textContent = skill.title || skill.skillName;
+            headingMain.appendChild(title);
+            const description = document.createElement('div');
+            description.className = 'built-in-skill-description';
+            description.textContent = skill.description || '';
+            headingMain.appendChild(description);
+            heading.appendChild(headingMain);
+
+            const normalizedStatus = String(skill.status || 'missing').replace(/-/g, '_');
+            const status = document.createElement('div');
+            status.className = `skill-status-pill ${skill.status || 'missing'}`;
+            status.textContent = this.t(`skills_manager.status_${normalizedStatus}`);
+            heading.appendChild(status);
+            card.appendChild(heading);
+
+            const detail = document.createElement('div');
+            detail.className = 'inline-status';
+            detail.textContent = this.t(`skills_manager.detail_${normalizedStatus}`, {
+              installed: skill.installedTemplateVersion || this.t('common.unknown'),
+              latest: skill.templateVersion || this.t('common.unknown'),
+            });
+            card.appendChild(detail);
+
+            const pathLine = document.createElement('div');
+            pathLine.className = 'hint-line path-line';
+            pathLine.textContent = this.t('skills_manager.path', { path: skill.path || '' });
+            card.appendChild(pathLine);
+
+            const toolbar = document.createElement('div');
+            toolbar.className = 'toolbar';
+            const actionKey = skill.status === 'missing'
+              ? 'skills_manager.install'
+              : skill.status === 'current'
+                ? 'skills_manager.current_action'
+                : 'skills_manager.update';
+            const actions = [
+              { action: 'install', label: actionKey, disabled: skill.status === 'current', primary: true },
+              { action: 'preview', label: 'skills_manager.view_changes', disabled: skill.status === 'current' },
+              { action: 'restore', label: 'skills_manager.restore_backup', disabled: skill.backupCount < 1 },
+              { action: 'reveal', label: 'skills_manager.reveal', disabled: !skill.installed },
+            ];
+            actions.forEach((item) => {
+              const button = document.createElement('ui-button');
+              button.textContent = this.t(item.label);
+              button.dataset.skillAction = item.action;
+              button.dataset.skillName = skill.skillName;
+              if (item.primary) {
+                button.classList.add('primary');
+              }
+              this.setDisabled(button, item.disabled);
+              toolbar.appendChild(button);
+            });
+            card.appendChild(toolbar);
+
+            const backup = document.createElement('div');
+            backup.className = 'hint-line skill-backup-line';
+            backup.textContent = skill.latestBackup
+              ? this.t('skills_manager.latest_backup', {
+                count: skill.backupCount,
+                path: skill.latestBackup.path,
+              })
+              : this.t('skills_manager.no_backup');
+            card.appendChild(backup);
+
+            const details = document.createElement('details');
+            details.className = 'skill-diff-details';
+            const summary = document.createElement('summary');
+            summary.textContent = this.t('skills_manager.diff_preview');
+            details.appendChild(summary);
+            const diff = document.createElement('pre');
+            diff.className = 'skill-diff';
+            diff.textContent = this.skillDiffs && this.skillDiffs[skill.skillName] || '';
+            details.appendChild(diff);
+            details.open = Boolean(diff.textContent);
+            card.appendChild(details);
+
+            builtInFragment.appendChild(card);
+          });
+          this.$.builtInSkillList.appendChild(builtInFragment);
+        }
+      }
+
+      if (!this.$.projectSkillList) {
+        return;
+      }
+      const skills = projectSkills.skills || [];
+      this.$.projectSkillList.innerHTML = '';
+      if (!skills.length) {
+        this.$.projectSkillList.textContent = this.t('skills_manager.no_skills');
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      skills.forEach((skill) => {
+        const card = document.createElement('div');
+        card.className = 'skill-card';
+
+        const main = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'skill-card-title';
+        title.textContent = `${skill.title || skill.name || this.t('common.unknown')}` +
+          (skill.builtIn || skill.official ? ` · ${this.t('skills_manager.official_badge')}` : '');
+        main.appendChild(title);
+
+        if (skill.description) {
+          const description = document.createElement('div');
+          description.className = 'skill-card-description';
+          description.textContent = skill.description;
+          main.appendChild(description);
+        }
+        const meta = document.createElement('div');
+        meta.className = `skill-card-meta${skill.valid ? '' : ' skill-format-warning'}`;
+        meta.textContent = skill.valid
+          ? skill.path
+          : `${skill.path} · ${this.t('skills_manager.invalid_format')}`;
+        main.appendChild(meta);
+        card.appendChild(main);
+
+        const revealButton = document.createElement('ui-button');
+        revealButton.textContent = this.t('skills_manager.reveal');
+        revealButton.dataset.skillPath = skill.path;
+        card.appendChild(revealButton);
+        fragment.appendChild(card);
+      });
+      this.$.projectSkillList.appendChild(fragment);
     },
     renderToolSummary() {
       if (!this.$.toolSummary) {
@@ -1680,6 +2043,105 @@ function createMethods(mode) {
       }
       await this.runAction(() => request('install-globally'));
     },
+    getBuiltInProjectSkill(skillName) {
+      const projectSkills = this.state && this.state.projectSkills;
+      const builtIns = projectSkills && Array.isArray(projectSkills.builtIns)
+        ? projectSkills.builtIns
+        : projectSkills && projectSkills.official
+          ? [projectSkills.official]
+          : [];
+      return builtIns.find((skill) => skill.skillName === skillName) || null;
+    },
+    async previewProjectSkill(skillName) {
+      try {
+        const result = await request('preview-project-skill-update', { skillName });
+        this.skillDiffs = this.skillDiffs || {};
+        this.skillDiffs[skillName] = result.diff || '';
+        this.renderProjectSkills();
+        this.showOutput(this.t('skills_manager.diff_summary', {
+          added: result.addedLines || 0,
+          removed: result.removedLines || 0,
+        }));
+      } catch (error) {
+        this.showOutput(this.t('common.error', { error: error.message }));
+      }
+    },
+    async installProjectSkill(skillName) {
+      const skill = this.getBuiltInProjectSkill(skillName);
+      if (!skill || skill.status === 'current') {
+        this.showOutput(this.t('skills_manager.already_current'));
+        return;
+      }
+
+      let allowModified = false;
+      if (skill.status !== 'missing') {
+        const titleKey = skill.modified
+          ? 'skills_manager.confirm_modified_title'
+          : 'skills_manager.confirm_update_title';
+        const bodyKey = skill.modified
+          ? 'skills_manager.confirm_modified_body'
+          : 'skills_manager.confirm_update_body';
+        const message = `${this.t(titleKey)}\n\n${this.t(bodyKey, {
+          path: skill.path || '',
+        })}`;
+        if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) {
+          return;
+        }
+        allowModified = skill.modified;
+      }
+      await this.runAction(() => request('install-or-update-project-skill', {
+        skillName,
+        allowModified,
+      }));
+    },
+    async restoreProjectSkill(skillName) {
+      const skill = this.getBuiltInProjectSkill(skillName);
+      if (!(skill && skill.latestBackup)) {
+        this.showOutput(this.t('skills_manager.no_backup'));
+        return;
+      }
+      const message = `${this.t('skills_manager.confirm_restore_title')}\n\n${this.t(
+        'skills_manager.confirm_restore_body',
+        { path: skill.latestBackup.path }
+      )}`;
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) {
+        return;
+      }
+      await this.runAction(() => request('restore-project-skill-backup', {
+        skillName,
+        backupPath: skill.latestBackup.path,
+      }));
+    },
+    async createProjectSkillFromForm() {
+      const skillName = String(this.getControlValue('newSkillNameInput', '') || '').trim();
+      if (!skillName) {
+        this.showOutput(this.t('skills_manager.skill_name_required'));
+        return;
+      }
+      try {
+        const result = await request('create-project-skill', {
+          skillName,
+          title: String(this.getControlValue('newSkillTitleInput', '') || '').trim(),
+          description: String(this.getControlValue('newSkillDescriptionInput', '') || '').trim(),
+          instructions: String(this.getControlValue('newSkillInstructionsInput', '') || '').trim(),
+        });
+        this.setControlValue('newSkillNameInput', '');
+        this.setControlValue('newSkillTitleInput', '');
+        this.setControlValue('newSkillDescriptionInput', '');
+        this.setControlValue('newSkillInstructionsInput', '');
+        this.showOutput(result);
+        await this.refresh();
+      } catch (error) {
+        this.showOutput(this.t('common.error', { error: error.message }));
+      }
+    },
+    async revealProjectSkill(skillPath) {
+      const target = String(skillPath || '').trim();
+      if (!target) {
+        return;
+      }
+      await this.runAction(() => request('reveal-project-skill', target));
+    },
     bindEvents() {
       this.on(this.$.restartBtn, 'click', () => this.runAction(() => request('restart-server')));
       this.on(this.$.refreshBtn, 'click', () => this.refresh());
@@ -1707,6 +2169,7 @@ function createMethods(mode) {
       this.on(this.$.openToolsBtn, 'click', () => this.runAction(() => request('open-panel', 'tool-exposure')));
       this.on(this.$.openSettingsBtn, 'click', () => this.runAction(() => request('open-panel', 'settings')));
       this.on(this.$.openActivityBtn, 'click', () => this.runAction(() => request('open-panel', 'activity')));
+      this.on(this.$.openProjectSkillsBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills')));
       this.on(this.$.openDashboardBtn, 'click', () => this.runAction(() => request('open-panel', 'default')));
       this.on(this.$.enabledInput, 'change', () => this.handleEnableToggle());
       this.on(this.$.portInput, 'change', () => this.persistConfig({ showOutput: true }));
@@ -1743,6 +2206,36 @@ function createMethods(mode) {
       this.on(this.$.deleteToolProfileBtn, 'click', () => this.deleteSavedToolProfile());
       this.on(this.$.exportToolProfilesBtn, 'click', () => this.exportSavedToolProfiles());
       this.on(this.$.importToolProfilesBtn, 'click', () => this.importSavedToolProfiles());
+      this.on(this.$.builtInSkillList, 'click', (event) => {
+        const target = event.target && typeof event.target.closest === 'function'
+          ? event.target.closest('ui-button')
+          : event.target;
+        const action = target && target.dataset && target.dataset.skillAction;
+        const skillName = target && target.dataset && target.dataset.skillName;
+        if (!action || !skillName) {
+          return;
+        }
+        if (action === 'install') {
+          this.installProjectSkill(skillName);
+        } else if (action === 'preview') {
+          this.previewProjectSkill(skillName);
+        } else if (action === 'restore') {
+          this.restoreProjectSkill(skillName);
+        } else if (action === 'reveal') {
+          const skill = this.getBuiltInProjectSkill(skillName);
+          this.revealProjectSkill(skill && skill.path);
+        }
+      });
+      this.on(this.$.createProjectSkillBtn, 'click', () => this.createProjectSkillFromForm());
+      this.on(this.$.projectSkillList, 'click', (event) => {
+        const target = event.target && typeof event.target.closest === 'function'
+          ? event.target.closest('ui-button')
+          : event.target;
+        if (!target || !target.dataset || !target.dataset.skillPath) {
+          return;
+        }
+        this.revealProjectSkill(target.dataset.skillPath);
+      });
       this.on(this.$.savedToolProfileSelect, 'change', () => {
         this.setControlValue('toolProfileNameInput', this.$.savedToolProfileSelect.value || '');
       });

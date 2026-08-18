@@ -6,6 +6,24 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-18
+
+### Added
+
+- Added a dedicated **Project Skills** panel for listing project-local Codex skills, independently installing and updating both built-in Funplay skills, previewing template differences, backing up updates, restoring the latest backup, and creating custom skills.
+- Added the built-in `funplay-cocos-ui-composition` Skill for Cocos-native responsive UI work across `UITransform`, `Widget`, `SafeArea`, `Layout`, scrolling, text, input, animation, prefabs, and performance validation.
+- Added managed per-Skill template version/hash metadata so MCP upgrades can report built-in Skill updates without silently replacing local changes.
+
+### Changed
+
+- Generate project Skills with standard `SKILL.md` YAML frontmatter containing `name` and `description`.
+- Expanded `funplay-cocos-mcp-workflow` from a short checklist into a complete inspect/edit/readback/diagnostics/preview workflow adapted from the proven Funplay Unity MCP Skill structure.
+- Preserve existing UI and gameplay-object Prefabs by default, editing only necessary nodes/components unless a full rebuild is explicitly requested.
+
+### Fixed
+
+- Fixed [#17](https://github.com/FunplayAI/funplay-cocos-mcp/issues/17): `create_prefab_from_node` now assigns unique `cc.PrefabInfo` and `cc.CompPrefabInfo` metadata before serialization and rejects incomplete output, allowing generated Prefabs to open in Cocos Creator's Prefab editor.
+
 ## [0.4.7] - 2026-08-10
 
 ### Added
