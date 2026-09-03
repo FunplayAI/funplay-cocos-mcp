@@ -2,7 +2,7 @@
 
 ## 【Feature Introduction】
 
-Funplay MCP for Cocos is an open-source AI development extension for **Cocos Creator 3.8 and later**. It embeds an MCP Server directly in the Cocos Creator editor, allowing MCP-compatible coding assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, and Kiro to connect to the active project, read real editor context, and execute development workflows.
+Funplay MCP for Cocos is an open-source AI development extension for **Cocos Creator 3.8 and later**. It embeds an MCP Server directly in the Cocos Creator editor, allowing MCP-compatible coding assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, and Kimi Code to connect to the active project, read real editor context, and execute development workflows.
 
 Unlike an assistant that can only analyze project files, Funplay MCP for Cocos can inspect the active scene, node hierarchy, components, assets, prefabs, logs, script diagnostics, editor state, and screenshots. This lets AI work from the project's actual state and helps reduce repeated switching between the editor, terminal, and AI client.
 
@@ -13,7 +13,7 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 - **Live editor context**: Read the current project, active scene, hierarchy, selection, asset metadata, script errors, editor logs, and recent MCP activity.
 - **Scene and asset automation**: Create and open scenes, inspect or edit nodes and components, create prefabs, analyze asset dependencies, validate prefab references, and refresh the asset database.
 - **Preview and visual verification**: Use Browser Preview, Editor Game View, or Simulator Preview; retrieve the browser preview URL and verify results with editor, scene, or preview screenshots.
-- **One-click AI client setup**: Generate or write MCP configuration for Claude Code, Cursor, Codex, VS Code, Trae, Kiro, and other compatible clients from the extension panel.
+- **One-click AI client setup**: Generate or write MCP configuration for Claude Code, Cursor, Codex, VS Code, Trae, Kiro, Qoder, Kimi Code, and other compatible clients from the extension panel.
 - **Flexible tool profiles**: The default `core` profile exposes 39 high-signal tools. Switch to `full` for all tools, or create a custom profile by category or individual tool.
 - **Focused management windows**: Separate MCP Server, Tool Exposure, MCP Settings, and Activity windows keep service controls, tool exposure, client setup, calls, and logs organized.
 - **English and Chinese UI**: Menus and native panel titles follow Cocos Creator; panel controls and status messages can follow Creator or use a project-specific language override.
@@ -64,7 +64,7 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 
 5. **Select and configure an AI client**
 
-   Choose Claude Code, Cursor, Codex, VS Code, Trae, or Kiro in the client configuration section, then use one-click setup. You can also copy the generated configuration into another MCP-compatible client manually.
+   Choose Claude Code, Cursor, Codex, VS Code, Trae, Kiro, Qoder, or Kimi Code in the client configuration section, then use one-click setup. You can also copy the generated configuration into another MCP-compatible client manually.
 
 6. **Confirm the connection**
 

@@ -78,7 +78,10 @@ function dashboardTemplate() {
           <ui-button id="openProjectSkillsBtn" data-i18n="dashboard.project_skills">Project Skills</ui-button>
         </div>
         <div id="globalInstallStatus" class="hint-line installation-status"></div>
-        <div id="projectSkillsNotice" class="skills-notice"></div>
+        <div id="projectSkillsNotice" class="skills-notice">
+          <div id="projectSkillsNoticeText" class="skills-notice-text"></div>
+          <ui-button id="openProjectSkillsNoticeBtn" data-i18n="skills_manager.manage">Manage Skills</ui-button>
+        </div>
       </section>
 
       <section class="section">
@@ -716,20 +719,28 @@ const STYLE = `
   }
   .skills-notice {
     display: none;
+    align-items: flex-start;
+    gap: 10px;
     margin-top: 8px;
     border-left: 3px solid #d28a2d;
     border-radius: 5px;
     padding: 7px 8px;
     background: rgba(210,138,45,0.12);
     color: var(--color-normal-contrast);
-    white-space: pre-wrap;
   }
   .skills-notice.visible {
-    display: block;
+    display: flex;
   }
   .skills-notice.modified {
     border-left-color: #4a91cf;
     background: rgba(74,145,207,0.12);
+  }
+  .skills-notice-text {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
   .skill-status-pill {
     border-radius: 999px;
@@ -880,10 +891,12 @@ const SELECTORS = {
   globalInstallStatus: '#globalInstallStatus',
   globalInstallPath: '#globalInstallPath',
   projectSkillsNotice: '#projectSkillsNotice',
+  projectSkillsNoticeText: '#projectSkillsNoticeText',
   openToolsBtn: '#openToolsBtn',
   openSettingsBtn: '#openSettingsBtn',
   openActivityBtn: '#openActivityBtn',
   openProjectSkillsBtn: '#openProjectSkillsBtn',
+  openProjectSkillsNoticeBtn: '#openProjectSkillsNoticeBtn',
   openDashboardBtn: '#openDashboardBtn',
   refreshBtn: '#refreshBtn',
   clientTargetSelect: '#clientTargetSelect',
@@ -1187,7 +1200,7 @@ function createMethods(mode) {
       this.$.globalInstallStatus.textContent = status;
     },
     renderProjectSkillsNotice() {
-      if (!this.$.projectSkillsNotice) {
+      if (!this.$.projectSkillsNotice || !this.$.projectSkillsNoticeText) {
         return;
       }
       const projectSkills = this.state && this.state.projectSkills;
@@ -1197,18 +1210,35 @@ function createMethods(mode) {
           ? [projectSkills.official]
           : [];
       const attention = builtIns.filter((skill) => skill.status !== 'current');
-      this.$.projectSkillsNotice.classList.remove('visible', 'modified');
+      this.$.projectSkillsNotice.classList.remove('visible', 'missing', 'update', 'modified');
       if (!attention.length) {
-        this.$.projectSkillsNotice.textContent = '';
+        this.$.projectSkillsNoticeText.textContent = '';
         return;
       }
-      this.$.projectSkillsNotice.textContent = this.t('skills_manager.notice_summary', {
-        count: attention.length,
-        total: builtIns.length,
-      });
+
+      const notices = [
+        ['missing', 'skills_manager.notice_missing_list'],
+        ['update-available', 'skills_manager.notice_update_list'],
+        ['modified', 'skills_manager.notice_modified_list'],
+      ].map(([status, key]) => {
+        const skills = attention.filter((skill) => skill.status === status);
+        if (!skills.length) {
+          return '';
+        }
+        return this.t(key, {
+          count: skills.length,
+          names: skills.map((skill) => skill.title || skill.skillName).join(', '),
+        });
+      }).filter(Boolean);
+
+      this.$.projectSkillsNoticeText.textContent = notices.join('\n');
       this.$.projectSkillsNotice.classList.add('visible');
       if (attention.some((skill) => skill.status === 'modified')) {
         this.$.projectSkillsNotice.classList.add('modified');
+      } else if (attention.some((skill) => skill.status === 'update-available')) {
+        this.$.projectSkillsNotice.classList.add('update');
+      } else {
+        this.$.projectSkillsNotice.classList.add('missing');
       }
     },
     renderProjectSkills() {
@@ -2170,6 +2200,7 @@ function createMethods(mode) {
       this.on(this.$.openSettingsBtn, 'click', () => this.runAction(() => request('open-panel', 'settings')));
       this.on(this.$.openActivityBtn, 'click', () => this.runAction(() => request('open-panel', 'activity')));
       this.on(this.$.openProjectSkillsBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills')));
+      this.on(this.$.openProjectSkillsNoticeBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills')));
       this.on(this.$.openDashboardBtn, 'click', () => this.runAction(() => request('open-panel', 'default')));
       this.on(this.$.enabledInput, 'change', () => this.handleEnableToggle());
       this.on(this.$.portInput, 'change', () => this.persistConfig({ showOutput: true }));

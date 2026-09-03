@@ -312,7 +312,11 @@ class ExtensionService {
       globalInstallInfo: this.lastGlobalInstallInfo,
       projectSkills: this.getProjectSkillsState(),
       clientConfig: this.getClientConfig(),
-      clientTargets: getTargetStatuses(this.config),
+      clientTargets: getTargetStatuses({
+        ...this.config,
+        host: status.host,
+        port: status.port,
+      }),
       localization: {
         preference: this.config.language,
         detectedLanguage,
@@ -633,7 +637,14 @@ class ExtensionService {
       listTools: () => this.toolRegistry.listTools(),
       readResource: async (uri) => await this.resourceProvider.readResource(uri),
       callTool: async (name, toolArgs) => await this.toolRegistry.callTool(name, toolArgs || {}),
-      listClientTargets: () => getTargetStatuses(this.config),
+      listClientTargets: () => {
+        const effective = this.getEffectiveServerConnection();
+        return getTargetStatuses({
+          ...this.config,
+          host: effective.host,
+          port: effective.port,
+        });
+      },
       getClientConfig: () => this.getClientConfig(),
       configureClient: async (targetId) => this.configureClient(targetId),
     };
@@ -742,7 +753,11 @@ class ExtensionService {
     this.log('info', `MCP client configured: ${result.name} -> ${result.configPath}`);
     return {
       ...result,
-      clientTargets: getTargetStatuses(this.config),
+      clientTargets: getTargetStatuses({
+        ...this.config,
+        host: effective.host,
+        port: effective.port,
+      }),
     };
   }
 

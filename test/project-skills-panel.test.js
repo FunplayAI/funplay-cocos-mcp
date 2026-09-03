@@ -31,3 +31,11 @@ test('shared panel implementation includes project skill management actions', ()
   assert.match(source, /builtInSkillList/);
   assert.match(source, /dataset\.skillAction/);
 });
+
+test('MCP Server dashboard reports missing and updateable built-in skills', () => {
+  const source = fs.readFileSync(require.resolve('../panel/shared'), 'utf8');
+  assert.match(source, /projectSkillsNoticeText/);
+  assert.match(source, /skills_manager\.notice_missing_list/);
+  assert.match(source, /skills_manager\.notice_update_list/);
+  assert.match(source, /openProjectSkillsNoticeBtn/);
+});

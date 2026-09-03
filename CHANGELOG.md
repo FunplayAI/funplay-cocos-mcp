@@ -6,6 +6,13 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-03
+
+### Added
+
+- Added one-click MCP client configuration for Qoder and Kimi Code, including their documented custom configuration-directory environment variables.
+- Added a dashboard alert that names built-in project Skills that are not installed, have updates available, or contain local modifications, with a direct link to Project Skills management.
+
 ## [0.5.1] - 2026-08-18
 
 ### Fixed

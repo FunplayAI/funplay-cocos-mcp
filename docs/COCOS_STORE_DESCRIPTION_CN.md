@@ -2,7 +2,7 @@
 
 ## 【功能介绍】
 
-Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的开源 AI 开发插件。它将 MCP Server 直接嵌入 Cocos Creator 编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro 等支持 MCP 的 AI 编程助手连接当前项目，读取真实编辑器上下文并执行开发工作流。
+Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的开源 AI 开发插件。它将 MCP Server 直接嵌入 Cocos Creator 编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code 等支持 MCP 的 AI 编程助手连接当前项目，读取真实编辑器上下文并执行开发工作流。
 
 与只能分析项目文件的普通 AI 助手不同，本插件能够访问当前打开的场景、节点层级、组件、资源、Prefab、日志、脚本诊断、编辑器状态和截图。AI 可以基于项目的实际状态进行分析、修改和验证，减少开发者在编辑器、终端和 AI 客户端之间反复切换。
 
@@ -13,7 +13,7 @@ Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的�
 - **真实编辑器上下文**：读取当前项目、活动场景、节点层级、选中对象、资源信息、脚本错误、编辑器日志和最近 MCP 调用记录。
 - **场景与资源自动化**：支持创建和打开场景、检查和修改节点及组件、创建 Prefab、分析资源依赖、验证 Prefab 引用并刷新资源数据库。
 - **预览与可视化验证**：支持浏览器预览、编辑器 Game View 和模拟器模式，可获取浏览器预览地址，并通过编辑器、场景或预览截图验证结果。
-- **一键配置 AI 客户端**：可在插件面板中为 Claude Code、Cursor、Codex、VS Code、Trae、Kiro 等客户端生成或写入 MCP 配置。
+- **一键配置 AI 客户端**：可在插件面板中为 Claude Code、Cursor、Codex、VS Code、Trae、Kiro、Qoder、Kimi Code 等客户端生成或写入 MCP 配置。
 - **灵活的工具 Profile**：默认 `core` Profile 提供 39 个高频工具；需要完整能力时可切换到 `full`，也可以按分类或工具名称自定义暴露范围。
 - **多窗口管理面板**：提供 MCP Server、Tool Exposure、MCP Settings、Activity 等独立窗口，用于管理服务、工具范围、客户端配置、调用记录和日志。
 - **中英文界面**：菜单和窗口标题跟随 Cocos Creator；窗口内控件与状态提示可跟随 Creator，也可按项目手动指定中文或英文。
@@ -64,7 +64,7 @@ Funplay MCP for Cocos 是一款面向 **Cocos Creator 3.8 及以上版本**的�
 
 5. **选择并配置 AI 客户端**
 
-   在客户端配置区域选择 Claude Code、Cursor、Codex、VS Code、Trae 或 Kiro，然后点击一键配置。也可以复制面板生成的配置，手动添加到其他支持 MCP 的客户端。
+   在客户端配置区域选择 Claude Code、Cursor、Codex、VS Code、Trae、Kiro、Qoder 或 Kimi Code，然后点击一键配置。也可以复制面板生成的配置，手动添加到其他支持 MCP 的客户端。
 
 6. **确认连接**
 
