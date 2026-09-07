@@ -14,7 +14,7 @@ function createRegistry(profile, projectPath = path.resolve('/tmp/funplay-cocos-
       projectPath,
       version: '0.0.0-test',
     }),
-    interactionLog: { add() {} },
+    interactionLog: overrides.interactionLog || { add() {} },
     runtimeLog: { add() {}, list: () => [], clear: () => 0 },
     sceneBridge: overrides.sceneBridge || { call: async () => ({ ok: true }) },
     editorExecutor: overrides.editorExecutor || (async () => ({ ok: true })),
@@ -79,10 +79,10 @@ test('recommended project skill tool records managed template metadata', async (
 
   const result = await registry.callToolDetailed('create_cocos_mcp_project_skill', {});
 
-  assert.equal(result.value.data.path, '.codex/skills/funplay-cocos-mcp-workflow/SKILL.md');
+  assert.equal(result.value.data.path, '.agents/skills/funplay-cocos-mcp-workflow/SKILL.md');
   assert.equal(
     result.value.data.manifest,
-    '.codex/skills/funplay-cocos-mcp-workflow/.funplay-cocos-mcp.json'
+    '.agents/skills/funplay-cocos-mcp-workflow/.funplay-cocos-mcp.json'
   );
   assert.equal(fs.existsSync(path.join(projectPath, result.value.data.manifest)), true);
 });
@@ -168,6 +168,18 @@ test('callToolDetailed preserves structured values and text output', async () =>
   assert.equal(result.value.data.projectPath, path.resolve('/tmp/funplay-cocos-test-project'));
   assert.match(result.value.callId, /^fp_/);
   assert.match(result.text, /projectPath/);
+});
+
+test('tool calls retain diagnostic summaries with detached activity previews', async () => {
+  const { InteractionLog } = require('../lib/interaction-log');
+  const log = new InteractionLog();
+  const registry = createRegistry('core', path.resolve('/tmp/funplay-cocos-test-project'), {}, { interactionLog: log });
+  const result = await registry.callToolDetailed('get_project_info', {});
+  assert.equal(log.list()[0].toolName, 'get_project_info');
+  assert.equal(log.list()[0].status, 'success');
+  assert.equal(typeof log.list()[0].summary, 'string');
+  assert.equal(log.list()[0].preview.projectPath, result.value.data.projectPath);
+  assert.notEqual(log.list()[0].preview, result.value.data);
 });
 
 test('create_prefab_from_node serializes through scene bridge and writes asset file', async (t) => {

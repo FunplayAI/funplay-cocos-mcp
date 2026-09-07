@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 const EN = require('../i18n/en');
 const ZH = require('../i18n/zh');
+const { createPanel } = require('../panel/shared');
 const { createToolRegistry } = require('../lib/tool-registry');
 const {
   ZH_TOOL_DESCRIPTIONS,
@@ -48,8 +49,17 @@ test('English and Chinese dictionaries stay complete and interpolate values', ()
 
 test('panel and package localization references exist in both dictionaries', () => {
   const panelSource = fs.readFileSync(require.resolve('../panel/shared'), 'utf8');
+  const previousEditor = global.Editor;
+  let templates;
+  try {
+    global.Editor = { Panel: { define: (definition) => definition } };
+    templates = ['dashboard', 'tool-exposure', 'settings', 'project-skills']
+      .map((mode) => createPanel(mode).template).join('\n');
+  } finally {
+    global.Editor = previousEditor;
+  }
   const panelKeys = [
-    ...panelSource.matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g),
+    ...templates.matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g),
     ...panelSource.matchAll(/this\.t\('([^']+)'/g),
   ].map((match) => match[1]);
   const packageSource = fs.readFileSync(require.resolve('../package.json'), 'utf8');

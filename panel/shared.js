@@ -12,34 +12,42 @@ function request(message, ...args) {
   return Editor.Message.request(PKG, message, ...args);
 }
 
-function stringify(value) {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return JSON.stringify(value, null, 2);
-}
-
 function statusMarkup() {
   return `
     <header class="titlebar">
-      <div>
-        <h1>Funplay Cocos MCP</h1>
-        <div id="versionText" class="subtle">Version</div>
+      <h1 data-i18n="panel_server">MCP Server</h1>
+      <div class="header-actions">
+        <span id="versionText" class="subtle">Version</span>
+        <ui-button id="openSettingsBtn" data-i18n="dashboard.settings">Settings</ui-button>
       </div>
-      <div id="statusPill" class="status-pill" data-i18n="common.unknown">Unknown</div>
     </header>
-    <div id="statusText" class="status-line"></div>
+    <div class="connection-line" aria-live="polite">
+      <span id="statusPill" class="status-pill" data-i18n="common.unknown">Unknown</span>
+      <span id="statusText" class="status-line"></span>
+      <ui-button id="copyUrlBtn" data-i18n="common.copy_url">Copy URL</ui-button>
+    </div>
+    <div id="projectContext" class="hint-line project-context"></div>
   `;
 }
 
-function outputMarkup() {
+function noticeMarkup() {
   return `
-    <section class="section output-section">
-      <details>
-        <summary data-i18n="common.output">Output</summary>
-        <pre id="output"></pre>
-      </details>
-    </section>
+    <div id="panelNotice" class="panel-notice" role="status" aria-live="polite" hidden>
+      <span id="panelNoticeText"></span>
+      <ui-button id="dismissNoticeBtn" data-i18n="common.dismiss">Dismiss</ui-button>
+    </div>
+  `;
+}
+
+function pageHeader(titleKey, title, hintKey, hint) {
+  return `
+    <header class="plain-header">
+      <div class="titlebar">
+        <h1 data-i18n="${titleKey}">${title}</h1>
+        <ui-button id="openDashboardBtn" data-i18n="panel_server">MCP Server</ui-button>
+      </div>
+      <div class="hint-line" data-i18n="${hintKey}">${hint}</div>
+    </header>
   `;
 }
 
@@ -49,93 +57,90 @@ function dashboardTemplate() {
       ${statusMarkup()}
       <div id="updateStatus" class="update-strip"></div>
 
-      <section class="section">
-        <div class="section-title" data-i18n="dashboard.service">Service</div>
-        <div class="service-grid">
-          <label><span data-i18n="dashboard.server_port">Server Port</span> <ui-num-input id="portInput"></ui-num-input></label>
-          <label><span data-i18n="dashboard.tool_exposure">Tool Exposure</span>
-            <ui-select id="profileSelect">
-              <option value="core">core</option>
-              <option value="full">full</option>
-              <option value="custom">custom</option>
-            </ui-select>
-          </label>
-        </div>
-        <div id="toolSummary" class="hint-line"></div>
-        <div class="toolbar">
+      <section class="section service-section">
+        <div class="service-heading">
           <label class="checkbox-inline">
             <ui-checkbox id="enabledInput"></ui-checkbox>
             <span data-i18n="dashboard.enable_server">Enable MCP Server</span>
           </label>
           <ui-button id="restartBtn" data-i18n="dashboard.restart">Restart</ui-button>
-          <ui-button id="copyUrlBtn" data-i18n="common.copy_url">Copy URL</ui-button>
-          <ui-button id="checkUpdatesBtn" data-i18n="dashboard.check_updates">Check Updates</ui-button>
-          <ui-button id="openReleaseBtn" data-i18n="dashboard.open_release">Open Release</ui-button>
-          <ui-button id="installUpdateBtn" data-i18n="dashboard.install_update">Install Update</ui-button>
-          <ui-button id="installGlobalBtn" data-i18n="installation.install_all">Install for All Projects</ui-button>
-          <ui-button id="openToolsBtn" data-i18n="dashboard.edit_tools">Edit Tools</ui-button>
-          <ui-button id="openSettingsBtn" data-i18n="dashboard.settings">Settings</ui-button>
+        </div>
+        <div class="service-form">
+          <label class="form-row"><span data-i18n="dashboard.server_port">Server Port</span>
+            <ui-num-input id="portInput"></ui-num-input>
+          </label>
+          <div class="port-caption">
+            <div id="portHint" class="hint-line"></div>
+            <ui-button id="useProjectPortBtn" data-i18n="dashboard.use_project_port">Use Per-Project Port</ui-button>
+            <ui-button id="pinCurrentPortBtn" data-i18n="dashboard.pin_current_port">Pin Current Port</ui-button>
+          </div>
+          <div class="form-row"><span data-i18n="dashboard.tool_exposure">Tool Exposure</span>
+            <div class="field-actions">
+              <ui-select id="profileSelect">
+                <option value="core">core</option>
+                <option value="full">full</option>
+                <option value="custom">custom</option>
+              </ui-select>
+              <ui-button id="openToolsBtn" data-i18n="dashboard.edit_tools">Edit Tools</ui-button>
+            </div>
+          </div>
+        </div>
+        <div id="toolSummary" class="hint-line"></div>
+        <div id="installationNotice" class="compact-warning" hidden></div>
+      </section>
+
+      <section class="section client-section">
+        <div class="section-heading">
+          <div class="section-title" data-i18n="dashboard.client_setup">One-Click MCP Configuration</div>
           <ui-button id="openProjectSkillsBtn" data-i18n="dashboard.project_skills">Project Skills</ui-button>
         </div>
-        <div id="globalInstallStatus" class="hint-line installation-status"></div>
+        <div class="client-actions">
+          <ui-select id="clientTargetSelect"></ui-select>
+          <ui-button id="configureClientBtn" class="configure-action" data-i18n="dashboard.configure_short">Configure</ui-button>
+          <ui-button id="configureWithSkillsBtn" class="configure-skills-action" data-i18n="dashboard.configure_skills">Configure + Skills</ui-button>
+        </div>
+        <div id="configureSkillsHint" class="hint-line setup-hint"></div>
+        <div id="clientActionStatus" class="action-status" aria-live="polite" hidden></div>
+        <div id="clientTargetStatus" class="connection-status" aria-live="polite"></div>
+        <div id="clientTargetDetails" class="hint-line config-location"></div>
         <div id="projectSkillsNotice" class="skills-notice">
           <div id="projectSkillsNoticeText" class="skills-notice-text"></div>
           <ui-button id="openProjectSkillsNoticeBtn" data-i18n="skills_manager.manage">Manage Skills</ui-button>
         </div>
-      </section>
-
-      <section class="section">
-        <div class="section-title" data-i18n="dashboard.mcp_client">MCP Client</div>
-        <div class="toolbar">
-          <ui-select id="clientTargetSelect"></ui-select>
-          <ui-button id="configureClientBtn" class="primary" data-i18n="dashboard.configure_client">One-Click Configure</ui-button>
-        </div>
-        <div id="clientTargetStatus" class="inline-status"></div>
         <details class="preview-details">
           <summary data-i18n="dashboard.preview_config">Preview selected config</summary>
           <ui-textarea id="clientConfigText" class="client-preview"></ui-textarea>
         </details>
       </section>
 
-      <section class="section">
+      <section class="section recent-section">
         <div class="section-heading">
           <div class="section-title" data-i18n="dashboard.recent_activity">Recent Activity</div>
-          <ui-button id="openActivityBtn" data-i18n="dashboard.open_activity">Open Activity</ui-button>
+          <div class="header-actions">
+            <ui-button id="clearActivityBtn" data-i18n="common.clear">Clear</ui-button>
+            <ui-button id="refreshBtn" data-i18n="common.refresh">Refresh</ui-button>
+          </div>
         </div>
         <div id="recentCalls" class="mini-list compact-list"></div>
       </section>
 
-      ${outputMarkup()}
     </div>
   `;
 }
 
 function toolExposureTemplate() {
   return `
-    <div class="mcp-root">
-      <header class="plain-header">
-        <h1 data-i18n="tools.title">Tool Exposure</h1>
-        <div class="hint-line" data-i18n="tools.hint">Edit exactly which tools MCP clients can see. Changes restart the running server automatically.</div>
-      </header>
+    <div class="mcp-root tool-exposure">
+      ${pageHeader('tools.title', 'Tool Exposure', 'tools.hint', 'Choose the tools MCP clients can use. Changes are applied automatically.')}
       <section class="section">
-        <div class="section-heading">
-          <div class="section-title" data-i18n="tools.edit_list">Edit Tool List</div>
-          <div id="toolSummary" class="inline-status"></div>
-        </div>
-        <div class="service-grid">
-          <label><span data-i18n="dashboard.tool_exposure">Tool Exposure</span>
-            <ui-select id="profileSelect">
-              <option value="core">core</option>
-              <option value="full">full</option>
-              <option value="custom">custom</option>
-            </ui-select>
-          </label>
-          <div class="toolbar inline-toolbar">
-            <ui-button id="useCoreBtn" data-i18n="tools.profile_core">Core</ui-button>
-            <ui-button id="useFullBtn" data-i18n="tools.profile_full">Full</ui-button>
-            <ui-button id="useCustomBtn" data-i18n="tools.profile_custom">Custom</ui-button>
-          </div>
-        </div>
+        <label class="form-row"><span data-i18n="dashboard.tool_exposure">Tool Exposure</span>
+          <ui-select id="profileSelect">
+            <option value="core">core</option>
+            <option value="full">full</option>
+            <option value="custom">custom</option>
+          </ui-select>
+        </label>
+        <div id="toolSummary" class="hint-line profile-summary"></div>
       </section>
 
       <section class="section">
@@ -178,22 +183,18 @@ function toolExposureTemplate() {
         </details>
       </section>
 
-      ${outputMarkup()}
     </div>
   `;
 }
 
 function settingsTemplate() {
   return `
-    <div class="mcp-root">
-      <header class="plain-header">
-        <h1 data-i18n="settings.title">MCP Settings</h1>
-        <div class="hint-line" data-i18n="settings.hint">Project-level defaults for interface, transport, JavaScript safety, and local diagnostics.</div>
-      </header>
+    <div class="mcp-root settings">
+      ${pageHeader('settings.title', 'MCP Settings', 'settings.hint', 'Interface, connections, safety, and extension management for this project.')}
       <section class="section">
         <div class="section-title" data-i18n="settings.interface">Interface</div>
         <div class="settings-grid">
-          <label><span data-i18n="settings.language">Language</span>
+          <label class="form-row"><span data-i18n="settings.language">Language</span>
             <ui-select id="languageSelect">
               <option value="auto">Auto / 跟随 Cocos Creator</option>
               <option value="zh">中文</option>
@@ -204,16 +205,6 @@ function settingsTemplate() {
         <div id="languageHint" class="hint-line"></div>
       </section>
 
-      <section class="section">
-        <div class="section-title" data-i18n="installation.title">All Projects</div>
-        <div id="globalInstallStatus" class="inline-status installation-status"></div>
-        <div id="globalInstallPath" class="hint-line path-line"></div>
-        <div class="toolbar">
-          <ui-button id="installGlobalBtn" class="primary" data-i18n="installation.install_all">Install for All Projects</ui-button>
-          <ui-button id="copyGlobalPathBtn" data-i18n="installation.copy_path">Copy Global Path</ui-button>
-        </div>
-        <div class="hint-line" data-i18n="installation.hint">Install one verified copy for this Cocos Creator version so projects opened with it can load the extension automatically.</div>
-      </section>
       <section class="section">
         <div class="section-title" data-i18n="settings.safety">Safety</div>
         <div class="settings-grid">
@@ -237,45 +228,49 @@ function settingsTemplate() {
       </section>
 
       <section class="section">
-        <div class="section-title" data-i18n="settings.diagnostics">Diagnostics</div>
+        <div class="section-title" data-i18n="settings.console_logs">Console Logs</div>
+        <div class="settings-grid">
+          <label class="checkbox-line">
+            <ui-checkbox id="consoleLoggingInput"></ui-checkbox>
+            <span data-i18n="settings.print_mcp_logs">Print MCP logs</span>
+          </label>
+        </div>
+        <div class="hint-line" data-i18n="settings.print_mcp_logs_hint">Immediately controls MCP messages, warnings, and errors printed to the Cocos console. Recent Activity, internal diagnostics, and project-script logs are unaffected.</div>
+      </section>
+
+      <section class="section">
+        <div class="section-title" data-i18n="settings.updates">Extension Updates</div>
+        <div id="updateStatus" class="update-strip"></div>
         <div class="toolbar">
-          <ui-button id="copyUrlBtn" data-i18n="common.copy_url">Copy URL</ui-button>
-          <ui-button id="copyHealthCurlBtn" data-i18n="common.copy_health_curl">Copy Health Curl</ui-button>
-          <ui-button id="copyToolsCurlBtn" data-i18n="common.copy_tools_curl">Copy Tools Curl</ui-button>
+          <ui-button id="checkUpdatesBtn" data-i18n="dashboard.check_updates">Check Updates</ui-button>
+          <ui-button id="openReleaseBtn" data-i18n="dashboard.open_release">Open Release</ui-button>
+          <ui-button id="installUpdateBtn" data-i18n="dashboard.install_update">Install Update</ui-button>
         </div>
       </section>
 
-      ${outputMarkup()}
-    </div>
-  `;
-}
-
-function activityTemplate() {
-  return `
-    <div class="mcp-root">
-      <header class="plain-header">
-        <h1 data-i18n="activity.title">Recent Activity</h1>
-        <div class="hint-line" data-i18n="activity.hint">Recent MCP calls, results, and runtime traces for troubleshooting.</div>
-      </header>
       <section class="section">
-        <div class="section-heading">
-          <div class="section-title" data-i18n="activity.tool_calls">Tool Calls</div>
-          <div class="toolbar compact">
-            <ui-button id="refreshBtn" data-i18n="common.refresh">Refresh</ui-button>
-            <ui-button id="clearActivityBtn" data-i18n="common.clear">Clear</ui-button>
+        <details>
+          <summary data-i18n="installation.title">All Projects</summary>
+          <div id="globalInstallStatus" class="inline-status installation-status"></div>
+          <div id="globalInstallPath" class="hint-line path-line"></div>
+          <div class="toolbar">
+            <ui-button id="installGlobalBtn" class="primary" data-i18n="installation.install_all">Install for All Projects</ui-button>
+            <ui-button id="copyGlobalPathBtn" data-i18n="installation.copy_path">Copy Global Path</ui-button>
+          </div>
+          <div class="hint-line" data-i18n="installation.hint">Install one verified copy for this Cocos Creator version so projects opened with it can load the extension automatically.</div>
+        </details>
+      </section>
+
+      <section class="section">
+        <details>
+          <summary data-i18n="settings.diagnostics">Diagnostics</summary>
+          <div class="toolbar">
+            <ui-button id="copyUrlBtn" data-i18n="common.copy_url">Copy URL</ui-button>
             <ui-button id="copyHealthCurlBtn" data-i18n="common.copy_health_curl">Copy Health Curl</ui-button>
             <ui-button id="copyToolsCurlBtn" data-i18n="common.copy_tools_curl">Copy Tools Curl</ui-button>
           </div>
-        </div>
-        <div id="recentCalls" class="mini-list"></div>
-      </section>
-      <section class="section">
-        <details>
-          <summary data-i18n="activity.runtime_logs">Runtime Logs</summary>
-          <div id="recentLogs" class="mini-list log-list"></div>
         </details>
       </section>
-      ${outputMarkup()}
     </div>
   `;
 }
@@ -283,10 +278,13 @@ function activityTemplate() {
 function projectSkillsTemplate() {
   return `
     <div class="mcp-root project-skills">
-      <header class="plain-header">
-        <h1 data-i18n="skills_manager.title">Project Skills</h1>
-        <div class="hint-line" data-i18n="skills_manager.hint">Manage Codex skills stored in this Cocos project without silently replacing local changes.</div>
-      </header>
+      ${pageHeader('skills_manager.title', 'Project Skills', 'skills_manager.hint', 'Manage skills for the selected client while preserving local changes.')}
+      <section class="section">
+        <label class="form-row"><span data-i18n="dashboard.mcp_client">MCP Client</span>
+          <ui-select id="skillClientSelect"></ui-select>
+        </label>
+        <div id="skillClientStatus" class="hint-line path-line"></div>
+      </section>
 
       <section class="section">
         <div class="section-heading">
@@ -297,10 +295,10 @@ function projectSkillsTemplate() {
       </section>
 
       <section class="section">
-        <div class="section-heading">
-          <div class="section-title" data-i18n="skills_manager.installed">Project Skills</div>
-        </div>
-        <div id="projectSkillList" class="skill-list"></div>
+        <details class="installed-skills">
+          <summary data-i18n="skills_manager.installed">Installed Project Skills</summary>
+          <div id="projectSkillList" class="skill-list"></div>
+        </details>
       </section>
 
       <section class="section">
@@ -326,7 +324,6 @@ function projectSkillsTemplate() {
         </details>
       </section>
 
-      ${outputMarkup()}
     </div>
   `;
 }
@@ -334,13 +331,13 @@ function projectSkillsTemplate() {
 function templateForMode(mode) {
   if (mode === 'tool-exposure') return toolExposureTemplate();
   if (mode === 'settings') return settingsTemplate();
-  if (mode === 'activity') return activityTemplate();
   if (mode === 'project-skills') return projectSkillsTemplate();
   return dashboardTemplate();
 }
 
 const STYLE = `
   :host {
+    position: relative;
     color: var(--color-normal-contrast);
     background: var(--color-normal-fill);
     font-size: 13px;
@@ -349,8 +346,31 @@ const STYLE = `
     height: 100%;
     overflow: auto;
     box-sizing: border-box;
-    padding: 12px;
+    padding: 18px 20px 24px;
+    line-height: 1.5;
+    container-type: inline-size;
+    container-name: mcp-panel;
   }
+  [hidden] { display: none !important; }
+  .panel-notice {
+    position: absolute;
+    z-index: 20;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-normal-border);
+    border-left: 3px solid #65cd89;
+    border-radius: 6px;
+    background: var(--color-normal-fill-emphasis, #303030);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+  }
+  #panelNoticeText { flex: 1; min-width: 0; max-height: 120px; overflow: auto; overflow-wrap: anywhere; }
+  .panel-notice.error { border-left-color: #ed9191; }
+  .panel-notice ui-button { flex-shrink: 0; }
   .titlebar {
     display: flex;
     align-items: center;
@@ -360,8 +380,9 @@ const STYLE = `
   }
   h1 {
     margin: 0;
-    font-size: 16px;
-    line-height: 1.2;
+    font-size: 21px;
+    letter-spacing: -0.3px;
+    line-height: 1.25;
     font-weight: 700;
   }
   h2 {
@@ -376,13 +397,16 @@ const STYLE = `
   .hint-line {
     color: var(--color-normal-contrast-weakest);
   }
-  .plain-header {
-    margin-bottom: 10px;
-  }
-  .plain-header h1 {
-    font-size: 17px;
-    margin-bottom: 4px;
-  }
+  .plain-header { margin-bottom: 18px; }
+  .plain-header .titlebar { margin-bottom: 8px; }
+  .plain-header h1 { font-size: 21px; }
+  .hint-line { font-size: 12px; line-height: 1.5; }
+  .plain-header .hint-line { max-width: 65ch; }
+  .mcp-root ui-button { min-height: 28px; padding: 0 10px; flex-shrink: 0; }
+  .mcp-root ui-button[disabled] { opacity: 0.45; }
+  .mcp-root ui-select, .mcp-root ui-input, .mcp-root ui-num-input { min-width: 0; width: 100%; }
+  .mcp-root ui-button.primary { background: #376f9e; border-color: #4c85b5; color: #fff; }
+  .mcp-root ui-button.primary:hover { background: #417eae; }
   .status-line {
     min-height: 18px;
     margin-bottom: 10px;
@@ -407,20 +431,23 @@ const STYLE = `
     background: #8a3f3f;
   }
   .section {
-    border: 1px solid var(--color-normal-border);
-    border-radius: 6px;
-    background: var(--color-normal-fill-emphasis);
-    padding: 10px;
-    margin-bottom: 10px;
+    border: 0;
+    border-top: 1px solid var(--color-normal-border);
+    border-radius: 0;
+    background: transparent;
+    padding: 18px 0 0;
+    margin: 18px 0 0;
   }
   .section-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
   }
   .section-title {
+    font-size: 14px;
     font-weight: 700;
     color: var(--color-normal-contrast);
   }
@@ -468,9 +495,11 @@ const STYLE = `
   .settings-grid,
   .tool-config-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
+  .settings-grid { grid-template-columns: 1fr; margin: 8px 0; }
+  .profile-summary { margin-top: 9px; }
   label {
     display: flex;
     flex-direction: column;
@@ -517,21 +546,23 @@ const STYLE = `
     min-height: 320px;
     max-height: 520px;
     overflow: auto;
-    border: 1px solid var(--color-normal-border);
-    border-radius: 5px;
-    padding: 6px;
-    background: rgba(0,0,0,0.12);
+    border: 0;
+    border-radius: 0;
+    padding: 0 4px 0 0;
+    background: transparent;
   }
   .tool-group {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.10);
+    border-radius: 6px;
   }
   .tool-group:last-child {
     margin-bottom: 0;
   }
   .tool-group summary {
-    display: flex;
-    align-items: center;
     min-height: 24px;
+    font-size: 13px;
   }
   .tool-group-actions {
     display: flex;
@@ -544,7 +575,7 @@ const STYLE = `
     grid-template-columns: 22px minmax(0, 1fr);
     gap: 6px;
     align-items: start;
-    padding: 4px 4px 4px 15px;
+    padding: 8px 4px 8px 15px;
     border-radius: 4px;
   }
   .tool-row:hover {
@@ -558,8 +589,8 @@ const STYLE = `
   .tool-desc {
     margin-top: 2px;
     color: var(--color-normal-contrast-weakest);
-    font-size: 11px;
-    line-height: 1.3;
+    font-size: 12px;
+    line-height: 1.5;
     word-break: break-word;
   }
   .category-row {
@@ -591,11 +622,6 @@ const STYLE = `
     flex-wrap: wrap;
     gap: 6px;
   }
-  .activity-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(220px, 1fr));
-    gap: 10px;
-  }
   .mini-list {
     min-height: 260px;
     max-height: 520px;
@@ -610,9 +636,6 @@ const STYLE = `
   .compact-list {
     min-height: 120px;
     max-height: 190px;
-  }
-  .log-list {
-    margin-top: 8px;
   }
   .mini-item {
     padding: 7px 8px;
@@ -690,10 +713,10 @@ const STYLE = `
     display: block;
   }
   summary {
+    padding: 3px 0;
     cursor: pointer;
     font-weight: 700;
     color: var(--color-normal-contrast);
-    outline: none;
     user-select: none;
   }
   pre {
@@ -743,7 +766,7 @@ const STYLE = `
     word-break: break-word;
   }
   .skill-status-pill {
-    border-radius: 999px;
+    border-radius: 4px;
     padding: 3px 8px;
     background: #666;
     color: #fff;
@@ -752,7 +775,8 @@ const STYLE = `
     white-space: nowrap;
   }
   .skill-status-pill.current {
-    background: #23884f;
+    background: rgba(65,150,95,0.18);
+    color: #78d197;
   }
   .skill-status-pill.update-available {
     background: #b67623;
@@ -766,14 +790,19 @@ const STYLE = `
   .built-in-skill-list {
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 12px;
   }
   .built-in-skill-card {
-    border: 1px solid var(--color-normal-border);
+    border: 0;
     border-radius: 6px;
-    padding: 9px;
-    background: rgba(0,0,0,0.10);
+    padding: 15px;
+    background: rgba(0,0,0,0.12);
   }
+  .built-in-skill-card .inline-status { margin-top: 10px; font-size: 12px; }
+  .built-in-skill-card .toolbar { margin-top: 12px; }
+  .skill-file-details { margin-top: 12px; font-size: 12px; }
+  .skill-file-details summary { font-weight: 400; color: var(--color-normal-contrast-weakest); }
+  .installed-skills .skill-list { margin-top: 12px; }
   .built-in-skill-heading {
     display: flex;
     align-items: flex-start;
@@ -781,6 +810,7 @@ const STYLE = `
     gap: 10px;
   }
   .built-in-skill-title {
+    font-size: 14px;
     color: var(--color-normal-contrast);
     font-weight: 700;
     word-break: break-word;
@@ -788,7 +818,8 @@ const STYLE = `
   .built-in-skill-description {
     margin-top: 4px;
     color: var(--color-normal-contrast-weak);
-    line-height: 1.35;
+    font-size: 12px;
+    line-height: 1.5;
     word-break: break-word;
   }
   .skill-backup-line {
@@ -834,9 +865,9 @@ const STYLE = `
   }
   .create-skill-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
-    gap: 8px;
-    margin-top: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
   }
   .stacked-field {
     margin-top: 8px;
@@ -848,26 +879,177 @@ const STYLE = `
     margin: 5px 0 8px 0;
     word-break: break-all;
   }
-  @media (max-width: 660px) {
+  /* The dashboard is a compact editor tool, with one visual level per task. */
+  .dashboard {
+    padding: 16px;
+    line-height: 1.45;
+    container-type: inline-size;
+    container-name: mcp-dashboard;
+  }
+  .dashboard [hidden] { display: none !important; }
+  .dashboard h1 { font-size: 21px; letter-spacing: -0.3px; }
+  .header-actions, .service-heading, .field-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-actions { flex-shrink: 0; }
+  .dashboard .titlebar { margin-bottom: 12px; }
+  .dashboard ui-button { min-height: 26px; padding: 0 9px; flex-shrink: 0; }
+  .dashboard ui-select, .dashboard ui-num-input { min-width: 0; width: 100%; }
+  .connection-line { display: flex; align-items: center; gap: 8px; }
+  .dashboard .status-pill {
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .dashboard .status-pill::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 6px;
+    vertical-align: 1px;
+  }
+  .dashboard .status-pill.running { color: #65cd89; }
+  .dashboard .status-pill.stopped { color: #ed9191; }
+  .dashboard .status-line {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    min-height: 0;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    color: var(--color-normal-contrast);
+  }
+  .project-context { margin-top: 5px; overflow-wrap: anywhere; }
+  .dashboard .hint-line { font-size: 12px; line-height: 1.5; }
+  .dashboard .section {
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--color-normal-border);
+    border-radius: 0;
+    padding: 15px 0 0;
+    margin: 15px 0 0;
+  }
+  .dashboard .section-title { font-size: 14px; }
+  .dashboard .section-heading { margin-bottom: 10px; }
+  .service-heading { justify-content: space-between; margin-bottom: 10px; }
+  .service-heading .checkbox-inline { gap: 7px; }
+  .service-form { display: grid; gap: 8px; }
+  .form-row {
+    display: grid;
+    grid-template-columns: 102px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    color: var(--color-normal-contrast-weak);
+  }
+  .field-actions { min-width: 0; }
+  .field-actions ui-select { flex: 1; }
+  .port-caption { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 4px; }
+  .port-caption .hint-line { flex: 1; min-width: 160px; }
+  .dashboard #toolSummary { margin-top: 7px; }
+  .client-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .client-actions ui-select { grid-column: 1 / -1; }
+  .client-actions ui-button { min-height: 32px; font-size: 13px; text-align: center; }
+  .dashboard ui-button.configure-action { background: #307d4d; border-color: #418c5e; color: #fff; }
+  .dashboard ui-button.configure-skills-action { background: #376f9e; border-color: #4c85b5; color: #fff; }
+  .dashboard ui-button.configure-action:hover { background: #388858; }
+  .dashboard ui-button.configure-skills-action:hover { background: #417eae; }
+  .dashboard ui-button[disabled] { opacity: 0.45; }
+  .setup-hint { margin: 7px 0 10px; }
+  .connection-status { color: var(--color-normal-contrast-weak); font-weight: 600; }
+  .connection-status.configured, .action-status.success { color: #65cd89; }
+  .connection-status.blocked, .action-status.warning { color: #e1af61; }
+  .action-status.error { color: #ed9191; }
+  .action-status { margin: 8px 0; font-size: 12px; overflow-wrap: anywhere; }
+  .config-location { margin-top: 3px; white-space: pre-line; overflow-wrap: anywhere; }
+  .dashboard .preview-details { margin-top: 10px; font-size: 12px; }
+  .compact-warning { color: #e1af61; font-size: 12px; margin-top: 8px; }
+  .dashboard .skills-notice { margin-top: 10px; padding: 9px 10px; font-size: 12px; }
+  .dashboard .compact-list { min-height: 170px; max-height: 400px; padding: 8px; }
+  .dashboard .mini-item { padding: 10px; margin-bottom: 8px; }
+  .dashboard .mini-title { font-size: 13px; }
+  .dashboard .mini-body { margin-top: 8px; font-size: 12px; }
+  .activity-result {
+    padding: 10px 12px;
+    margin-top: 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.22);
+    font-size: 12px;
+  }
+  .dashboard .activity-result .mini-body { margin: 0 0 8px; font-weight: 600; }
+  .activity-result .result-error { color: #ed9191; }
+  .execution-meta { color: var(--color-normal-contrast-weakest); font-size: 11px; margin-bottom: 8px; }
+  .result-section-title { color: var(--color-normal-contrast); font-weight: 600; margin: 10px 0 5px; }
+  .result-fields { display: grid; gap: 4px; min-width: 0; }
+  .result-row { display: grid; grid-template-columns: minmax(75px, 32%) minmax(0, 1fr); gap: 10px; }
+  .result-key, .result-branch > summary, .result-array li::marker, .execution-logs li::marker { color: #80b6dd; }
+  .result-key, .result-value, .result-branch > summary { overflow-wrap: anywhere; }
+  .result-value { white-space: pre-wrap; min-width: 0; }
+  .result-value.boolean-true { color: #75cd93; }
+  .result-value.boolean-false { color: #e39b9b; }
+  .result-empty, .result-omitted { color: var(--color-normal-contrast-weakest); }
+  .result-branch { min-width: 0; }
+  .result-branch > summary { font-weight: 500; }
+  .result-branch > .result-fields, .result-branch > .result-array { margin-left: 10px; padding-left: 10px; border-left: 1px solid rgba(255,255,255,0.12); }
+  .result-branch > .result-array { padding-left: 24px; }
+  .result-array, .execution-logs { margin: 4px 0; padding-left: 24px; }
+  .result-array > li, .execution-logs > li { list-style: decimal outside; padding-left: 2px; margin: 5px 0; }
+  .execution-log { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 8px; }
+  .execution-level { color: #80b6dd; font-size: 10px; padding-top: 2px; }
+  .execution-level.warn { color: #e1af61; }
+  .execution-level.error { color: #ed9191; }
+  .execution-message { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+  .result-details { margin-top: 8px; font-size: 11px; }
+  .result-details summary { font-weight: 400; color: var(--color-normal-contrast-weakest); }
+  .result-details pre { min-height: 0; max-height: 240px; font-size: 11px; color: var(--color-normal-contrast); }
+  @container mcp-dashboard (min-width: 520px) {
+    .dashboard .client-actions { grid-template-columns: minmax(120px, 1fr) auto auto; }
+    .dashboard .client-actions ui-select { grid-column: auto; }
+  }
+  @container mcp-dashboard (max-width: 340px) {
+    .dashboard .titlebar { gap: 8px; }
+    .dashboard h1 { font-size: 19px; }
+    .dashboard .header-actions { gap: 5px; }
+    .form-row { grid-template-columns: 85px minmax(0, 1fr); gap: 8px; }
+    .dashboard .skills-notice { flex-wrap: wrap; }
+    .dashboard .skills-notice-text { flex-basis: 100%; }
+  }
+  @container mcp-panel (max-width: 500px) {
     .summary-grid,
     .service-grid,
     .settings-grid,
     .tool-config-grid,
     .category-controls,
-    .activity-grid,
     .create-skill-grid {
       grid-template-columns: 1fr;
     }
-    .category-row {
-      grid-template-columns: 1fr;
-    }
+    .category-row { grid-template-columns: 1fr; }
+    .built-in-skill-heading { flex-wrap: wrap; }
+    .profile-row ui-input, .profile-row ui-select { flex: 1 1 100%; }
+    .plain-header .titlebar { gap: 10px; }
+    .plain-header h1 { font-size: 19px; }
   }
 `;
 
 const SELECTORS = {
+  recentCalls: '#recentCalls',
+  clearActivityBtn: '#clearActivityBtn',
+  panelNotice: '#panelNotice',
+  panelNoticeText: '#panelNoticeText',
+  dismissNoticeBtn: '#dismissNoticeBtn',
   statusPill: '#statusPill',
   versionText: '#versionText',
   statusText: '#statusText',
+  projectContext: '#projectContext',
+  portHint: '#portHint',
+  installationNotice: '#installationNotice',
   endpointMetric: '#endpointMetric',
   projectMetric: '#projectMetric',
   toolMetric: '#toolMetric',
@@ -876,6 +1058,7 @@ const SELECTORS = {
   portInput: '#portInput',
   profileSelect: '#profileSelect',
   sessionsInput: '#sessionsInput',
+  consoleLoggingInput: '#consoleLoggingInput',
   javascriptSafetyInput: '#javascriptSafetyInput',
   languageSelect: '#languageSelect',
   languageHint: '#languageHint',
@@ -891,17 +1074,24 @@ const SELECTORS = {
   globalInstallStatus: '#globalInstallStatus',
   globalInstallPath: '#globalInstallPath',
   projectSkillsNotice: '#projectSkillsNotice',
+  skillClientSelect: '#skillClientSelect',
+  skillClientStatus: '#skillClientStatus',
+  useProjectPortBtn: '#useProjectPortBtn',
+  pinCurrentPortBtn: '#pinCurrentPortBtn',
   projectSkillsNoticeText: '#projectSkillsNoticeText',
   openToolsBtn: '#openToolsBtn',
   openSettingsBtn: '#openSettingsBtn',
-  openActivityBtn: '#openActivityBtn',
   openProjectSkillsBtn: '#openProjectSkillsBtn',
   openProjectSkillsNoticeBtn: '#openProjectSkillsNoticeBtn',
   openDashboardBtn: '#openDashboardBtn',
   refreshBtn: '#refreshBtn',
   clientTargetSelect: '#clientTargetSelect',
   configureClientBtn: '#configureClientBtn',
+  configureWithSkillsBtn: '#configureWithSkillsBtn',
+  configureSkillsHint: '#configureSkillsHint',
+  clientActionStatus: '#clientActionStatus',
   clientTargetStatus: '#clientTargetStatus',
+  clientTargetDetails: '#clientTargetDetails',
   clientConfigText: '#clientConfigText',
   toolSummary: '#toolSummary',
   useCoreBtn: '#useCoreBtn',
@@ -924,9 +1114,6 @@ const SELECTORS = {
   disabledCategoriesInput: '#disabledCategoriesInput',
   enabledToolsInput: '#enabledToolsInput',
   disabledToolsInput: '#disabledToolsInput',
-  recentCalls: '#recentCalls',
-  recentLogs: '#recentLogs',
-  clearActivityBtn: '#clearActivityBtn',
   builtInSkillList: '#builtInSkillList',
   projectSkillList: '#projectSkillList',
   newSkillNameInput: '#newSkillNameInput',
@@ -934,12 +1121,11 @@ const SELECTORS = {
   newSkillDescriptionInput: '#newSkillDescriptionInput',
   newSkillInstructionsInput: '#newSkillInstructionsInput',
   createProjectSkillBtn: '#createProjectSkillBtn',
-  output: '#output',
 };
 
 function createPanel(mode) {
   return Editor.Panel.define({
-    template: templateForMode(mode),
+    template: templateForMode(mode) + noticeMarkup(),
     style: STYLE,
     $: SELECTORS,
     methods: createMethods(mode),
@@ -958,9 +1144,9 @@ function createPanel(mode) {
           }
           return null;
         })
-        .catch((error) => this.showOutput(this.t('errors.refresh_failed', { error: error.message })));
+        .catch((error) => this.showNotice(this.t('errors.refresh_failed', { error: error.message }), 'error'));
     },
-    close() {},
+    close() { this.dismissNotice(); },
   });
 }
 
@@ -971,7 +1157,7 @@ function createMethods(mode) {
         this.state = await request('get-panel-state');
         this.renderState();
       } catch (error) {
-        this.showOutput(this.t('errors.refresh_failed', { error: error.message }));
+        this.showNotice(this.t('errors.refresh_failed', { error: error.message }), 'error');
         throw error;
       }
     },
@@ -1029,7 +1215,7 @@ function createMethods(mode) {
       const isRunning = Boolean(status.running);
 
       this.syncLanguage();
-      this.setText('versionText', this.t('dashboard.version', { version: status.version || 'unknown' }));
+      this.setText('versionText', `v${status.version || 'unknown'}`);
       if (this.$.statusPill) {
         this.$.statusPill.textContent = isRunning ? this.t('dashboard.running') : this.t('dashboard.stopped');
         this.$.statusPill.classList.toggle('running', isRunning);
@@ -1040,10 +1226,12 @@ function createMethods(mode) {
         ? ` | ${this.t('dashboard.port_fallback', { requested: status.requestedPort, actual: status.port })}`
         : '';
       const attachText = status.attachedToExisting ? ` | ${this.t('dashboard.attached_listener')}` : '';
-      this.setText(
-        'statusText',
-        `${status.url || ''} | ${this.t('dashboard.project')}: ${status.projectName || ''} | Cocos ${status.cocosVersion || ''}${portText}${attachText}`
-      );
+      this.setText('statusText', status.url || '—');
+      this.setText('projectContext', `${status.projectName || ''} · Cocos ${status.cocosVersion || ''}${attachText}`);
+      this.setText('portHint', status.portFallbackActive ? portText.replace(/^ \| /, '')
+        : this.t(config.portMode === 'project' ? 'dashboard.derived_port_hint' : 'dashboard.fixed_port_hint', { port: status.derivedPort || config.port }));
+      this.setHidden(this.$.useProjectPortBtn, config.portMode === 'project' && !status.portFallbackActive);
+      this.setHidden(this.$.pinCurrentPortBtn, config.portMode !== 'project' && !status.portFallbackActive);
 
       this.setText('endpointMetric', status.url || '-');
       this.setText('projectMetric', status.projectName || '-');
@@ -1055,6 +1243,7 @@ function createMethods(mode) {
       this.setControlValue('portInput', Number(config.port || status.port || 8765));
       this.setControlValue('profileSelect', config.toolProfile || status.toolProfile || 'core');
       this.setControlValue('sessionsInput', Boolean(config.enableSessions || status.enableSessions));
+      this.setControlValue('consoleLoggingInput', config.enableConsoleLogging !== false);
       this.setControlValue('javascriptSafetyInput', config.executeJavascriptSafetyChecks !== false);
       this.setControlValue('enabledCategoriesInput', this.formatList(config.enabledToolCategories));
       this.setControlValue('disabledCategoriesInput', this.formatList(config.disabledToolCategories));
@@ -1066,16 +1255,19 @@ function createMethods(mode) {
       this.renderProjectSkillsNotice();
       this.renderProjectSkills();
       this.renderToolSummary();
+      this.renderActivity();
       this.renderToolProfiles();
       this.renderCategoryControls();
       this.renderToolList();
       this.renderClientTargets();
-      this.renderActivity();
     },
     setText(key, value) {
       if (this.$[key]) {
         this.$[key].textContent = value;
       }
+    },
+    setHidden(element, hidden) {
+      if (element) element.hidden = Boolean(hidden);
     },
     setControlValue(key, value) {
       if (this.$[key]) {
@@ -1146,6 +1338,12 @@ function createMethods(mode) {
     },
     renderInstallationStatus() {
       const installation = this.state && this.state.installation;
+      if (this.$.installationNotice) {
+        const problem = installation && (installation.globalInstallError || installation.duplicateInstall);
+        this.setHidden(this.$.installationNotice, !problem);
+        this.$.installationNotice.textContent = problem
+          ? this.t(installation.globalInstallError ? 'installation.short_error' : 'installation.short_duplicate') : '';
+      }
       if (!installation) {
         this.setDisabled(this.$.installGlobalBtn, true);
         return;
@@ -1199,11 +1397,22 @@ function createMethods(mode) {
       }
       this.$.globalInstallStatus.textContent = status;
     },
+    selectedSkillClientId() {
+      return this.$.skillClientSelect && this.$.skillClientSelect.value
+        || this.$.clientTargetSelect && this.$.clientTargetSelect.value
+        || this.state && this.state.config && this.state.config.lastClientTargetId || 'codex';
+    },
+    selectedProjectSkills() {
+      const id = this.selectedSkillClientId();
+      const state = this.state || {};
+      return state.projectSkillsByClient && state.projectSkillsByClient[id]
+        || (state.projectSkills && state.projectSkills.clientId === id ? state.projectSkills : { clientId: id, supported: false, builtIns: [], skills: [], platforms: state.projectSkills && state.projectSkills.platforms || [] });
+    },
     renderProjectSkillsNotice() {
       if (!this.$.projectSkillsNotice || !this.$.projectSkillsNoticeText) {
         return;
       }
-      const projectSkills = this.state && this.state.projectSkills;
+      const projectSkills = this.selectedProjectSkills();
       const builtIns = projectSkills && Array.isArray(projectSkills.builtIns)
         ? projectSkills.builtIns
         : projectSkills && projectSkills.official
@@ -1211,6 +1420,11 @@ function createMethods(mode) {
           : [];
       const attention = builtIns.filter((skill) => skill.status !== 'current');
       this.$.projectSkillsNotice.classList.remove('visible', 'missing', 'update', 'modified');
+      if (projectSkills.error) {
+        this.$.projectSkillsNoticeText.textContent = `${projectSkills.clientName || projectSkills.clientId}\n${this.t('skills_manager.read_error', { error: projectSkills.error })}`;
+        this.$.projectSkillsNotice.classList.add('visible', 'modified');
+        return;
+      }
       if (!attention.length) {
         this.$.projectSkillsNoticeText.textContent = '';
         return;
@@ -1231,7 +1445,7 @@ function createMethods(mode) {
         });
       }).filter(Boolean);
 
-      this.$.projectSkillsNoticeText.textContent = notices.join('\n');
+      this.$.projectSkillsNoticeText.textContent = `${projectSkills.clientName || projectSkills.clientId}\n${notices.join('\n')}`;
       this.$.projectSkillsNotice.classList.add('visible');
       if (attention.some((skill) => skill.status === 'modified')) {
         this.$.projectSkillsNotice.classList.add('modified');
@@ -1245,7 +1459,18 @@ function createMethods(mode) {
       if (!this.$.builtInSkillList && !this.$.projectSkillList) {
         return;
       }
-      const projectSkills = this.state && this.state.projectSkills;
+      if (this.$.skillClientSelect) {
+        const selected = this.selectedSkillClientId();
+        const targets = this.state && this.state.clientTargets || [];
+        this.$.skillClientSelect.innerHTML = targets.map((target) => `<option value="${target.id}">${target.name}</option>`).join('');
+        this.$.skillClientSelect.value = selected;
+      }
+      const projectSkills = this.selectedProjectSkills();
+      if (this.$.skillClientStatus) this.$.skillClientStatus.textContent = projectSkills.error
+        ? this.t('skills_manager.read_error', { error: projectSkills.error })
+        : projectSkills.supported
+          ? `${projectSkills.clientName}: ${projectSkills.skillRoot}` : this.t('skills_manager.unsupported');
+      this.setDisabled(this.$.createProjectSkillBtn, !projectSkills.supported || Boolean(projectSkills.error));
       const builtIns = projectSkills && Array.isArray(projectSkills.builtIns)
         ? projectSkills.builtIns
         : projectSkills && projectSkills.official
@@ -1293,8 +1518,14 @@ function createMethods(mode) {
 
             const pathLine = document.createElement('div');
             pathLine.className = 'hint-line path-line';
-            pathLine.textContent = this.t('skills_manager.path', { path: skill.path || '' });
-            card.appendChild(pathLine);
+            pathLine.textContent = this.t('skills_manager.path', { path: skill.path || '' })
+              + (skill.legacyPath ? `\n${this.t('skills_manager.legacy_path', { path: skill.legacyPath })}` : '');
+            const fileDetails = document.createElement('details');
+            fileDetails.className = 'skill-file-details';
+            const fileSummary = document.createElement('summary');
+            fileSummary.textContent = this.t('skills_manager.file_details');
+            fileDetails.appendChild(fileSummary);
+            fileDetails.appendChild(pathLine);
 
             const toolbar = document.createElement('div');
             toolbar.className = 'toolbar';
@@ -1307,9 +1538,9 @@ function createMethods(mode) {
               { action: 'install', label: actionKey, disabled: skill.status === 'current', primary: true },
               { action: 'preview', label: 'skills_manager.view_changes', disabled: skill.status === 'current' },
               { action: 'restore', label: 'skills_manager.restore_backup', disabled: skill.backupCount < 1 },
-              { action: 'reveal', label: 'skills_manager.reveal', disabled: !skill.installed },
+              { action: 'reveal', label: 'skills_manager.reveal', disabled: !skill.installed || Boolean(skill.legacyPath) },
             ];
-            actions.forEach((item) => {
+            actions.filter((item) => !item.disabled).forEach((item) => {
               const button = document.createElement('ui-button');
               button.textContent = this.t(item.label);
               button.dataset.skillAction = item.action;
@@ -1330,7 +1561,8 @@ function createMethods(mode) {
                 path: skill.latestBackup.path,
               })
               : this.t('skills_manager.no_backup');
-            card.appendChild(backup);
+            fileDetails.appendChild(backup);
+            card.appendChild(fileDetails);
 
             const details = document.createElement('details');
             details.className = 'skill-diff-details';
@@ -1339,10 +1571,10 @@ function createMethods(mode) {
             details.appendChild(summary);
             const diff = document.createElement('pre');
             diff.className = 'skill-diff';
-            diff.textContent = this.skillDiffs && this.skillDiffs[skill.skillName] || '';
+            diff.textContent = this.skillDiffs && this.skillDiffs[`${this.selectedSkillClientId()}:${skill.skillName}`] || '';
             details.appendChild(diff);
             details.open = Boolean(diff.textContent);
-            card.appendChild(details);
+            if (diff.textContent) card.appendChild(details);
 
             builtInFragment.appendChild(card);
           });
@@ -1652,7 +1884,19 @@ function createMethods(mode) {
         return;
       }
       const configured = target.configured ? this.t('client.configured') : this.t('client.not_configured');
-      this.$.clientTargetStatus.textContent = `${configured}: ${target.configPath}`;
+      const blocked = this.state && this.state.clientConfig && this.state.clientConfig.configurationBlocked;
+      const skills = this.selectedProjectSkills();
+      const busy = Boolean(this.configuringClient);
+      this.setDisabled(this.$.clientTargetSelect, busy);
+      this.setDisabled(this.$.configureClientBtn, blocked || busy);
+      this.setDisabled(this.$.configureWithSkillsBtn, blocked || busy || !skills.supported || Boolean(skills.error));
+      this.setText('configureSkillsHint', skills.error ? this.t('skills_manager.read_error', { error: skills.error })
+        : this.t(skills.supported ? 'client.skills_setup_hint' : 'skills_manager.unsupported'));
+      this.$.clientTargetStatus.classList.remove('configured', 'blocked', 'unconfigured');
+      this.$.clientTargetStatus.classList.add(blocked ? 'blocked' : target.configured ? 'configured' : 'unconfigured');
+      this.$.clientTargetStatus.textContent = blocked ? this.t('client.fallback_blocked') : `${this.t('client.status')}: ${configured}`;
+      this.setText('clientTargetDetails', `${target.configPath}\n${target.serverName || ''} → ${this.state && this.state.clientConfig && this.state.clientConfig.url || ''}`);
+      this.renderProjectSkillsNotice();
       const previews = this.state && this.state.clientConfig && Array.isArray(this.state.clientConfig.targets)
         ? this.state.clientConfig.targets
         : [];
@@ -1669,29 +1913,140 @@ function createMethods(mode) {
         this.$.recentCalls,
         state.recentInteractions || [],
         (entry) => ({
+          id: `${entry.timestamp}:${entry.toolName}`,
           title: entry.toolName || this.t('activity.tool_fallback'),
           status: entry.status || 'info',
           badge: this.statusBadgeText(entry.status),
           meta: this.formatTimestamp(entry.timestamp),
-          body: entry.summary || '',
+          body: this.activitySummary(entry),
+          preview: entry.preview,
+          execution: entry.execution,
         }),
         this.t('activity.no_calls')
       );
-      this.renderMiniList(
-        this.$.recentLogs,
-        state.recentRuntimeLogs || [],
-        (entry) => ({
-          title: `${String(entry.level || this.t('activity.info_fallback')).toUpperCase()} ${entry.message || ''}`,
-          meta: this.formatTimestamp(entry.timestamp),
-          body: entry.details ? stringify(entry.details) : '',
-        }),
-        this.t('activity.no_logs')
-      );
+    },
+    activityReturnValue(entry) {
+      return entry.execution && entry.execution.context === 'scene' && entry.preview
+        ? entry.preview.result : entry.preview;
+    },
+    activitySummary(entry) {
+      if (entry.status === 'error') return entry.summary || this.t('activity.execution_failed');
+      const value = this.activityReturnValue(entry);
+      if (value && typeof value === 'object') {
+        for (const key of ['summary', 'message']) {
+          if (typeof value[key] === 'string' && value[key]) return value[key];
+        }
+      }
+      if (entry.execution) return this.t('activity.execution_completed');
+      return entry.summary && entry.summary !== 'Structured result returned.'
+        ? entry.summary : this.t('activity.call_completed');
+    },
+    activityDisclosure(key, label, defaultOpen = false) {
+      const details = document.createElement('details');
+      details.dataset.activityKey = key;
+      details.open = this.activityDisclosureState && this.activityDisclosureState.has(key)
+        ? this.activityDisclosureState.get(key) : defaultOpen;
+      const summary = document.createElement('summary');
+      summary.textContent = label;
+      details.appendChild(summary);
+      return details;
+    },
+    renderActivityValue(value, key, depth = 0) {
+      if (value === null || typeof value !== 'object') {
+        const text = document.createElement('span');
+        text.className = 'result-value';
+        text.textContent = value === undefined ? '—' : value === null ? 'null' : value === '' ? '""'
+          : typeof value === 'boolean' ? this.t(value ? 'common.yes' : 'common.no') : String(value);
+        if (typeof value === 'boolean') text.className += ` boolean-${value}`;
+        return text;
+      }
+      const array = Array.isArray(value);
+      const entries = Object.entries(value);
+      if (!entries.length) {
+        const empty = document.createElement('span');
+        empty.className = 'result-value result-empty';
+        empty.textContent = array ? '[]' : '{}';
+        return empty;
+      }
+      const tree = document.createElement(array ? 'ol' : 'div');
+      tree.className = array ? 'result-array' : 'result-fields';
+      entries.forEach(([field, child]) => {
+        const childKey = `${key}/${JSON.stringify(field)}`;
+        const remainder = field === '$remaining' ? child
+          : array && child && typeof child === 'object' && Object.keys(child).length === 1 ? child.$remaining : undefined;
+        if (Number.isInteger(remainder)) {
+          const notice = document.createElement(array ? 'li' : 'div');
+          notice.className = 'result-omitted';
+          notice.textContent = this.t('activity.items_omitted', { count: remainder });
+          tree.appendChild(notice);
+        } else if (array) {
+          const item = document.createElement('li');
+          item.appendChild(this.renderActivityValue(child, childKey, depth + 1));
+          tree.appendChild(item);
+        } else {
+          const labelKey = `activity.field_${field}`;
+          const label = EN[labelKey] ? this.t(labelKey) : field;
+          if (child && typeof child === 'object' && Object.keys(child).length) {
+            const branch = this.activityDisclosure(childKey, label, depth < 2);
+            branch.className = 'result-branch';
+            branch.appendChild(this.renderActivityValue(child, childKey, depth + 1));
+            tree.appendChild(branch);
+          } else {
+            const row = document.createElement('div');
+            row.className = 'result-row';
+            const term = document.createElement('span');
+            term.className = 'result-key';
+            term.textContent = label;
+            row.appendChild(term);
+            row.appendChild(this.renderActivityValue(child, childKey, depth + 1));
+            tree.appendChild(row);
+          }
+        }
+      });
+      return tree;
+    },
+    renderExecutionLogs(execution, parent) {
+      const heading = document.createElement('div');
+      heading.className = 'result-section-title';
+      heading.textContent = this.t('activity.execution_logs');
+      parent.appendChild(heading);
+      const logs = document.createElement('ol');
+      logs.className = 'execution-logs';
+      (execution.logs || []).forEach((entry) => {
+        const item = document.createElement('li');
+        const row = document.createElement('div');
+        row.className = 'execution-log';
+        const level = document.createElement('span');
+        const name = ['info', 'warn', 'error', 'debug'].includes(entry.level) ? entry.level : 'info';
+        level.className = `execution-level ${name}`;
+        level.textContent = name.toUpperCase();
+        const message = document.createElement('span');
+        message.className = 'execution-message';
+        message.textContent = entry.message;
+        row.appendChild(level);
+        row.appendChild(message);
+        item.appendChild(row);
+        logs.appendChild(item);
+      });
+      if (!(execution.logs || []).length) {
+        logs.className += ' result-empty';
+        logs.textContent = this.t('activity.no_execution_logs');
+      }
+      parent.appendChild(logs);
+      if (execution.logsOmitted) {
+        const notice = document.createElement('div');
+        notice.className = 'result-omitted';
+        notice.textContent = this.t('activity.logs_omitted', { count: execution.logsOmitted });
+        parent.appendChild(notice);
+      }
     },
     renderMiniList(container, entries, formatEntry, emptyText) {
       if (!container) {
         return;
       }
+      const scrollTop = container.scrollTop;
+      this.activityDisclosureState = new Map(Array.from(container.querySelectorAll
+        ? container.querySelectorAll('details[data-activity-key]') : [], (element) => [element.dataset.activityKey, element.open]));
       container.innerHTML = '';
       if (!entries.length) {
         container.textContent = emptyText;
@@ -1732,15 +2087,42 @@ function createMethods(mode) {
             item.appendChild(meta);
           }
         }
+        const result = document.createElement('div');
+        result.className = 'activity-result';
         if (formatted.body) {
           const body = document.createElement('div');
-          body.className = 'mini-body';
+          body.className = `mini-body${formatted.status === 'error' ? ' result-error' : ''}`;
           body.textContent = formatted.body;
-          item.appendChild(body);
+          result.appendChild(body);
+        }
+        if (formatted.execution) {
+          const meta = document.createElement('div');
+          meta.className = 'execution-meta';
+          meta.textContent = `${this.t(`activity.context_${formatted.execution.context}`)} · ${formatted.execution.durationMs} ms`;
+          result.appendChild(meta);
+          this.renderExecutionLogs(formatted.execution, result);
+        }
+        if (formatted.preview !== undefined || formatted.execution && formatted.status !== 'error') {
+          const heading = document.createElement('div');
+          heading.className = 'result-section-title';
+          heading.textContent = this.t(formatted.execution ? 'activity.return_value' : 'activity.result');
+          result.appendChild(heading);
+          result.appendChild(this.renderActivityValue(this.activityReturnValue(formatted), `${formatted.id}/data`));
+        }
+        item.appendChild(result);
+        if (formatted.preview !== undefined || formatted.execution) {
+          const details = this.activityDisclosure(`${formatted.id}/json`, this.t('activity.result_preview'));
+          details.className = 'result-details';
+          const json = document.createElement('pre');
+          json.textContent = JSON.stringify(formatted.execution
+            ? { data: formatted.preview, execution: formatted.execution } : formatted.preview, null, 2);
+          details.appendChild(json);
+          item.appendChild(details);
         }
         fragment.appendChild(item);
       });
       container.appendChild(fragment);
+      if (Number.isFinite(scrollTop)) container.scrollTop = scrollTop;
     },
     formatTimestamp(value) {
       if (!value) {
@@ -1803,6 +2185,9 @@ function createMethods(mode) {
           ? this.parseList(this.$.disabledToolsInput.value)
           : (config.disabledTools || []),
         enableSessions: this.$.sessionsInput ? Boolean(this.$.sessionsInput.value) : Boolean(config.enableSessions),
+        enableConsoleLogging: this.$.consoleLoggingInput
+          ? Boolean(this.$.consoleLoggingInput.value)
+          : config.enableConsoleLogging !== false,
         executeJavascriptSafetyChecks: this.$.javascriptSafetyInput
           ? Boolean(this.$.javascriptSafetyInput.value)
           : config.executeJavascriptSafetyChecks !== false,
@@ -1821,42 +2206,59 @@ function createMethods(mode) {
       };
     },
     async persistConfig(options = {}) {
-      const { showOutput = false } = options;
+      const { showNotice = false } = options;
       try {
         const panelState = await request('save-config', this.collectConfig());
         this.state = panelState;
         this.renderState();
-        if (showOutput) {
-          this.showOutput(this.t('common.configuration_saved'));
+        if (showNotice) {
+          this.showNotice(this.t('common.configuration_saved'));
         }
         return panelState;
       } catch (error) {
-        this.showOutput(this.t('common.save_failed', { error: error.message }));
+        this.showNotice(this.t('common.save_failed', { error: error.message }), 'error');
         throw error;
       }
     },
-    async runAction(action) {
+    async runAction(action, options = {}) {
       try {
         const result = await action();
-        this.showOutput(result);
+        if (result && (result.ok === false || result.success === false)) {
+          throw new Error(result.message || result.error && result.error.message || this.t('common.action_failed'));
+        }
         await this.refresh();
+        if (options.notify !== false) this.showNotice(this.t('common.action_completed'));
+        return result;
       } catch (error) {
-        this.showOutput(this.t('common.error', { error: error.message }));
+        this.showNotice(this.t('common.error', { error: error.message }), 'error');
       }
     },
-    showOutput(value) {
-      if (this.$.output) {
-        this.$.output.textContent = stringify(value);
+    dismissNotice() {
+      clearTimeout(this.noticeTimer);
+      this.noticeTimer = null;
+      if (this.$.panelNotice) this.$.panelNotice.hidden = true;
+    },
+    showNotice(value, status = 'success') {
+      if (!this.$.panelNotice || !this.$.panelNoticeText) return;
+      this.dismissNotice();
+      // Only a short action acknowledgement belongs here, never a raw result dump.
+      this.$.panelNoticeText.textContent = typeof value === 'string' ? value : this.t('common.action_completed');
+      this.$.panelNotice.className = `panel-notice ${status}`;
+      this.$.panelNotice.setAttribute('role', status === 'error' ? 'alert' : 'status');
+      this.$.panelNotice.setAttribute('aria-live', status === 'error' ? 'assertive' : 'polite');
+      this.$.panelNotice.hidden = false;
+      if (status === 'success') {
+        this.noticeTimer = setTimeout(() => this.dismissNotice(), 4500);
       }
     },
     copyText(text, successMessage) {
       if (!text) {
-        this.showOutput(this.t('common.nothing_to_copy'));
+        this.showNotice(this.t('common.nothing_to_copy'));
         return;
       }
       navigator.clipboard.writeText(text)
-        .then(() => this.showOutput(successMessage))
-        .catch(() => this.showOutput(text));
+        .then(() => this.showNotice(successMessage))
+        .catch(() => this.showNotice(this.t('common.copy_failed'), 'error'));
     },
     getCurlCommand(key) {
       const curl = this.state && this.state.clientConfig && this.state.clientConfig.curl;
@@ -1902,13 +2304,13 @@ function createMethods(mode) {
       }
       this.state.config.savedToolProfiles = this.normalizeToolProfiles(profiles);
       this.state.config.activeToolProfileName = snapshot.name;
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
     async applySavedToolProfile() {
       const name = this.$.savedToolProfileSelect.value;
       const profile = this.getSavedToolProfiles().find((item) => item.name === name);
       if (!profile) {
-        this.showOutput(this.t('tools.no_profile_selected'));
+        this.showNotice(this.t('tools.no_profile_selected'), 'error');
         return;
       }
       this.setControlValue('profileSelect', profile.toolProfile);
@@ -1918,12 +2320,12 @@ function createMethods(mode) {
       this.setControlValue('disabledToolsInput', this.formatList(profile.disabledTools));
       this.setControlValue('toolProfileNameInput', profile.name);
       this.state.config.activeToolProfileName = profile.name;
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
     async deleteSavedToolProfile() {
       const name = this.$.savedToolProfileSelect.value;
       if (!name) {
-        this.showOutput(this.t('tools.no_profile_selected'));
+        this.showNotice(this.t('tools.no_profile_selected'), 'error');
         return;
       }
       this.state.config.savedToolProfiles = this.getSavedToolProfiles()
@@ -1932,7 +2334,7 @@ function createMethods(mode) {
         this.state.config.activeToolProfileName = '';
       }
       this.setControlValue('toolProfileNameInput', '');
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
     exportSavedToolProfiles() {
       const payload = JSON.stringify({ version: 1, profiles: this.getSavedToolProfiles() }, null, 2);
@@ -1954,9 +2356,9 @@ function createMethods(mode) {
           ...this.getSavedToolProfiles(),
           ...incoming,
         ]);
-        await this.persistConfig({ showOutput: true });
+        await this.persistConfig({ showNotice: true });
       } catch (error) {
-        this.showOutput(this.t('tools.import_failed', { error: error.message }));
+        this.showNotice(this.t('tools.import_failed', { error: error.message }), 'error');
       }
     },
     async setCategoryExposure(category, action) {
@@ -1976,7 +2378,7 @@ function createMethods(mode) {
       this.setControlValue('profileSelect', 'custom');
       this.$.enabledCategoriesInput.value = Array.from(enabled).sort().join('\n');
       this.$.disabledCategoriesInput.value = Array.from(disabled).sort().join('\n');
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
     async setToolExposure(toolName, exposed) {
       const name = String(toolName || '').trim();
@@ -1994,8 +2396,8 @@ function createMethods(mode) {
       }
       this.setControlValue('enabledToolsInput', Array.from(enabled).sort().join('\n'));
       this.setControlValue('disabledToolsInput', Array.from(disabled).sort().join('\n'));
-      await this.persistConfig({ showOutput: false });
-      this.showOutput(this.t('tools.exposure_saved', {
+      await this.persistConfig({ showNotice: false });
+      this.showNotice(this.t('tools.exposure_saved', {
         name,
         state: exposed ? this.t('tools.enabled') : this.t('tools.disabled'),
       }));
@@ -2007,17 +2409,71 @@ function createMethods(mode) {
       this.setControlValue('disabledCategoriesInput', '');
       this.setControlValue('enabledToolsInput', exposed ? names.join('\n') : '');
       this.setControlValue('disabledToolsInput', exposed ? '' : names.join('\n'));
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
     async useDefaultToolList() {
       this.setControlValue('enabledCategoriesInput', '');
       this.setControlValue('disabledCategoriesInput', '');
       this.setControlValue('enabledToolsInput', '');
       this.setControlValue('disabledToolsInput', '');
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
     async clearActivity() {
-      await this.runAction(() => request('call-tool', 'clear_logs', { scope: 'mcp' }));
+      await this.runAction(() => request('clear-recent-activity'));
+    },
+    showClientAction(message, status = 'info') {
+      const element = this.$.clientActionStatus;
+      if (!element) return;
+      element.textContent = message;
+      element.className = `action-status ${status}`;
+      element.hidden = !message;
+    },
+    async configureClientSetup(includeSkills = false) {
+      if (this.configuringClient) return;
+      const targetId = this.$.clientTargetSelect && this.$.clientTargetSelect.value;
+      if (!targetId) {
+        this.showClientAction(this.t('client.select_first'), 'error');
+        return;
+      }
+      if (this.state && this.state.clientConfig && this.state.clientConfig.configurationBlocked) {
+        this.showClientAction(this.t('client.fallback_blocked'), 'warning');
+        return;
+      }
+      this.configuringClient = true;
+      this.renderClientTargetStatus();
+      this.showClientAction(this.t('client.configuring'));
+      let configured = false;
+      try {
+        // Refresh this client's state before any write. Configuring a connection
+        // must not replace existing Skills, even if they changed during setup.
+        const skills = includeSkills ? await request('get-project-skills-state', { clientId: targetId }) : null;
+        if (includeSkills && (!skills || !skills.supported || skills.error || !Array.isArray(skills.builtIns))) {
+          throw new Error(skills && skills.error || this.t('skills_manager.unsupported'));
+        }
+        await request('configure-client', targetId);
+        configured = true;
+        const installed = [];
+        const preserved = [];
+        for (const skill of skills && skills.builtIns || []) {
+          if (skill.status !== 'missing') {
+            if (skill.status !== 'current') preserved.push(skill.skillName);
+            continue;
+          }
+          const outcome = await request('install-or-update-project-skill', { skillName: skill.skillName, clientId: targetId, onlyIfMissing: true });
+          if (outcome.installed) installed.push(skill.skillName);
+          else if (!outcome.alreadyCurrent) preserved.push(skill.skillName);
+        }
+        this.showClientAction(this.t(preserved.length ? 'client.setup_review' : includeSkills ? 'client.setup_complete' : 'client.configure_complete', {
+          count: installed.length,
+        }), preserved.length ? 'warning' : 'success');
+      } catch (error) {
+        const message = this.t(configured ? 'client.setup_partial' : 'client.configure_failed', { error: error.message });
+        this.showClientAction(message, 'error');
+      } finally {
+        this.configuringClient = false;
+        try { await this.refresh(); } catch (error) { /* refresh already reports the error */ }
+        this.renderClientTargetStatus();
+      }
     },
     async handleEnableToggle() {
       const shouldEnable = Boolean(this.$.enabledInput.value);
@@ -2040,13 +2496,13 @@ function createMethods(mode) {
         this.state = panelState;
         this.renderState();
       } catch (error) {
-        this.showOutput(this.t('updates.auto_check_failed', { error: error.message }));
+        this.showNotice(this.t('updates.auto_check_failed', { error: error.message }), 'error');
       }
     },
     async installUpdate() {
       const update = this.state && this.state.updateInfo;
       if (!(update && update.ok && update.updateAvailable && update.downloadAvailable)) {
-        this.showOutput(this.t('updates.none_installable'));
+        this.showNotice(this.t('updates.none_installable'));
         return;
       }
       const message =
@@ -2060,7 +2516,7 @@ function createMethods(mode) {
     async installGlobally() {
       const installation = this.state && this.state.installation;
       if (!(installation && installation.canInstallGlobally)) {
-        this.showOutput(this.t('installation.already_available'));
+        this.showNotice(this.t('installation.already_available'));
         return;
       }
       const message =
@@ -2074,7 +2530,7 @@ function createMethods(mode) {
       await this.runAction(() => request('install-globally'));
     },
     getBuiltInProjectSkill(skillName) {
-      const projectSkills = this.state && this.state.projectSkills;
+      const projectSkills = this.selectedProjectSkills();
       const builtIns = projectSkills && Array.isArray(projectSkills.builtIns)
         ? projectSkills.builtIns
         : projectSkills && projectSkills.official
@@ -2084,22 +2540,23 @@ function createMethods(mode) {
     },
     async previewProjectSkill(skillName) {
       try {
-        const result = await request('preview-project-skill-update', { skillName });
+        const clientId = this.selectedSkillClientId();
+        const result = await request('preview-project-skill-update', { skillName, clientId });
         this.skillDiffs = this.skillDiffs || {};
-        this.skillDiffs[skillName] = result.diff || '';
+        this.skillDiffs[`${clientId}:${skillName}`] = result.diff || '';
         this.renderProjectSkills();
-        this.showOutput(this.t('skills_manager.diff_summary', {
+        this.showNotice(this.t('skills_manager.diff_summary', {
           added: result.addedLines || 0,
           removed: result.removedLines || 0,
         }));
       } catch (error) {
-        this.showOutput(this.t('common.error', { error: error.message }));
+        this.showNotice(this.t('common.error', { error: error.message }), 'error');
       }
     },
     async installProjectSkill(skillName) {
       const skill = this.getBuiltInProjectSkill(skillName);
       if (!skill || skill.status === 'current') {
-        this.showOutput(this.t('skills_manager.already_current'));
+        this.showNotice(this.t('skills_manager.already_current'));
         return;
       }
 
@@ -2121,13 +2578,14 @@ function createMethods(mode) {
       }
       await this.runAction(() => request('install-or-update-project-skill', {
         skillName,
+        clientId: this.selectedSkillClientId(),
         allowModified,
       }));
     },
     async restoreProjectSkill(skillName) {
       const skill = this.getBuiltInProjectSkill(skillName);
       if (!(skill && skill.latestBackup)) {
-        this.showOutput(this.t('skills_manager.no_backup'));
+        this.showNotice(this.t('skills_manager.no_backup'));
         return;
       }
       const message = `${this.t('skills_manager.confirm_restore_title')}\n\n${this.t(
@@ -2139,18 +2597,20 @@ function createMethods(mode) {
       }
       await this.runAction(() => request('restore-project-skill-backup', {
         skillName,
+        clientId: this.selectedSkillClientId(),
         backupPath: skill.latestBackup.path,
       }));
     },
     async createProjectSkillFromForm() {
       const skillName = String(this.getControlValue('newSkillNameInput', '') || '').trim();
       if (!skillName) {
-        this.showOutput(this.t('skills_manager.skill_name_required'));
+        this.showNotice(this.t('skills_manager.skill_name_required'), 'error');
         return;
       }
       try {
         const result = await request('create-project-skill', {
           skillName,
+          clientId: this.selectedSkillClientId(),
           title: String(this.getControlValue('newSkillTitleInput', '') || '').trim(),
           description: String(this.getControlValue('newSkillDescriptionInput', '') || '').trim(),
           instructions: String(this.getControlValue('newSkillInstructionsInput', '') || '').trim(),
@@ -2159,10 +2619,10 @@ function createMethods(mode) {
         this.setControlValue('newSkillTitleInput', '');
         this.setControlValue('newSkillDescriptionInput', '');
         this.setControlValue('newSkillInstructionsInput', '');
-        this.showOutput(result);
+        this.showNotice(result);
         await this.refresh();
       } catch (error) {
-        this.showOutput(this.t('common.error', { error: error.message }));
+        this.showNotice(this.t('common.error', { error: error.message }), 'error');
       }
     },
     async revealProjectSkill(skillPath) {
@@ -2170,10 +2630,19 @@ function createMethods(mode) {
       if (!target) {
         return;
       }
-      await this.runAction(() => request('reveal-project-skill', target));
+      await this.runAction(() => request('reveal-project-skill', { path: target, clientId: this.selectedSkillClientId() }));
     },
     bindEvents() {
+      this.on(this.$.clearActivityBtn, 'click', () => this.clearActivity());
+      this.on(this.$.dismissNoticeBtn, 'click', () => this.dismissNotice());
       this.on(this.$.restartBtn, 'click', () => this.runAction(() => request('restart-server')));
+      this.on(this.$.useProjectPortBtn, 'click', () => this.runAction(() => request('save-config', { portMode: 'project' })));
+      this.on(this.$.pinCurrentPortBtn, 'click', () => this.runAction(() => request('save-config', { portMode: 'fixed', port: this.state.status.port })));
+      this.on(this.$.skillClientSelect, 'change', () => {
+        this.skillDiffs = {};
+        this.renderProjectSkills();
+        this.runAction(() => request('save-config', { lastClientTargetId: this.selectedSkillClientId() }));
+      });
       this.on(this.$.refreshBtn, 'click', () => this.refresh());
       this.on(this.$.copyUrlBtn, 'click', () => {
         const status = this.state && this.state.status;
@@ -2196,42 +2665,36 @@ function createMethods(mode) {
           this.t('installation.path_copied')
         );
       });
-      this.on(this.$.openToolsBtn, 'click', () => this.runAction(() => request('open-panel', 'tool-exposure')));
-      this.on(this.$.openSettingsBtn, 'click', () => this.runAction(() => request('open-panel', 'settings')));
-      this.on(this.$.openActivityBtn, 'click', () => this.runAction(() => request('open-panel', 'activity')));
-      this.on(this.$.openProjectSkillsBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills')));
-      this.on(this.$.openProjectSkillsNoticeBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills')));
-      this.on(this.$.openDashboardBtn, 'click', () => this.runAction(() => request('open-panel', 'default')));
+      this.on(this.$.openToolsBtn, 'click', () => this.runAction(() => request('open-panel', 'tool-exposure'), { notify: false }));
+      this.on(this.$.openSettingsBtn, 'click', () => this.runAction(() => request('open-panel', 'settings'), { notify: false }));
+      this.on(this.$.openProjectSkillsBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills'), { notify: false }));
+      this.on(this.$.openProjectSkillsNoticeBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills'), { notify: false }));
+      this.on(this.$.openDashboardBtn, 'click', () => this.runAction(() => request('open-panel', 'default'), { notify: false }));
       this.on(this.$.enabledInput, 'change', () => this.handleEnableToggle());
-      this.on(this.$.portInput, 'change', () => this.persistConfig({ showOutput: true }));
-      this.on(this.$.profileSelect, 'change', () => this.persistConfig({ showOutput: true }));
-      this.on(this.$.sessionsInput, 'change', () => this.persistConfig({ showOutput: true }));
-      this.on(this.$.javascriptSafetyInput, 'change', () => this.persistConfig({ showOutput: true }));
+      this.on(this.$.portInput, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.profileSelect, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.sessionsInput, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.consoleLoggingInput, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.javascriptSafetyInput, 'change', () => this.persistConfig({ showNotice: true }));
       this.on(this.$.languageSelect, 'change', () => this.handleLanguageChange());
-      this.on(this.$.enabledCategoriesInput, 'change', () => this.persistConfig({ showOutput: true }));
-      this.on(this.$.disabledCategoriesInput, 'change', () => this.persistConfig({ showOutput: true }));
-      this.on(this.$.enabledToolsInput, 'change', () => this.persistConfig({ showOutput: true }));
-      this.on(this.$.disabledToolsInput, 'change', () => this.persistConfig({ showOutput: true }));
+      this.on(this.$.enabledCategoriesInput, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.disabledCategoriesInput, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.enabledToolsInput, 'change', () => this.persistConfig({ showNotice: true }));
+      this.on(this.$.disabledToolsInput, 'change', () => this.persistConfig({ showNotice: true }));
       this.on(this.$.clientTargetSelect, 'confirm', () => this.renderClientTargetStatus());
       this.on(this.$.clientTargetSelect, 'change', () => {
+        this.showClientAction('');
         this.renderClientTargetStatus();
         this.persistConfig();
       });
-      this.on(this.$.configureClientBtn, 'click', () => {
-        const targetId = this.$.clientTargetSelect.value;
-        if (!targetId) {
-          this.showOutput(this.t('client.select_first'));
-          return;
-        }
-        this.runAction(() => request('configure-client', targetId));
-      });
+      this.on(this.$.configureClientBtn, 'click', () => this.configureClientSetup(false));
+      this.on(this.$.configureWithSkillsBtn, 'click', () => this.configureClientSetup(true));
       this.on(this.$.useCoreBtn, 'click', () => this.applyPreset('core'));
       this.on(this.$.useFullBtn, 'click', () => this.applyPreset('full'));
       this.on(this.$.useCustomBtn, 'click', () => this.applyPreset('custom'));
       this.on(this.$.selectAllToolsBtn, 'click', () => this.setAllToolExposure(true));
       this.on(this.$.clearToolsBtn, 'click', () => this.setAllToolExposure(false));
       this.on(this.$.useDefaultToolsBtn, 'click', () => this.useDefaultToolList());
-      this.on(this.$.clearActivityBtn, 'click', () => this.clearActivity());
       this.on(this.$.saveToolProfileBtn, 'click', () => this.saveCurrentToolProfile());
       this.on(this.$.applyToolProfileBtn, 'click', () => this.applySavedToolProfile());
       this.on(this.$.deleteToolProfileBtn, 'click', () => this.deleteSavedToolProfile());
@@ -2315,7 +2778,7 @@ function createMethods(mode) {
         this.setControlValue('enabledToolsInput', '');
         this.setControlValue('disabledToolsInput', '');
       }
-      this.persistConfig({ showOutput: true });
+      this.persistConfig({ showNotice: true });
     },
     async handleLanguageChange() {
       if (!this.state) {
@@ -2324,7 +2787,7 @@ function createMethods(mode) {
       this.state.config.language = this.getControlValue('languageSelect', 'auto');
       this.syncLanguage();
       this.renderState();
-      await this.persistConfig({ showOutput: true });
+      await this.persistConfig({ showNotice: true });
     },
   };
 }

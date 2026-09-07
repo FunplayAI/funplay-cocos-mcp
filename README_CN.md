@@ -77,22 +77,25 @@ Cocos Creator 会按版本隔离全局扩展。如果同时使用多个 Creator 
 Funplay > MCP Server
 ```
 
-服务默认运行在 `http://127.0.0.1:8765/`。
+新项目会获得 `20000–29999` 范围内的稳定项目独立端口。已有配置保留原来的固定端口（包括 `8765`）。请使用 MCP Server 面板显示的实际 URL；如果当前使用临时回退端口，请先点击“固定当前端口”或“使用项目独立端口”，再配置客户端。
 
 如果配置端口已被占用，扩展会先检查已有 listener 是否属于同一个 Cocos 项目；同项目 listener 会被安全复用，无关 listener 才会自动回退到下一个可用本地端口。
 
 面板刻意保持精简：
 
 - 启用或停用 MCP Server
-- 打开聚焦的 Tool Exposure、MCP Settings 和 Activity 子窗口
+- 打开聚焦的 Tool Exposure、MCP Settings 和 Project Skills 子窗口
 - 自动检查当前安装版本是否落后于 GitHub 最新 Release
 - 从面板打开 Release 页面，或安装已校验的 Release 包
 - 一键安装到 Cocos Creator 全局扩展目录，让已有项目和新项目自动可用
 - 一键配置 AI 客户端，并随目标客户端预览对应配置
-- 把高级工具 profile 编辑、传输设置、诊断和日志从主窗口拆出去
+- 把高级工具 profile 编辑、传输设置和安装管理从主窗口拆出去
 - 自动跟随 Cocos Creator 的界面语言，或在 MCP Settings 中为项目指定中文/英文
+- 在设置中关闭“打印 MCP 日志”，停止控制台刷屏，同时保留最近活动和内部诊断记录
 
-独立的 Tool Exposure 窗口使用按分类分组的工具列表，支持单个工具开关和分类 Select/Clear。Activity 窗口使用单列最近调用流，并显示 `OK` / `ERR` / `INT` 状态徽标，整体信息架构更接近 Funplay Unity MCP，而不是把所有维护流程都塞进主窗口。
+各管理页面统一标题、对齐控件和轻量分区。Tool Exposure 按分类管理工具开关；Project Skills 突出可用操作，将文件路径和备份信息折叠收纳。“最近活动”显示每次调用的摘要和真实结果，对象、数组按层级展开；脚本调用分开展示执行日志与返回值。各页“输出”与独立日志查看窗口仍保持移除。操作后显示简短成功/失败提示，底层诊断记录仍可通过 MCP 工具和资源读取。
+
+脚本工具按次采集 `console.log/info/warn/error/debug` 输出，失败前的日志也会保留，不受“打印 MCP 日志”开关影响。并发、嵌套调用的日志相互隔离，脚本完成后停止采集；不混入全局/项目日志或单独 require 的模块内部日志。使用脚本中注入的 `console`（`run`/模块导出函数也可通过 `env.console` 使用）。MCP 响应保持原有 `data` 结构，新增可选的 `execution` 信息，包含执行上下文、耗时、已限量并脱敏的日志及省略条数。最近活动保留结果层级和标量值；大结果及文件/脚本正文仍限量或省略，并显示截断提示。
 
 扩展菜单和原生窗口标题会跟随 Cocos Creator 的界面语言。窗口内的控件、工具描述、状态提示、确认信息和空状态支持中文与英文；打开 `Funplay > MCP Settings` 可以跟随 Creator，也可以为当前项目固定内容语言。MCP 工具 ID 和 schema 保持英文，确保客户端集成稳定。
 
@@ -105,10 +108,10 @@ Funplay > MCP Server
 写入客户端的 MCP server 名称是：
 
 ```text
-funplay_cocos
+cocos-<project>-<hash>
 ```
 
-如果你更想手动编辑配置文件，再参考下面这些示例。
+如果你更想手动编辑配置文件，再参考下面这些示例，并将示例中的旧名称 `funplay_cocos` 和端口 `8765` 替换为面板显示的名称和 URL。Claude Code 一键配置使用 `~/.claude.json` 中按 Git 根目录划分的项目配置，而不是下面的全局示例。详见[配置与迁移说明](docs/PROJECT_WORKFLOWS.md)。
 
 <details>
 <summary>Claude Code / Claude Desktop</summary>
@@ -285,14 +288,14 @@ curl http://127.0.0.1:8765/tools
 ## 开始前说明
 
 - 这是一个 **仅限 Editor** 的扩展，用于自动化 Cocos Creator，不会给最终游戏包添加运行时依赖。
-- MCP Server 默认监听 `http://127.0.0.1:8765/`。
+- 新项目使用稳定的项目独立端口；MCP Server 面板会显示实际地址，也支持固定端口。
 - 如果配置端口被占用，服务会先通过项目身份识别同项目已有 listener；无法确认同项目时才会自动回退到下一个可用端口，面板与一键客户端配置会使用实际运行端口。
 - `GET /health` 和 `GET /tools` 是只读调试端点，方便不用 MCP 客户端也能快速检查本地服务。
 - 默认 `core` profile 暴露 39 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 105 个工具；也可以用 `custom` 按分类或工具名增删。
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
-- **项目 Skills** 会同时管理两个内置项目 Skill：用于编辑器自动化的 `funplay-cocos-mcp-workflow`，以及用于 Cocos 响应式 UI 的 `funplay-cocos-ui-composition`；也会列出自定义 `.codex/skills`。两个内置 Skill 分别维护版本、差异、本地修改、备份、更新和恢复状态。
+- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code。选择客户端后可查看对应托管目录、版本、差异、本地修改、备份和恢复操作。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。
@@ -315,7 +318,7 @@ curl http://127.0.0.1:8765/tools
 - **105 个内置工具** — 覆盖场景层级、编辑器状态、选择工作流、Prefab、资产、资产依赖、项目指令、UI 创建、组件、文件、日志、脚本诊断、截图、运行态控制、构建/预览辅助、编辑器偏好、事件绑定和输入模拟
 - **统一主工具** — `execute_javascript` 同时支持 `scene` 和 `editor` 两种上下文
 - **Resources 与 Prompts** — 实时项目/日志资源，以及脚本修复、场景验证、可玩原型等可复用工作流
-- **Cocos 图形面板** — `Funplay > MCP Server` 是精简 Dashboard，并提供 Tool Exposure、MCP Settings、Project Skills、Activity 子窗口承载复杂工作流
+- **Cocos 图形面板** — `Funplay > MCP Server` 是精简 Dashboard，并提供 Tool Exposure、MCP Settings、Project Skills 子窗口承载复杂工作流
 - **截图与输入支持** — 支持编辑器/场景/Game/Preview 截图，以及 Electron 级鼠标键盘事件
 - **厂商无关** — 兼容任意支持 HTTP JSON-RPC MCP 的 AI 客户端
 
@@ -339,7 +342,7 @@ Funplay MCP for Cocos 延续 Funplay MCP for Unity 的设计原则，并针对 C
 
 - **Tools** — `core` 下 39 个工具，`full` 下 105 个工具，并支持 `custom` include/exclude 规则和命名工具 profile
 - **Primary execution** — `execute_javascript` 用于场景/运行态和编辑器/browser 自动化
-- **Prompts** — `fix_script_errors`、`create_playable_prototype`、`scene_validation`、`auto_wire_scene`
+- **Prompts** — `fix_script_errors`、`create_playable_prototype`、`scene_validation`、`auto_wire_scene`，以及从 `mcp-prompts/*.md` 读取的带参数项目工作流。详见[项目隔离、Skills 与工作流配置](docs/PROJECT_WORKFLOWS.md)。
 - **Resources** — 项目上下文、场景摘要、当前选择、脚本诊断、资产选择、日志和 MCP 交互历史
 
 自动生成的工具参考文档见 [docs/TOOLS.md](./docs/TOOLS.md)，里面包含工具分类、profile 和读写/变更提示。
@@ -443,6 +446,7 @@ Editor 上下文脚本可以访问 `Editor`、`fs`、`path`、`os`、`require`�
   "enabledTools": [],
   "disabledTools": [],
   "enableSessions": false,
+  "enableConsoleLogging": true,
   "executeJavascriptSafetyChecks": true,
   "autostart": true,
   "maxInteractionLogEntries": 50,
@@ -459,6 +463,8 @@ Editor 上下文脚本可以访问 `Editor`、`fs`、`path`、`os`、`require`�
 
 `toolProfile: "custom"` 会从 `core` 集合开始，再加入 `enabledToolCategories` / `enabledTools`，并移除 `disabledToolCategories` / `disabledTools`。面板可以把这些暴露设置保存为命名 `savedToolProfiles`，方便恢复或分享。`enableSessions` 默认关闭，因为常规编辑器自动化不需要跨请求客户端状态。
 
+`enableConsoleLogging` 默认开启。在 **MCP 设置 > 控制台日志 > 打印 MCP 日志** 取消勾选，即可停止扩展及 HTTP 服务向 Cocos 控制台打印 MCP 信息、警告和错误。设置立即生效并按项目保存，不会重启 MCP、清空历史、静音项目脚本日志或影响 stdio 协议输出。
+
 ## 架构
 
 ```text
@@ -473,7 +479,7 @@ Cocos Creator Extension
     │   └─ Scene/runtime execution bridge
     ├─ panel/index.js
     │   └─ Minimal MCP Server dashboard
-    ├─ panel/tool-exposure.js, panel/settings.js, panel/activity.js
+    ├─ panel/tool-exposure.js, panel/settings.js, panel/project-skills.js
     │   └─ Focused maintenance windows
     └─ lib/
         ├─ assets, diagnostics, screenshots, input

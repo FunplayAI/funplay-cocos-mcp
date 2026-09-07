@@ -24,7 +24,13 @@ const {
   restoreLatestCocosMcpProjectSkillBackup,
   updateBuiltInProjectSkill,
   updateCocosMcpProjectSkill,
+  writeManagedSkillManifest,
 } = require('../lib/project-skills');
+
+const UI_SKILL_V1_CONTENT = fs.readFileSync(
+  path.join(__dirname, 'fixtures', 'cocos-ui-skill-v1.md'),
+  'utf8'
+);
 
 function createProject(t) {
   const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-project-skills-'));
@@ -66,7 +72,7 @@ test('both built-in Cocos skills have independent state, manifests, and updates'
   });
   assert.equal(installed.state.skillId, 'cocos-ui-composition');
   assert.equal(installed.state.status, 'current');
-  assert.equal(installed.state.templateVersion, 1);
+  assert.equal(installed.state.templateVersion, 2);
   assert.equal(getCocosMcpProjectSkillState(projectPath).status, 'missing');
 
   const preview = previewBuiltInProjectSkillUpdate(projectPath, {
@@ -113,6 +119,66 @@ test('legacy official skill is updateable without being treated as user-modified
   assert.equal(Boolean(result.backup), true);
   assert.equal(result.state.status, 'current');
   assert.equal(result.state.backupCount, 1);
+});
+
+for (const managed of [true, false]) {
+  test(`UI skill v1 ${managed ? 'with' : 'without'} a manifest can upgrade to v2`, (t) => {
+    const projectPath = createProject(t);
+    const options = { skillName: COCOS_UI_SKILL_NAME };
+    const target = getSkillRelativePath(COCOS_UI_SKILL_NAME);
+    writeProjectInstruction(projectPath, { target, content: UI_SKILL_V1_CONTENT });
+    if (managed) {
+      writeManagedSkillManifest(projectPath, UI_SKILL_V1_CONTENT, {
+        ...options,
+        templateVersion: 1,
+        extensionVersion: '0.5.2',
+      });
+    }
+
+    const before = getProjectSkillsState(projectPath).builtIns
+      .find((skill) => skill.skillName === COCOS_UI_SKILL_NAME);
+    assert.equal(before.status, 'update-available');
+    assert.equal(before.modified, false);
+    assert.equal(before.installedTemplateVersion, 1);
+    assert.equal(before.templateVersion, 2);
+
+    const preview = previewBuiltInProjectSkillUpdate(projectPath, options);
+    assert.equal(preview.addedLines, 1);
+    assert.equal(preview.removedLines, 1);
+    assert.equal(readProjectInstruction(projectPath, target).content, UI_SKILL_V1_CONTENT);
+
+    const result = updateBuiltInProjectSkill(projectPath, options);
+    assert.equal(result.updated, true);
+    assert.equal(result.state.status, 'current');
+    assert.equal(result.state.installedTemplateVersion, 2);
+    assert.equal(result.state.backupCount, 1);
+    assert.equal(readProjectInstruction(projectPath, result.backup.path).content, UI_SKILL_V1_CONTENT);
+    assert.equal(readProjectInstruction(projectPath, target).content, UI_SKILL_V1_CONTENT.replace(
+      'https://docs.cocos.com/creator/3.8/manual/en/ui-system/)',
+      'https://docs.cocos.com/creator/3.8/manual/en/2d-object/ui-system/)'
+    ));
+  });
+}
+
+test('UI skill v1 with local changes is protected during the v2 update', (t) => {
+  const projectPath = createProject(t);
+  const options = { skillName: COCOS_UI_SKILL_NAME };
+  const target = getSkillRelativePath(COCOS_UI_SKILL_NAME);
+  writeManagedSkillManifest(projectPath, UI_SKILL_V1_CONTENT, {
+    ...options,
+    templateVersion: 1,
+    extensionVersion: '0.5.2',
+  });
+  const modifiedContent = `${UI_SKILL_V1_CONTENT}\nCustom UI rule.\n`;
+  writeProjectInstruction(projectPath, { target, content: modifiedContent });
+
+  assert.equal(getBuiltInProjectSkillState(projectPath, options).status, 'modified');
+  assert.throws(() => updateBuiltInProjectSkill(projectPath, options), /local modifications/);
+  assert.equal(readProjectInstruction(projectPath, target).content, modifiedContent);
+
+  const result = updateBuiltInProjectSkill(projectPath, { ...options, allowModified: true });
+  assert.equal(result.state.status, 'current');
+  assert.equal(readProjectInstruction(projectPath, result.backup.path).content, modifiedContent);
 });
 
 test('modified recommended skill requires confirmation and is backed up before update', (t) => {

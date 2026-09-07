@@ -4,12 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const manifest = require('./package.json');
-const { SERVER_NAME, buildTargets, configureTarget, getTargetStatuses } = require('./lib/client-config');
+const { getServerName, formatTargetPreview, buildTargets, configureTarget, getTargetStatuses } = require('./lib/client-config');
+const { readOptionalText, writeTextIfUnchanged } = require('./lib/atomic-file');
 const {
   loadConfig,
   getProjectPath,
   getProjectName,
   getProjectIdentity,
+  getProjectPort,
   getCocosVersion,
   hasRuntimeConfigChanges,
 } = require('./lib/config');
@@ -19,6 +21,7 @@ const { ResourceProvider } = require('./lib/resources');
 const { PromptProvider } = require('./lib/prompts');
 const { InteractionLog } = require('./lib/interaction-log');
 const { RuntimeLog } = require('./lib/runtime-log');
+const { captureScriptExecution } = require('./lib/script-execution');
 const { checkForUpdate } = require('./lib/update-checker');
 const { installLatestUpdate } = require('./lib/updater');
 const {
@@ -29,6 +32,7 @@ const {
 const { normalizeSavedToolProfiles } = require('./lib/tool-profiles');
 const { detectEditorLanguage, normalizeLanguagePreference, resolveLanguage } = require('./lib/i18n');
 const { createProjectSkill } = require('./lib/project-instructions');
+const { SKILL_PLATFORMS } = require('./lib/skill-platforms');
 const {
   getProjectSkillsState: readProjectSkillsState,
   previewBuiltInProjectSkillUpdate,
@@ -60,6 +64,7 @@ class ExtensionService {
     if (this.runtimeLog && typeof this.runtimeLog.add === 'function') {
       this.runtimeLog.add(level, message, details);
     }
+    if (this.config && this.config.enableConsoleLogging === false) return;
     const output = `${LOG_PREFIX} ${message}`;
     if (level === 'error') {
       console.error(output);
@@ -71,8 +76,8 @@ class ExtensionService {
   }
 
   load() {
-    this.log('info', 'Extension loading...');
     this.reloadRuntime();
+    this.log('info', 'Extension loading...');
     let result;
     if (this.config.autostart) {
       this.log('info', 'Autostart is enabled, starting MCP server.');
@@ -151,7 +156,7 @@ class ExtensionService {
       editorExecutor: async (payload) => await this.executeEditorScript(payload, runtimeContext),
     });
     this.resourceProvider = new ResourceProvider(runtimeContext, sceneBridge, this.interactionLog, this.runtimeLog);
-    this.promptProvider = new PromptProvider(runtimeContext);
+    this.promptProvider = new PromptProvider(runtimeContext, { onWarning: (message) => this.log('warn', message) });
   }
 
   async startServer() {
@@ -227,6 +232,8 @@ class ExtensionService {
       host: this.config.host,
       port: effective.port,
       requestedPort: this.config.port,
+      portMode: this.config.portMode,
+      derivedPort: getProjectPort(),
       portFallbackActive: Boolean(fallbackInfo),
       portFallbackInfo: fallbackInfo,
       toolProfile: this.config.toolProfile,
@@ -235,6 +242,7 @@ class ExtensionService {
       enabledToolCategories: this.config.enabledToolCategories,
       disabledToolCategories: this.config.disabledToolCategories,
       enableSessions: this.config.enableSessions,
+      enableConsoleLogging: this.config.enableConsoleLogging,
       executeJavascriptSafetyChecks: this.config.executeJavascriptSafetyChecks,
       autostart: this.config.autostart,
       activeToolProfileName: this.config.activeToolProfileName,
@@ -304,7 +312,6 @@ class ExtensionService {
       resources,
       prompts,
       recentInteractions: this.interactionLog.list(20),
-      recentRuntimeLogs: this.runtimeLog.list(20),
       config: this.config,
       updateInfo: this.lastUpdateInfo,
       installInfo: this.lastInstallInfo,
@@ -312,6 +319,9 @@ class ExtensionService {
       globalInstallInfo: this.lastGlobalInstallInfo,
       projectSkills: this.getProjectSkillsState(),
       clientConfig: this.getClientConfig(),
+      projectSkillsByClient: Object.fromEntries(SKILL_PLATFORMS.map((platform) => [
+        platform.id, this.getProjectSkillsState({ clientId: platform.id }),
+      ])),
       clientTargets: getTargetStatuses({
         ...this.config,
         host: status.host,
@@ -330,24 +340,37 @@ class ExtensionService {
     return this.toolRegistry.listTools();
   }
 
+  clearRecentActivity() {
+    this.ensureRuntime();
+    this.interactionLog.clear();
+    return this.getPanelState();
+  }
+
   async callToolFromPanel(name, args) {
     this.ensureRuntime();
     this.log('info', `Panel calling tool: ${name}`);
     return await this.toolRegistry.callTool(name, args || {});
   }
 
-  getProjectSkillsState() {
-    return readProjectSkillsState(getProjectPath());
+  getProjectSkillsState(options = {}) {
+    this.ensureRuntime();
+    return readProjectSkillsState(getProjectPath(), this.getSkillOptions(options));
+  }
+
+  getSkillOptions(options = {}) {
+    return { ...options, clientId: options.clientId || this.config.lastClientTargetId };
   }
 
   previewProjectSkillUpdate(options = {}) {
-    return previewBuiltInProjectSkillUpdate(getProjectPath(), options);
+    return previewBuiltInProjectSkillUpdate(getProjectPath(), this.getSkillOptions(options));
   }
 
   installOrUpdateProjectSkill(options = {}) {
     const result = updateBuiltInProjectSkill(getProjectPath(), {
+      ...this.getSkillOptions(options),
       skillName: options.skillName,
       allowModified: options.allowModified === true,
+      onlyIfMissing: options.onlyIfMissing === true,
       extensionVersion: manifest.version || '0.0.0',
     });
     this.log(
@@ -356,7 +379,9 @@ class ExtensionService {
         ? `Installed recommended project skill at ${result.write.path}.`
         : result.updated
           ? `Updated recommended project skill at ${result.write.path}.`
-          : 'Recommended project skill is already current.'
+          : result.skipped
+            ? `Kept existing project skill at ${result.state.path}.`
+            : 'Recommended project skill is already current.'
     );
     return {
       ...result,
@@ -365,7 +390,7 @@ class ExtensionService {
   }
 
   restoreProjectSkillBackup(options = {}) {
-    const result = restoreLatestBuiltInProjectSkillBackup(getProjectPath(), options);
+    const result = restoreLatestBuiltInProjectSkillBackup(getProjectPath(), this.getSkillOptions(options));
     this.log('info', `Restored project skill backup ${result.source.path}.`);
     return {
       ...result,
@@ -375,6 +400,7 @@ class ExtensionService {
 
   createProjectSkillFromPanel(options = {}) {
     const result = createProjectSkill(getProjectPath(), {
+      ...this.getSkillOptions(options),
       skillName: options.skillName,
       title: options.title,
       description: options.description,
@@ -390,8 +416,8 @@ class ExtensionService {
   }
 
   revealProjectSkill(target) {
-    const relativePath = String(target || '').trim();
-    const state = this.getProjectSkillsState();
+    const relativePath = String(target && target.path || target || '').trim();
+    const state = this.getProjectSkillsState(target && typeof target === 'object' ? target : {});
     const skill = state.skills.find((item) => item.path === relativePath);
     if (!skill) {
       throw new Error(`Project skill not found: ${relativePath}`);
@@ -649,32 +675,37 @@ class ExtensionService {
       configureClient: async (targetId) => this.configureClient(targetId),
     };
 
-    const runner = new AsyncFunction(
-      'require',
-      'Editor',
-      'args',
-      'context',
-      'helpers',
-      'fs',
-      'path',
-      'os',
-      `
+    const execute = async (scriptConsole) => {
+      const runner = new AsyncFunction(
+        'require',
+        'Editor',
+        'args',
+        'context',
+        'helpers',
+        'fs',
+        'path',
+        'os',
+        'console',
+        `
       const module = { exports: {} };
       const exports = module.exports;
       ${code}
       if (typeof run === 'function') {
-        return await run({ Editor, args, context, helpers, fs, path, os, require });
+        return await run({ Editor, args, context, helpers, fs, path, os, require, console });
       }
       if (typeof module.exports === 'function') {
-        return await module.exports({ Editor, args, context, helpers, fs, path, os, require });
+        return await module.exports({ Editor, args, context, helpers, fs, path, os, require, console });
       }
       if (module.exports && typeof module.exports.run === 'function') {
-        return await module.exports.run({ Editor, args, context, helpers, fs, path, os, require });
+        return await module.exports.run({ Editor, args, context, helpers, fs, path, os, require, console });
       }
-      `
-    );
-
-    return await runner(require, global.Editor, args, context, helpers, fs, path, os);
+        `
+      );
+      return await runner(require, global.Editor, args, context, helpers, fs, path, os, scriptConsole);
+    };
+    return payload.captureActivity
+      ? captureScriptExecution(execute, { context: 'editor', targetConsole: console })
+      : execute(console);
   }
 
   async readResourceFromPanel(uri) {
@@ -701,10 +732,12 @@ class ExtensionService {
     const baseUrl = url.replace(/\/$/, '');
     return {
       url,
-      codex: `[mcp_servers.funplay_cocos]\nurl = "${url}"\n`,
+      serverName: getServerName(this.config),
+      configurationBlocked: Boolean(this.server && this.server.isRunning() && effective.port !== this.config.port),
+      codex: `[mcp_servers.${getServerName(this.config)}]\nurl = "${url}"\n`,
       json: JSON.stringify({
         mcpServers: {
-          funplay_cocos: {
+          [getServerName(this.config)]: {
             url,
           },
         },
@@ -719,37 +752,29 @@ class ExtensionService {
   }
 
   formatClientTargetPreview(target) {
-    if (target.isToml) {
-      return `[mcp_servers.${SERVER_NAME}]\nurl = "${target.url}"\n`;
-    }
-
-    const rootKey = target.rootKey || 'mcpServers';
-    return JSON.stringify({
-      [rootKey]: {
-        [SERVER_NAME]: target.entry,
-      },
-    }, null, 2);
+    return formatTargetPreview(target);
   }
 
-  configureClient(targetId) {
+  async configureClient(targetId) {
     this.ensureRuntime();
     this.log('info', `Configuring MCP client target: ${targetId}`);
     const effective = this.getEffectiveServerConnection();
-    if (effective.port !== this.config.port) {
-      this.log(
-        'info',
-        `Using actual running port ${effective.port} for MCP client configuration ` +
-        `(requested: ${this.config.port}).`
-      );
-    }
     const result = configureTarget(
       {
         ...this.config,
         host: effective.host,
         port: effective.port,
+        stablePort: this.config.port,
+        migrateLegacy: Boolean(this.server && this.server.isRunning()),
       },
       targetId
     );
+    await this.saveConfig({
+      clientConfigEntries: {
+        ...this.config.clientConfigEntries,
+        [targetId]: { serverName: result.serverName, url: result.url, configPath: result.configPath, projectIdentity: result.projectIdentity },
+      },
+    });
     this.log('info', `MCP client configured: ${result.name} -> ${result.configPath}`);
     return {
       ...result,
@@ -763,7 +788,13 @@ class ExtensionService {
 
   async saveConfig(partialConfig) {
     this.ensureRuntime();
-    const nextPort = partialConfig && partialConfig.port !== undefined
+    const originalConfigText = readOptionalText(this.config.configPath);
+    if (this.config.configError) throw new Error(this.config.configError);
+    const nextPortMode = partialConfig && partialConfig.portMode
+      ? (partialConfig.portMode === 'project' ? 'project' : 'fixed')
+      : partialConfig && partialConfig.port !== undefined && Number(partialConfig.port) !== this.config.port
+        ? 'fixed' : this.config.portMode;
+    const nextPort = nextPortMode === 'project' ? getProjectPort() : partialConfig && partialConfig.port !== undefined
       ? Number(partialConfig.port)
       : this.config.port;
     const nextMaxEntries = partialConfig && partialConfig.maxInteractionLogEntries !== undefined
@@ -784,8 +815,12 @@ class ExtensionService {
       ? (partialConfig.toolProfile === 'full' || partialConfig.toolProfile === 'custom' ? partialConfig.toolProfile : 'core')
       : this.config.toolProfile;
     const nextConfig = {
+      ...(originalConfigText ? JSON.parse(originalConfigText) : {}),
       host: partialConfig && partialConfig.host ? String(partialConfig.host) : this.config.host,
       port: Number.isInteger(nextPort) && nextPort > 0 && nextPort <= 65535 ? nextPort : this.config.port,
+      portMode: nextPortMode,
+      clientConfigEntries: partialConfig && partialConfig.clientConfigEntries
+        ? partialConfig.clientConfigEntries : this.config.clientConfigEntries,
       toolProfile: nextProfile,
       enabledTools: normalizeList(partialConfig && partialConfig.enabledTools, this.config.enabledTools),
       disabledTools: normalizeList(partialConfig && partialConfig.disabledTools, this.config.disabledTools),
@@ -800,6 +835,9 @@ class ExtensionService {
       enableSessions: partialConfig && typeof partialConfig.enableSessions === 'boolean'
         ? partialConfig.enableSessions
         : this.config.enableSessions,
+      enableConsoleLogging: partialConfig && typeof partialConfig.enableConsoleLogging === 'boolean'
+        ? partialConfig.enableConsoleLogging
+        : this.config.enableConsoleLogging,
       executeJavascriptSafetyChecks: partialConfig && typeof partialConfig.executeJavascriptSafetyChecks === 'boolean'
         ? partialConfig.executeJavascriptSafetyChecks
         : this.config.executeJavascriptSafetyChecks,
@@ -824,10 +862,14 @@ class ExtensionService {
     };
 
     const configPath = this.config.configPath;
-    fs.writeFileSync(configPath, JSON.stringify(nextConfig, null, 2) + '\n', 'utf8');
+    writeTextIfUnchanged(configPath, JSON.stringify(nextConfig, null, 2) + '\n', originalConfigText);
     const wasRunning = Boolean(this.server && this.server.isRunning());
     const runtimeConfigChanged = hasRuntimeConfigChanges(this.config, nextConfig);
     const requiresRestart = wasRunning && runtimeConfigChanged;
+    // Console printing is a live preference, independent of the server lifecycle
+    // and the in-memory diagnostic/activity buffers.
+    this.config.enableConsoleLogging = nextConfig.enableConsoleLogging;
+    if (this.server) this.server.config.enableConsoleLogging = nextConfig.enableConsoleLogging;
     if (requiresRestart) {
       await this.stopServer();
       await this.startServer();
@@ -870,9 +912,6 @@ module.exports = {
     openSettingsPanel() {
       return service.openPanel('settings');
     },
-    openActivityPanel() {
-      return service.openPanel('activity');
-    },
     openProjectSkillsPanel() {
       return service.openPanel('project-skills');
     },
@@ -891,6 +930,9 @@ module.exports = {
     getPanelState() {
       return service.getPanelState();
     },
+    clearRecentActivity() {
+      return service.clearRecentActivity();
+    },
     saveConfig(config) {
       return service.saveConfig(config);
     },
@@ -900,8 +942,8 @@ module.exports = {
     callToolFromPanel(name, args) {
       return service.callToolFromPanel(name, args);
     },
-    getProjectSkillsState() {
-      return service.getProjectSkillsState();
+    getProjectSkillsState(options) {
+      return service.getProjectSkillsState(options);
     },
     previewProjectSkillUpdate(options) {
       return service.previewProjectSkillUpdate(options);

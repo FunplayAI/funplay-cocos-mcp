@@ -77,22 +77,25 @@ Open the editor menu:
 Funplay > MCP Server
 ```
 
-The server runs on `http://127.0.0.1:8765/` by default.
+New projects get a stable project-derived port in `20000–29999`. Existing saved configurations keep their fixed port (including `8765`). Use the exact URL shown in MCP Server; if a temporary fallback port is active, click **Pin Current Port** or **Use Per-Project Port** before configuring a client.
 
 If the configured port is already occupied, the extension first checks whether the existing listener belongs to the same Cocos project. Same-project listeners are reused safely; unrelated listeners trigger automatic fallback to the next available local port.
 
 The panel is intentionally small:
 
 - Enable or disable the MCP server
-- Open focused Tool Exposure, MCP Settings, and Activity windows
+- Open focused Tool Exposure, MCP Settings, and Project Skills windows
 - Automatically check the installed version against the latest GitHub release
 - Open the release page or install verified release packages from the panel
 - Install once in the Cocos Creator global extensions directory so existing and new projects can use it automatically
 - Configure AI clients with one click and preview the selected client config
-- Keep advanced tool profile editing, transport settings, diagnostics, and logs out of the main server window
+- Keep advanced tool profile editing, transport settings, and installation management out of the main server window
 - Follow the Cocos Creator interface language automatically, or select Chinese/English per project in MCP Settings
+- Toggle **Print MCP logs** in Settings to silence MCP console messages without losing Recent Activity or internal diagnostics
 
-The separate Tool Exposure window uses grouped tool lists with per-tool toggles and category select/clear actions. The Activity window uses a single recent-call stream with `OK` / `ERR` / `INT` badges, matching the simpler Funplay Unity MCP information architecture instead of putting every maintenance workflow into the main server panel.
+All management pages use consistent headings, aligned controls, and lightweight sections. Tool Exposure groups per-tool toggles by category; Project Skills highlights available actions and folds away file paths and backups. Recent Activity shows each call's summary and actual result as an expandable object/array tree, with execution logs and return values in separate sections for scripts. Output sections and the standalone log-viewing panel are removed. Short action notices preserve success/failure feedback, while diagnostic logs remain available to MCP tools and resources.
+
+Script tools capture per-call `console.log/info/warn/error/debug` output, including logs before a failure, independently of **Print MCP logs**. Capture is isolated across concurrent and nested calls and stops when the script settles; global/project logs and logs from separately required modules are not collected. Use the injected `console` (also available as `env.console` in `run`/module exports). MCP responses retain their existing `data` shape and add optional `execution` metadata with context, duration, bounded/redacted logs, and an omitted-entry count. Recent Activity preserves result hierarchy and scalar values; large results and file/script bodies remain limited or omitted, with truncation notices.
 
 The extension menu and native panel titles follow the Cocos Creator interface language. Panel controls, tool descriptions, status messages, prompts, and empty states support English and Chinese; open `Funplay > MCP Settings` to follow Creator or set a project-specific content-language override. MCP tool IDs and schemas remain in English so client integrations stay stable.
 
@@ -105,10 +108,10 @@ Select your target client, click **One-Click Configure**, and the extension writ
 The MCP server name written to clients is:
 
 ```text
-funplay_cocos
+cocos-<project>-<hash>
 ```
 
-If you prefer to edit config files manually, use the examples below as fallback references.
+If you prefer to edit config files manually, use the examples below as fallback references. Replace their legacy `funplay_cocos` name and `8765` port with the name and URL shown in your panel. One-click Claude Code configuration uses the project's Git-root scope in `~/.claude.json`, not the global example below. See [project setup and migration](docs/PROJECT_WORKFLOWS.md).
 
 <details>
 <summary>Claude Code / Claude Desktop</summary>
@@ -285,14 +288,14 @@ Try a higher-level prompt in your AI client:
 ## Before You Start
 
 - This extension is **Editor-only**. It is meant to automate Cocos Creator, not to add runtime dependencies to your final game build.
-- The MCP server listens on `http://127.0.0.1:8765/` by default.
+- New projects use a project-derived port. The MCP Server dashboard shows the exact endpoint and supports pinning a fixed port.
 - If the configured port is busy, the server automatically falls back to the next available port and the panel/client config use the actual running port.
 - `GET /health` and `GET /tools` are read-only debug endpoints for quick local checks outside an MCP client.
 - The default `core` profile exposes 39 high-signal tools. Switch to `full` for all 105 tools, or use `custom` to include/exclude tool categories and individual tools.
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
-- **Project Skills** manages two built-in project skills—`funplay-cocos-mcp-workflow` for editor automation and `funplay-cocos-ui-composition` for responsive Cocos UI—alongside custom `.codex/skills`. Each built-in skill has independent version, diff, local-modification, backup, update, and restore state.
+- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, and Kimi Code. Select a client to see its managed directory, versions, diffs, local modifications, backups, and restore actions. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -315,7 +318,7 @@ Try a higher-level prompt in your AI client:
 - **105 Built-in Tools** — Scene hierarchy, editor state, selection workflows, prefabs, assets, asset dependencies, project instructions, UI creation, components, files, logs, script diagnostics, screenshots, runtime control, build/preview helpers, editor preferences, event binding, and input simulation
 - **Primary Unified Tool** — `execute_javascript` supports both `scene` and `editor` contexts
 - **Resources & Prompts** — Live project/log resources plus reusable workflows like script fixing, scene validation, and playable prototype creation
-- **Cocos Panel UI** — A compact `Funplay > MCP Server` dashboard plus focused Tool Exposure, MCP Settings, Project Skills, and Activity windows for larger workflows
+- **Cocos Panel UI** — A compact `Funplay > MCP Server` dashboard plus focused Tool Exposure, MCP Settings, and Project Skills windows for larger workflows
 - **Screenshot and Input Support** — Capture editor/scene/game/preview screenshots and send Electron-level mouse/keyboard events
 - **Vendor Agnostic** — Works with any AI client that supports MCP over HTTP JSON-RPC
 
@@ -339,7 +342,7 @@ The current package exposes four capability layers:
 
 - **Tools** — 39 tools in `core`, 105 tools in `full`, plus `custom` include/exclude rules and saved tool profiles
 - **Primary execution** — `execute_javascript` for scene/runtime and editor/browser automation
-- **Prompts** — `fix_script_errors`, `create_playable_prototype`, `scene_validation`, and `auto_wire_scene`
+- **Prompts** — `fix_script_errors`, `create_playable_prototype`, `scene_validation`, and `auto_wire_scene`, plus parameterized project workflows loaded from `mcp-prompts/*.md`. See [project isolation, Skills and workflow setup](docs/PROJECT_WORKFLOWS.md).
 - **Resources** — project context, scene summaries, current selection, script diagnostics, asset selection, logs, and MCP interaction history
 
 For the generated tool reference, including categories, profiles, and read/mutation hints, see [docs/TOOLS.md](./docs/TOOLS.md).
@@ -443,6 +446,7 @@ Place `funplay-cocos-mcp.config.json` in the Cocos project root:
   "enabledTools": [],
   "disabledTools": [],
   "enableSessions": false,
+  "enableConsoleLogging": true,
   "executeJavascriptSafetyChecks": true,
   "autostart": true,
   "maxInteractionLogEntries": 50,
@@ -459,6 +463,8 @@ Environment variables are also supported:
 
 `toolProfile: "custom"` starts from the `core` set, then adds `enabledToolCategories` / `enabledTools` and removes `disabledToolCategories` / `disabledTools`. The panel can save these exposure settings as named `savedToolProfiles` for quick restore or sharing. `enableSessions` is off by default because this server does not need cross-request client state for normal editor automation.
 
+`enableConsoleLogging` defaults to `true`. Turn it off in **MCP Settings > Console Logs > Print MCP logs** to stop the extension and HTTP server from printing MCP information, warnings, and errors to the Cocos console. It takes effect immediately, persists per project, and does not restart MCP, clear history, mute project-script logs, or change stdio protocol output.
+
 ## Architecture
 
 ```text
@@ -473,7 +479,7 @@ Cocos Creator Extension
     │   └─ Scene/runtime execution bridge
     ├─ panel/index.js
     │   └─ Minimal MCP Server dashboard
-    ├─ panel/tool-exposure.js, panel/settings.js, panel/activity.js
+    ├─ panel/tool-exposure.js, panel/settings.js, panel/project-skills.js
     │   └─ Focused maintenance windows
     └─ lib/
         ├─ assets, diagnostics, screenshots, input

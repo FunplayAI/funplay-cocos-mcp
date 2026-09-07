@@ -44,7 +44,7 @@ test('createProjectSkill writes a Codex project skill', () => {
     description: 'Validate Cocos scenes.',
   });
 
-  assert.equal(result.path, '.codex/skills/scene-qa/SKILL.md');
+  assert.equal(result.path, '.agents/skills/scene-qa/SKILL.md');
   const content = readProjectInstruction(projectPath, result.path).content;
   assert.match(content, /^---\nname: scene-qa\ndescription: "Validate Cocos scenes\."\n---/);
   const listed = listProjectInstructions(projectPath);
@@ -58,7 +58,7 @@ test('createCocosMcpProjectSkill writes the recommended MCP workflow skill', () 
   const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-default-skill-'));
   const result = createCocosMcpProjectSkill(projectPath);
 
-  assert.equal(result.path, '.codex/skills/funplay-cocos-mcp-workflow/SKILL.md');
+  assert.equal(result.path, '.agents/skills/funplay-cocos-mcp-workflow/SKILL.md');
   const content = readProjectInstruction(projectPath, result.path).content;
   assert.match(content, /Funplay Cocos MCP Workflow/);
   assert.match(content, /inspect_asset_dependencies/);
@@ -70,7 +70,7 @@ test('createCocosUiProjectSkill writes the responsive Cocos UI composition skill
   const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-ui-skill-'));
   const result = createCocosUiProjectSkill(projectPath);
 
-  assert.equal(result.path, '.codex/skills/funplay-cocos-ui-composition/SKILL.md');
+  assert.equal(result.path, '.agents/skills/funplay-cocos-ui-composition/SKILL.md');
   const content = readProjectInstruction(projectPath, result.path).content;
   assert.match(content, /^---\nname: funplay-cocos-ui-composition\n/);
   assert.match(content, /`UITransform`/);

@@ -131,10 +131,10 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 
 | Tool | Profiles | Access | Description |
 |---|---|---|---|
-| `create_cocos_mcp_project_skill` | `full` | stateful | [core] Create a recommended local Codex project skill for Funplay Cocos MCP workflows. |
-| `create_project_skill` | `full` | stateful | [core] Create a local Codex project skill under .codex/skills/{skillName}/SKILL.md. |
-| `list_project_instructions` | `core`, `full` | read-only | [specialist] List project AI instruction files and local Codex project skills. |
-| `read_project_instruction` | `core`, `full` | read-only | [specialist] Read a project AI instruction file such as AGENTS.md, CLAUDE.md, or a .codex skill SKILL.md. |
+| `create_cocos_mcp_project_skill` | `full` | stateful | [core] Create the recommended Funplay Cocos MCP workflow Skill for a supported client (defaults to Codex). |
+| `create_project_skill` | `full` | stateful | [core] Create a project Skill for Codex, Claude Code, Cursor, Qoder, or Kimi Code. Defaults to Codex under .agents/skills. |
+| `list_project_instructions` | `core`, `full` | read-only | [specialist] List project AI instruction files and Skills for a supported client (defaults to Codex). |
+| `read_project_instruction` | `core`, `full` | read-only | [specialist] Read a project AI instruction file such as AGENTS.md, CLAUDE.md, or a project SKILL.md. |
 | `write_project_instruction` | `full` | mutating | [core] Create or update a project AI instruction file inside the Cocos project. |
 
 ### Logs

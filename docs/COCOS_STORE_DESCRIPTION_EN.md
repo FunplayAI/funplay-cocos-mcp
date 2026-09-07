@@ -15,7 +15,7 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 - **Preview and visual verification**: Use Browser Preview, Editor Game View, or Simulator Preview; retrieve the browser preview URL and verify results with editor, scene, or preview screenshots.
 - **One-click AI client setup**: Generate or write MCP configuration for Claude Code, Cursor, Codex, VS Code, Trae, Kiro, Qoder, Kimi Code, and other compatible clients from the extension panel.
 - **Flexible tool profiles**: The default `core` profile exposes 39 high-signal tools. Switch to `full` for all tools, or create a custom profile by category or individual tool.
-- **Focused management windows**: Separate MCP Server, Tool Exposure, MCP Settings, and Activity windows keep service controls, tool exposure, client setup, calls, and logs organized.
+- **Focused management windows**: Consistent MCP Server, Tool Exposure, MCP Settings, and Project Skills windows keep service controls, tool exposure, client setup, and skill management organized, without output or log-viewing panels.
 - **English and Chinese UI**: Menus and native panel titles follow Cocos Creator; panel controls and status messages can follow Creator or use a project-specific language override.
 - **Update checks and one-click updates**: Detect new GitHub Releases, download the extension package, and verify its SHA256 checksum before installation.
 - **Install once for every project**: Install a SHA256-verified release in the active Creator version's managed global extension directory so projects opened with that version load it automatically.
@@ -35,7 +35,7 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 - Minimum supported version: **Cocos Creator 3.8**.
 - This is an editor-only extension and does not add runtime code to the final game build.
 - AI clients and model services must be installed and configured separately; no third-party AI service is bundled with the extension.
-- The default endpoint is `http://127.0.0.1:8765/`. If the port is occupied, the server automatically selects the next available port and displays the active address in the panel.
+- New projects use a stable project-derived port; existing fixed endpoints remain unchanged. The panel shows the active address. Pin a temporary fallback port or resolve the conflict before configuring a client.
 - Tools with write or mutation capabilities operate directly on the current project. Use Git or another version control system and review the intended scope before major changes.
 
 ## 【Usage Guide】
