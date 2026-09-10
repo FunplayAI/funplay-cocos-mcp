@@ -742,6 +742,14 @@ class ExtensionService {
           },
         },
       }, null, 2),
+      opencode: JSON.stringify({
+        mcp: {
+          [getServerName(this.config)]: {
+            type: 'remote',
+            url,
+          },
+        },
+      }, null, 2),
       targets,
       curl: {
         health: `curl ${baseUrl}/health`,

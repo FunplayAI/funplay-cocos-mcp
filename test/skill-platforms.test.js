@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { SKILL_PLATFORMS, getSkillProjectPath } = require('../lib/skill-platforms');
+const { SKILL_PLATFORMS, getSkillsDirectory, getSkillProjectPath } = require('../lib/skill-platforms');
 const { getProjectSkillsState, updateBuiltInProjectSkill, getBuiltInProjectSkillState, createProjectSkillBackup, listProjectSkillBackups, restoreLatestBuiltInProjectSkillBackup } = require('../lib/project-skills');
 const { COCOS_UI_SKILL_NAME, buildCocosUiProjectSkillContent, createProjectSkill } = require('../lib/project-instructions');
 
@@ -128,4 +128,22 @@ test('missing-only setup never replaces an existing old or modified Skill after 
     assert.equal(fs.readFileSync(file, 'utf8'), content);
     assert.equal(listProjectSkillBackups(root, COCOS_UI_SKILL_NAME, options).length, 0);
   }
+});
+
+test('OpenCode exposes its own project-local Skills directory', () => {
+  assert.equal(getSkillsDirectory({ clientId: 'opencode' }), '.opencode/skills');
+});
+
+test('OpenCode project paths are resolved in place without a Git root walk', () => {
+  assert.equal(
+    getSkillProjectPath('X:\\proj\\path', { clientId: 'opencode' }),
+    path.resolve('X:\\proj\\path')
+  );
+});
+
+test('the OpenCode client is registered as a Skills platform', () => {
+  assert.ok(
+    SKILL_PLATFORMS.some((platform) => platform.id === 'opencode'),
+    'SKILL_PLATFORMS must register the opencode client'
+  );
 });

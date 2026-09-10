@@ -27,10 +27,11 @@ Script cards separate the execution summary, scoped console logs, and return val
 | Cursor | `.cursor/skills` |
 | Qoder | `.qoder/skills` |
 | Kimi Code | `<nearest Git root>/.kimi-code/skills` (project directory when no Git root exists) |
+| OpenCode | `.opencode/skills` |
 
 The manager checks these **managed project directories**, not every user-level or cross-client compatibility directory an agent may also discover. It does not change global Skills, agent rules, or user-authored `AGENTS.md` / `CLAUDE.md` files. Open the AI client at the relevant project/Git root so it can discover the files.
 
-Client paths were checked against the official [Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), [Claude Code](https://code.claude.com/docs/en/skills#where-skills-live), [Cursor](https://cursor.com/docs/skills), [Qoder](https://docs.qoder.com/cli/Skills), and [Kimi Code](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html#skill-locations) documentation.
+Client paths were checked against the official [Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), [Claude Code](https://code.claude.com/docs/en/skills#where-skills-live), [Cursor](https://cursor.com/docs/skills), [Qoder](https://docs.qoder.com/cli/Skills), [Kimi Code](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html#skill-locations), and [OpenCode](https://opencode.ai/docs/skills) documentation.
 
 ### Legacy Codex installs
 

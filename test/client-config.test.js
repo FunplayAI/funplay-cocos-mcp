@@ -8,12 +8,19 @@ const test = require('node:test');
 const {
   buildTargets,
   configureTarget,
+  formatTargetPreview,
   getTargetStatuses,
+  SERVER_NAME,
 } = require('../lib/client-config');
 
 const CONFIG = {
   host: '127.0.0.1',
   port: 8765,
+};
+
+const OPENCODE_CONFIG = {
+  host: '127.0.0.1',
+  port: 8123,
 };
 
 function createTargetOptions(t, env = {}) {
@@ -127,4 +134,71 @@ test('Kimi Code one-click configuration creates a user-level mcp.json', (t) => {
     getTargetStatuses(CONFIG, options).find((target) => target.id === 'kimi').configured,
     true
   );
+});
+
+test('OpenCode exposes a remote MCP target with its official root key', (t) => {
+  const options = createTargetOptions(t);
+  const targets = buildTargets(OPENCODE_CONFIG, options);
+  const opencode = targets.find((target) => target.id === 'opencode');
+
+  assert.ok(opencode, 'buildTargets must expose an OpenCode target');
+  assert.equal(opencode.name, 'OpenCode');
+  assert.equal(opencode.rootKey, 'mcp');
+  assert.deepEqual(opencode.entry, {
+    type: 'remote',
+    url: 'http://127.0.0.1:8123/',
+  });
+});
+
+test('OpenCode honors XDG_CONFIG_HOME for its opencode.json path', (t) => {
+  const baseOptions = createTargetOptions(t);
+  const xdgConfigHome = path.join(baseOptions.homePath, 'custom-xdg');
+  const options = {
+    ...baseOptions,
+    env: {
+      XDG_CONFIG_HOME: xdgConfigHome,
+    },
+  };
+  const targets = buildTargets(OPENCODE_CONFIG, options);
+  const opencode = targets.find((target) => target.id === 'opencode');
+
+  assert.ok(opencode, 'buildTargets must expose an OpenCode target');
+  assert.equal(opencode.configPath, path.join(xdgConfigHome, 'opencode', 'opencode.json'));
+});
+
+test('OpenCode uses ~/.config/opencode when XDG_CONFIG_HOME is unset', (t) => {
+  const options = createTargetOptions(t);
+  const targets = buildTargets(OPENCODE_CONFIG, options);
+  const opencode = targets.find((target) => target.id === 'opencode');
+
+  assert.ok(opencode, 'buildTargets must expose an OpenCode target');
+  assert.equal(opencode.configPath, path.join(options.homePath, '.config', 'opencode', 'opencode.json'));
+});
+
+test('OpenCode prefers an existing opencode.jsonc over opencode.json', (t) => {
+  const options = createTargetOptions(t);
+  const dir = path.join(options.homePath, '.config', 'opencode');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'opencode.jsonc'), '{}\n', 'utf8');
+  const targets = buildTargets(OPENCODE_CONFIG, options);
+  const opencode = targets.find((target) => target.id === 'opencode');
+
+  assert.ok(opencode, 'buildTargets must expose an OpenCode target');
+  assert.equal(opencode.configPath, path.join(dir, 'opencode.jsonc'));
+});
+
+test('OpenCode configuration preview nests the remote entry under the mcp root', (t) => {
+  const options = createTargetOptions(t);
+  const targets = buildTargets(OPENCODE_CONFIG, options);
+  const opencode = targets.find((target) => target.id === 'opencode');
+
+  assert.ok(opencode, 'buildTargets must expose an OpenCode target');
+  assert.deepEqual(JSON.parse(formatTargetPreview(opencode)), {
+    mcp: {
+      [SERVER_NAME]: {
+        type: 'remote',
+        url: 'http://127.0.0.1:8123/',
+      },
+    },
+  });
 });
