@@ -361,6 +361,12 @@ Creator 3.8.x preview automation uses the same modes and editor APIs as the buil
 
 Use `get_preview_mode` to inspect the active mode, `set_preview_mode` to switch it, and `run_project_preview` to start it. `run_project_preview` still accepts `platform` as a deprecated alias for `mode`.
 
+Game View starts through the native preview toolbar so its manual Pause/Resume buttons remain usable. Repeated starts leave an existing preview running (including its paused state). `pause_runtime` and `resume_runtime` control that same Game View preview and are idempotent; they require a running Game View and do not control browser/simulator previews or the edit-scene director. Switching away from Game View stops it through the toolbar first; rejected operations report an error instead of claiming success.
+
+Enable these control tools in `full` or a custom tool profile. When scripting, prefer them over directly calling `scene.editor-preview-set-play`, which bypasses toolbar synchronization.
+
+`get_runtime_state` (also used by `validate_scene`) reports `scope: "gameView"`, actual `running`/`paused` values, `busy`, and `toolbarSynchronized`. It no longer presents edit-scene frame/time-scale counters as preview state; those remain in `get_performance_snapshot.runtime` with `scope: "editScene"`. `set_time_scale` continues to affect only the edit scene. Preview controls require a compatible, ready Creator main-window toolbar; an unavailable toolbar produces an explicit error.
+
 Browser preview results distinguish same-host automation from LAN access:
 
 | Field | Meaning |

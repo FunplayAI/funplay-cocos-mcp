@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const previewRuntime = require('../lib/preview-runtime');
 const {
   broadcastEditorMessage,
   getEditorPreference,
@@ -14,6 +15,19 @@ const {
   tryEditorRequests,
   tryEditorRequestsStatus,
 } = require('../lib/tools/cocos-project');
+
+function mockPreviewToolbar(t) {
+  const commands = [];
+  t.mock.method(previewRuntime, 'controlPreviewToolbar', async (command) => {
+    commands.push(command);
+    if (command.action === 'set-mode') {
+      await Editor.Profile.setConfig('preview', 'preview.current.platform', command.mode, 'local');
+      Editor.Message.send('preview', 'change-platform', command.mode);
+    }
+    return { scope: 'gameView', running: command.action === 'start', paused: false, toolbarSynchronized: true };
+  });
+  return commands;
+}
 
 test('tryEditorRequests returns the first successful editor message candidate', async () => {
   const calls = [];
@@ -188,7 +202,8 @@ test('getPreviewMode reads the Creator 3.8 preview profile and separates LAN bro
   }
 });
 
-test('setPreviewMode stops Game View, persists the profile, and broadcasts the platform change', async () => {
+test('setPreviewMode delegates stop, mode persistence, and UI synchronization to the native toolbar', async (t) => {
+  const commands = mockPreviewToolbar(t);
   let currentMode = 'gameView';
   const profileWrites = [];
   const requests = [];
@@ -215,7 +230,8 @@ test('setPreviewMode stops Game View, persists the profile, and broadcasts the p
   try {
     const result = await setPreviewMode('browser');
 
-    assert.deepEqual(requests, [['scene', 'editor-preview-set-play', false]]);
+    assert.deepEqual(requests, []);
+    assert.deepEqual(commands, [{ action: 'set-mode', mode: 'browser' }]);
     assert.deepEqual(profileWrites, [['preview', 'preview.current.platform', 'browser', 'local']]);
     assert.deepEqual(sends, [['preview', 'change-platform', 'browser']]);
     assert.equal(result.previousMode, 'gameView');
@@ -226,7 +242,8 @@ test('setPreviewMode stops Game View, persists the profile, and broadcasts the p
   }
 });
 
-test('runProjectPreview starts browser preview and returns local and network URLs', async () => {
+test('runProjectPreview starts browser preview and returns local and network URLs', async (t) => {
+  mockPreviewToolbar(t);
   let currentMode = 'browser';
   const requests = [];
   global.Editor = {
@@ -269,7 +286,8 @@ test('runProjectPreview starts browser preview and returns local and network URL
   }
 });
 
-test('runProjectPreview starts editor preview and supports the deprecated platform alias', async () => {
+test('runProjectPreview starts editor preview through the toolbar and supports the deprecated platform alias', async (t) => {
+  const commands = mockPreviewToolbar(t);
   let currentMode = 'browser';
   const requests = [];
   global.Editor = {
@@ -291,9 +309,12 @@ test('runProjectPreview starts editor preview and supports the deprecated platfo
   try {
     const result = await runProjectPreview({ platform: 'gameView' });
 
-    assert.deepEqual(requests, [['scene', 'editor-preview-set-play', true]]);
+    assert.deepEqual(requests, []);
+    assert.deepEqual(commands, [{ action: 'set-mode', mode: 'gameView' }, { action: 'start' }]);
     assert.equal(result.mode, 'gameView');
-    assert.equal(result.method, 'scene.editor-preview-set-play');
+    assert.equal(result.method, 'preview.toolbar.play');
+    assert.equal(result.runtime.running, true);
+    assert.equal(result.runtime.toolbarSynchronized, true);
     assert.equal(result.usedDeprecatedPlatform, true);
   } finally {
     delete global.Editor;
@@ -305,4 +326,42 @@ test('runProjectPreview rejects conflicting mode and platform values', async () 
     () => runProjectPreview({ mode: 'browser', platform: 'simulator' }),
     /Conflicting preview mode values/
   );
+});
+
+test('runProjectPreview uses the current Game View mode when mode is omitted', async (t) => {
+  const commands = mockPreviewToolbar(t);
+  global.Editor = { Profile: { getConfig: async () => 'gameView', setConfig: async () => {} } };
+  t.after(() => { delete global.Editor; });
+  const result = await runProjectPreview();
+  assert.equal(result.modeChange, null);
+  assert.equal(result.started, true);
+  assert.deepEqual(commands, [{ action: 'start' }]);
+});
+
+test('failed toolbar mode changes do not start a preview or fall back to direct scene control', async (t) => {
+  let requests = 0;
+  global.Editor = {
+    Profile: { getConfig: async () => 'gameView', setConfig: async () => assert.fail('Unexpected profile write') },
+    Message: { send: () => assert.fail('Unexpected mode broadcast'), request: async () => { requests++; } },
+  };
+  t.after(() => { delete global.Editor; });
+  t.mock.method(previewRuntime, 'controlPreviewToolbar', async () => { throw new Error('Game View stop rejected'); });
+  await assert.rejects(runProjectPreview({ mode: 'browser' }), /stop rejected/);
+  assert.equal(requests, 0);
+});
+
+test('simulator launches keep the native preview terminal path and do not query a browser URL', async (t) => {
+  mockPreviewToolbar(t);
+  let mode = 'browser';
+  const requests = [];
+  global.Editor = {
+    Profile: { getConfig: async () => mode, setConfig: async (_pkg, _key, value) => { mode = value; } },
+    Message: { send: () => {}, request: async (...args) => { requests.push(args); return true; } },
+  };
+  t.after(() => { delete global.Editor; });
+  const result = await runProjectPreview({ mode: 'simulator' });
+  assert.equal(result.started, true);
+  assert.equal(result.method, 'preview.open-terminal');
+  assert.equal(result.urlAvailable, false);
+  assert.deepEqual(requests, [['preview', 'open-terminal', undefined]]);
 });

@@ -6,6 +6,14 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-10
+
+### Fixed
+
+- Fixed Game View preview started through MCP leaving the native toolbar in a stopped or wrong-platform state, which disabled manual pause controls. Preview starts and mode changes now use the toolbar's own logic, repair legacy state mismatches, and verify the actual preview state.
+- Routed `pause_runtime` and `resume_runtime` to the Game View preview controller instead of the edit-scene director. Repeated start/pause/resume calls are idempotent; stopped previews, rejected operations, busy or unavailable toolbars now report explicit errors.
+- `get_runtime_state` and scene validation now report Game View running/paused state and toolbar synchronization. Edit-scene frame/time-scale counters remain in performance snapshots and are explicitly labeled to avoid confusing them with preview state.
+
 ## [0.6.0] - 2026-09-07
 
 ### Added

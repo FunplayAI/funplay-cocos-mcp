@@ -54,9 +54,9 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 | `get_build_status` | `core`, `full` | read-only | [specialist] Query Cocos build/preview status using known builder message variants. |
 | `get_preview_mode` | `core`, `full` | read-only | [specialist] Query the active Cocos Creator preview mode. Browser results use a same-host loopback url/localUrl and preserve Creator's reported LAN address as networkUrl. |
 | `open_build_panel` | `full` | stateful | [core] Open the Cocos build panel, defaulting to the builder panel id. |
-| `run_project_preview` | `full` | stateful | [core] Start Cocos Creator 3.8.x preview in browser, editor Game View, or simulator mode. Browser results use a same-host loopback url/localUrl and preserve Creator's reported LAN address as networkUrl. |
+| `run_project_preview` | `full` | stateful | [core] Start Cocos Creator 3.8.x preview in browser, editor Game View, or simulator mode. Game View uses the native toolbar and does not toggle off an already running preview. Browser results use a same-host loopback url/localUrl and preserve Creator's reported LAN address as networkUrl. |
 | `save_current_scene` | `full` | stateful | [core] Save the currently open Cocos scene using available editor scene messages. |
-| `set_preview_mode` | `full` | mutating | [core] Switch Cocos Creator preview mode using the supported 3.8.x Preview profile and toolbar message. |
+| `set_preview_mode` | `full` | mutating | [core] Switch Cocos Creator 3.8.x preview mode through the native toolbar, synchronizing its state and stopping Game View before switching away. |
 
 ### Camera
 
@@ -149,7 +149,7 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 
 | Tool | Profiles | Access | Description |
 |---|---|---|---|
-| `get_performance_snapshot` | `core`, `full` | read-only | [specialist] Return scene scale and runtime performance-oriented counters such as node/component counts, UI counts, depth, memory, and warnings. |
+| `get_performance_snapshot` | `core`, `full` | read-only | [specialist] Return edit-scene scale and performance-oriented counters such as node/component counts, UI counts, depth, memory, and warnings. Its director counters are not Game View preview state. |
 | `list_editor_windows` | `core`, `full` | read-only | [specialist] List available Electron windows so screenshots or input-targeting can choose the correct window. Use this when window targeting is the explicit problem. |
 
 ### Prefabs
@@ -186,10 +186,10 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 
 | Tool | Profiles | Access | Description |
 |---|---|---|---|
-| `get_runtime_state` | `core`, `full` | read-only | [specialist] Return structured Cocos runtime state including pause state, frame count, and scheduler time scale. Prefer this when you want a compact validation snapshot. |
-| `pause_runtime` | `full` | stateful | [core] Pause Cocos director game logic execution. |
-| `resume_runtime` | `full` | stateful | [core] Resume Cocos director game logic execution. |
-| `set_time_scale` | `full` | mutating | [core] Set Cocos scheduler time scale for runtime validation. |
+| `get_runtime_state` | `core`, `full` | read-only | [specialist] Return the editor Game View preview running/paused state and toolbar synchronization status, not edit-scene director counters. Does not inspect browser or simulator runtime state. |
+| `pause_runtime` | `full` | stateful | [core] Pause an active editor Game View preview through the native toolbar. Idempotent; does not pause the edit-scene director, browser, or simulator. |
+| `resume_runtime` | `full` | stateful | [core] Resume a paused editor Game View preview through the native toolbar. Idempotent; requires a running Game View preview. |
+| `set_time_scale` | `full` | mutating | [core] Set the edit-scene Cocos scheduler time scale. Does not change the separate Game View preview runtime. |
 
 ### Scene
 

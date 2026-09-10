@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createToolRegistry } = require('../lib/tool-registry');
+const previewRuntime = require('../lib/preview-runtime');
 
 function createRegistry(profile, projectPath = path.resolve('/tmp/funplay-cocos-test-project'), configExtras = {}, overrides = {}) {
   return createToolRegistry({
@@ -20,6 +21,39 @@ function createRegistry(profile, projectPath = path.resolve('/tmp/funplay-cocos-
     editorExecutor: overrides.editorExecutor || (async () => ({ ok: true })),
   });
 }
+
+test('runtime tools control the preview toolbar instead of calling edit-scene director helpers', async (t) => {
+  const commands = [];
+  t.mock.method(previewRuntime, 'controlPreviewToolbar', async (command) => {
+    commands.push(command);
+    return { scope: 'gameView', running: true, paused: command.action === 'pause', toolbarSynchronized: true };
+  });
+  const registry = createRegistry('full', undefined, {}, {
+    sceneBridge: { call: async () => assert.fail('Preview controls must not use the edit-scene director') },
+  });
+  for (const name of ['get_runtime_state', 'pause_runtime', 'resume_runtime']) {
+    const { value } = await registry.callToolDetailed(name, {});
+    assert.equal(value.ok, true);
+    assert.equal(value.data.scope, 'gameView');
+    assert.equal(value.data.paused, name === 'pause_runtime');
+  }
+  assert.deepEqual(commands, [{ action: 'state' }, { action: 'pause' }, { action: 'resume' }]);
+});
+
+test('scene validation uses Game View state while preserving separate edit-scene performance counters', async (t) => {
+  t.mock.method(previewRuntime, 'controlPreviewToolbar', async (command) => {
+    assert.deepEqual(command, { action: 'state' });
+    return { scope: 'gameView', running: true, paused: true };
+  });
+  const sceneCalls = [];
+  const registry = createRegistry('core', undefined, {}, {
+    sceneBridge: { call: async (method) => { sceneCalls.push(method); return { ok: true }; } },
+  });
+  const { value } = await registry.callToolDetailed('validate_scene', { includeScriptDiagnostics: false, includeLogErrors: false });
+  assert.equal(value.data.runtime.scope, 'gameView');
+  assert.equal(value.data.runtime.paused, true);
+  assert.deepEqual(sceneCalls, ['getSceneInfo', 'getPerformanceSnapshot']);
+});
 
 function mockEditorRequests(t, handler) {
   const previousEditor = global.Editor;

@@ -361,6 +361,12 @@ Creator 3.8.x 的预览自动化使用与内置预览工具栏相同的模式和
 
 使用 `get_preview_mode` 查询当前模式，使用 `set_preview_mode` 切换模式，使用 `run_project_preview` 启动预览。`run_project_preview` 仍兼容旧的 `platform` 参数，但该参数已弃用，推荐改用 `mode`。
 
+Game View 通过原生预览工具栏启动，手动暂停/恢复按钮会保持可用。重复启动不会停止已有预览，也会保留其暂停状态。`pause_runtime` 和 `resume_runtime` 控制同一个 Game View 预览且可重复调用；它们要求 Game View 已启动，不控制浏览器、模拟器或编辑场景 director。切换到其他模式前会先通过工具栏停止 Game View，操作被拒绝时会明确报错，不会误报成功。
+
+请使用 `full` 范围，或在自定义范围中启用上述控制工具。编写脚本时也应优先使用这些工具，避免直接调用会绕过工具栏同步的 `scene.editor-preview-set-play`。
+
+`get_runtime_state`（`validate_scene` 也使用它）返回 `scope: "gameView"`、实际的 `running`/`paused`、`busy` 和 `toolbarSynchronized`。它不再将编辑场景的帧数/时间缩放当作预览状态；这些计数仍可通过 `get_performance_snapshot.runtime` 查询，并标记为 `scope: "editScene"`。`set_time_scale` 仍只影响编辑场景。预览控制要求 Creator 主窗口的兼容工具栏已就绪；工具栏不可用时会明确报错。
+
 浏览器预览结果会区分同机自动化与局域网访问：
 
 | 字段 | 含义 |
