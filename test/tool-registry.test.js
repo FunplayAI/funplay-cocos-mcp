@@ -121,6 +121,20 @@ test('recommended project skill tool records managed template metadata', async (
   assert.equal(fs.existsSync(path.join(projectPath, result.value.data.manifest)), true);
 });
 
+test('Skills tool schemas and execution support OpenCode project directories', async (t) => {
+  const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-opencode-tools-'));
+  t.after(() => fs.rmSync(projectPath, { recursive: true, force: true }));
+  const registry = createRegistry('full', projectPath);
+  for (const name of ['list_project_instructions', 'create_project_skill', 'create_cocos_mcp_project_skill']) {
+    const tool = registry.listTools().find((entry) => entry.name === name);
+    assert.ok(tool.inputSchema.properties.clientId.enum.includes('opencode'));
+  }
+  const result = await registry.callToolDetailed('create_cocos_mcp_project_skill', { clientId: 'opencode' });
+  assert.equal(result.value.data.path, '.opencode/skills/funplay-cocos-mcp-workflow/SKILL.md');
+  assert.equal(fs.existsSync(path.join(projectPath, result.value.data.path)), true);
+  assert.equal(fs.existsSync(path.join(projectPath, '.agents')), false);
+});
+
 test('create_scene serializes and persists a scene without an interactive save dialog', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-scene-'));
   t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));

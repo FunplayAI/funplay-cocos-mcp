@@ -6,6 +6,11 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Added
+
+- Added OpenCode one-click MCP configuration and project-local Skills support (`.opencode/skills`), contributed in [#19](https://github.com/FunplayAI/funplay-cocos-mcp/pull/19).
+- OpenCode configuration reads and updates JSON/JSONC with comments and trailing commas, preserves unrelated text and settings, and rejects malformed or duplicate-key configurations without overwriting them.
+
 ## [0.6.1] - 2026-09-10
 
 ### Fixed

@@ -45,7 +45,7 @@ test('project keys are stable, short, ASCII-safe and distinct for same-name proj
   assert.equal(first, getServerName(config(path.join(root, 'one', '游戏'))));
 });
 
-for (const targetId of ['cursor', 'qoder', 'kimi', 'codex']) {
+for (const targetId of ['cursor', 'qoder', 'kimi', 'codex', 'opencode']) {
   test(`${targetId} keeps two projects side by side and only updates an owned entry`, (t) => {
     const { root, projectPath, options } = fixture(t);
     const firstConfig = config(projectPath);

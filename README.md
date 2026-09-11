@@ -241,6 +241,8 @@ url = "http://127.0.0.1:8765/"
 
 The global config lives in `$XDG_CONFIG_HOME/opencode/opencode.json` or `~/.config/opencode/opencode.json` on every platform (`opencode.jsonc` also works).
 
+One-click configuration prefers an existing `opencode.jsonc`. It supports comments and trailing commas in either file, preserves unrelated settings and comments, and leaves malformed or ambiguous configurations unchanged.
+
 ```json
 {
   "mcp": {

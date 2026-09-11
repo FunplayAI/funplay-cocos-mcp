@@ -241,6 +241,8 @@ url = "http://127.0.0.1:8765/"
 
 全局配置位于所有平台的 `$XDG_CONFIG_HOME/opencode/opencode.json` 或 `~/.config/opencode/opencode.json`（`opencode.jsonc` 同样可用）。
 
+一键配置优先使用已有的 `opencode.jsonc`，支持两种文件中的注释和尾逗号，保留其他设置及注释；遇到格式错误或存在歧义的配置时，不会覆盖原文件。
+
 ```json
 {
   "mcp": {
