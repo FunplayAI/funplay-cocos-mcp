@@ -6,6 +6,8 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-09-11
+
 ### Added
 
 - Added OpenCode one-click MCP configuration and project-local Skills support (`.opencode/skills`), contributed in [#19](https://github.com/FunplayAI/funplay-cocos-mcp/pull/19).
