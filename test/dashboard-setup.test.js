@@ -100,3 +100,16 @@ test('double clicks cannot configure or install twice', async (t) => {
   await first;
   assert.equal(panel.$.clientTargetSelect.disabled, false);
 });
+
+test('OpenCode Configure + Skills routes every setup action to the selected client', async (t) => {
+  const skills = { supported: true, builtIns: [{ skillName: 'workflow', status: 'missing' }] };
+  const { panel, calls } = fixture(t, (name) => name === 'get-project-skills-state' ? skills : {}, skills);
+  panel.$.clientTargetSelect.value = 'opencode';
+  panel.state.clientTargets = [{ id: 'opencode', name: 'OpenCode', configPath: '/fixture/opencode.jsonc' }];
+  panel.state.projectSkillsByClient = { opencode: skills };
+  await panel.configureClientSetup(true);
+  assert.deepEqual(calls.map((call) => call.name), ['get-project-skills-state', 'configure-client', 'install-or-update-project-skill']);
+  assert.deepEqual(calls[0].args, [{ clientId: 'opencode' }]);
+  assert.deepEqual(calls[1].args, ['opencode']);
+  assert.deepEqual(calls[2].args, [{ skillName: 'workflow', clientId: 'opencode', onlyIfMissing: true }]);
+});

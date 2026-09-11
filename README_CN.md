@@ -19,7 +19,7 @@
 
 ---
 
-Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code 等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
+Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode 等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
 
 这个项目延续 Funplay MCP for Unity 的产品方向：默认工具面保持聚焦，提供一键客户端配置，并围绕一个高灵活度主执行工具组织工作流。
 
@@ -236,6 +236,26 @@ url = "http://127.0.0.1:8765/"
 
 </details>
 
+<details>
+<summary>OpenCode</summary>
+
+全局配置位于所有平台的 `$XDG_CONFIG_HOME/opencode/opencode.json` 或 `~/.config/opencode/opencode.json`（`opencode.jsonc` 同样可用）。
+
+一键配置优先使用已有的 `opencode.jsonc`，支持两种文件中的注释和尾逗号，保留其他设置及注释；遇到格式错误或存在歧义的配置时，不会覆盖原文件。
+
+```json
+{
+  "mcp": {
+    "funplay_cocos": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8765/"
+    }
+  }
+}
+```
+
+</details>
+
 ### 可选：npm stdio Wrapper
 
 如果 MCP 客户端更适合使用本地 `stdio` 命令，可以在启动 Cocos 编辑器内置服务后安装 npm wrapper：
@@ -308,7 +328,7 @@ curl http://127.0.0.1:8765/tools
 
 - **`execute_javascript` 主工具优先** — 一个高灵活度 JavaScript 工具就能编排场景/运行态和编辑器自动化，避免 AI 客户端被大量细碎工具干扰
 - **嵌入式 Cocos 扩展** — Cocos 侧不需要单独 Python 守护进程或外部 bridge
-- **一键客户端配置** — 在 Cocos Creator 内直接配置 Claude Code、Cursor、VS Code、Trae、Kiro、Qoder、Kimi Code、Codex
+- **一键客户端配置** — 在 Cocos Creator 内直接配置 Claude Code、Cursor、VS Code、Trae、Kiro、Qoder、Kimi Code、Codex、OpenCode
 - **内建项目上下文** — 直接暴露项目、场景、选择、脚本诊断、日志和交互历史资源
 - **默认聚焦，必要时全量** — `core` 降低工具列表噪音，需要时切到 `full` 暴露全部工具；`custom` 与保存的 profile 可按分类或工具名调整并恢复
 - **可视化验证** — 截图和输入模拟让 AI 能验证 UI 与玩法改动

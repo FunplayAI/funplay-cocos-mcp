@@ -19,7 +19,7 @@
 
 ---
 
-Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, and Kimi Code inspect and operate your running Cocos project.
+Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, Kimi Code, and OpenCode inspect and operate your running Cocos project.
 
 The package follows the same product direction as Funplay MCP for Unity: keep the default tool surface focused, provide a one-click client configuration window, and make one high-flexibility execution tool the primary workflow.
 
@@ -236,6 +236,26 @@ url = "http://127.0.0.1:8765/"
 
 </details>
 
+<details>
+<summary>OpenCode</summary>
+
+The global config lives in `$XDG_CONFIG_HOME/opencode/opencode.json` or `~/.config/opencode/opencode.json` on every platform (`opencode.jsonc` also works).
+
+One-click configuration prefers an existing `opencode.jsonc`. It supports comments and trailing commas in either file, preserves unrelated settings and comments, and leaves malformed or ambiguous configurations unchanged.
+
+```json
+{
+  "mcp": {
+    "funplay_cocos": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8765/"
+    }
+  }
+}
+```
+
+</details>
+
 ### Optional: npm stdio Wrapper
 
 If your MCP client prefers a local `stdio` command, install the npm wrapper after starting the Cocos editor server:
@@ -308,7 +328,7 @@ Try a higher-level prompt in your AI client:
 
 - **`execute_javascript` First** — One high-flexibility JavaScript tool can orchestrate scene/runtime work and editor-side automation without flooding AI clients with too many narrow tool calls
 - **Embedded Cocos Extension** — No separate Python daemon or external bridge process is required for the Cocos-side plugin
-- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Kiro, Qoder, Kimi Code, and Codex directly from Cocos Creator
+- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Kiro, Qoder, Kimi Code, Codex, and OpenCode directly from Cocos Creator
 - **Project Context Built In** — Exposes live project, scene, selection, script diagnostics, logs, and interaction-history resources
 - **Focused by Default, Full When Needed** — `core` reduces tool-list noise; `full` exposes every available tool; `custom` plus saved profiles lets you tune and restore tool exposure by category or tool
 - **Visual Validation** — Scene/editor/preview screenshots and input simulation help AI verify UI and gameplay changes
