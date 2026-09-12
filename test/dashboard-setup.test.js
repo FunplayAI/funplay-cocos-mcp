@@ -1,8 +1,13 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const test = require('node:test');
 const { createPanel } = require('../panel/shared');
+const { buildTargets, configureTarget, getTargetStatuses } = require('../lib/client-config');
+const { getProjectSkillsState, updateBuiltInProjectSkill } = require('../lib/project-skills');
 
 function element(value = '') {
   const classes = new Set();
@@ -113,3 +118,54 @@ test('OpenCode Configure + Skills routes every setup action to the selected clie
   assert.deepEqual(calls[1].args, ['opencode']);
   assert.deepEqual(calls[2].args, [{ skillName: 'workflow', clientId: 'opencode', onlyIfMissing: true }]);
 });
+
+for (const clientId of ['claude_code', 'opencode']) {
+  test(`${clientId} Configure + Skills installs real files without Object.hasOwn`, async (t) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-setup-compat-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const projectPath = path.join(root, 'project');
+    fs.mkdirSync(path.join(projectPath, '.git'), { recursive: true });
+    const config = { host: '127.0.0.1', port: 23456, projectPath };
+    const options = { homePath: path.join(root, 'client-home'), env: {}, platform: process.platform };
+    let target = buildTargets(config, options).find((item) => item.id === clientId);
+    if (clientId === 'opencode') {
+      const jsoncPath = target.configPath.replace(/\.json$/, '.jsonc');
+      fs.mkdirSync(path.dirname(jsoncPath), { recursive: true });
+      fs.writeFileSync(jsoncPath, '// preserve preference\n{"theme":"dark","mcp":{},}\n');
+      target = buildTargets(config, options).find((item) => item.id === clientId);
+    }
+    const { panel, calls } = fixture(t, (name, args) => {
+      if (name === 'get-project-skills-state') return getProjectSkillsState(projectPath, args);
+      if (name === 'configure-client') return configureTarget(config, args, options);
+      if (name === 'install-or-update-project-skill') return updateBuiltInProjectSkill(projectPath, args);
+      throw new Error(`Unexpected request: ${name}`);
+    });
+    panel.$.clientTargetSelect.value = clientId;
+    panel.state.clientTargets = [target];
+    panel.state.projectSkillsByClient = { [clientId]: getProjectSkillsState(projectPath, { clientId }) };
+
+    // This test file is process-isolated and its tests run sequentially. Restore
+    // the API in finally after the asynchronous panel setup has finished.
+    const descriptor = Object.getOwnPropertyDescriptor(Object, 'hasOwn');
+    try {
+      delete Object.hasOwn;
+      await panel.configureClientSetup(true);
+      assert.equal(getTargetStatuses(config, options).find((item) => item.id === clientId).configured, true);
+      const installed = getProjectSkillsState(projectPath, { clientId }).builtIns;
+      assert.equal(installed.length, 2);
+      assert.ok(installed.every((skill) => skill.status === 'current' && skill.manifest.valid));
+      assert.equal(calls.filter((call) => call.name === 'install-or-update-project-skill').length, 2);
+      assert.equal(panel.$.clientActionStatus.className, 'action-status success');
+      const written = fs.readFileSync(target.configPath, 'utf8');
+      if (clientId === 'opencode') assert.ok(written.startsWith('// preserve preference\n'));
+      await panel.configureClientSetup(true);
+      assert.equal(fs.readFileSync(target.configPath, 'utf8'), written);
+      assert.equal(calls.filter((call) => call.name === 'install-or-update-project-skill').length, 2);
+      assert.equal(panel.$.clientActionStatus.className, 'action-status success');
+      assert.equal(panel.configuringClient, false);
+      assert.equal(panel.$.configureWithSkillsBtn.disabled, false);
+    } finally {
+      if (descriptor) Object.defineProperty(Object, 'hasOwn', descriptor);
+    }
+  });
+}

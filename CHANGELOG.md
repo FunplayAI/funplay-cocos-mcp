@@ -6,6 +6,10 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `Object.hasOwn is not a function` in older Cocos Creator editor runtimes (reported on 3.8.3), affecting Configure + Skills, JSONC configuration, and project prompts. Use compatible own-property checks while retaining duplicate-key validation and concurrent-edit protection. Contributed in [#21](https://github.com/FunplayAI/funplay-cocos-mcp/pull/21).
+
 ## [0.6.2] - 2026-09-11
 
 ### Added
