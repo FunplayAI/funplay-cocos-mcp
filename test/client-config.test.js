@@ -292,3 +292,52 @@ test('OpenCode config writes retain a symlink and the real file permissions', (t
   assert.ok(fs.readFileSync(actual, 'utf8').includes('/* keep */'));
   assert.equal(getTargetStatuses(OPENCODE_CONFIG, options).find((target) => target.id === 'opencode').configured, true);
 });
+
+const WINDOWS_PROJECT_PATH = ['D:', 'repos', 'game'].join('\\');
+
+test('Claude Code scope path uses forward slashes on Windows', (t) => {
+  const options = { ...createTargetOptions(t), platform: 'win32' };
+  const config = { ...CONFIG, projectPath: WINDOWS_PROJECT_PATH };
+  const target = buildTargets(config, options).find((item) => item.id === 'claude_code');
+
+  assert.equal(target.scopePath, 'D:/repos/game');
+});
+
+test('Claude Code scope path is left untouched on POSIX', (t) => {
+  const options = { ...createTargetOptions(t), platform: 'linux' };
+  const projectPath = path.join(options.homePath, 'game');
+  const target = buildTargets({ ...CONFIG, projectPath }, options).find((item) => item.id === 'claude_code');
+
+  // path.resolve is host-specific, so assert the separator is untranslated rather than a literal path.
+  assert.equal(target.scopePath, path.resolve(projectPath));
+});
+
+test('Claude Code reuses a project key that differs only by drive-letter case', (t) => {
+  const options = { ...createTargetOptions(t), platform: 'win32' };
+  const configPath = path.join(options.homePath, '.claude.json');
+  fs.writeFileSync(configPath, JSON.stringify({
+    projects: { 'd:/repos/game': { mcpServers: { existing: { type: 'http', url: 'http://127.0.0.1:1/' } } } },
+  }, null, 2));
+
+  const config = { ...CONFIG, projectPath: WINDOWS_PROJECT_PATH };
+  const result = configureTarget(config, 'claude_code', options);
+  const written = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+  assert.deepEqual(Object.keys(written.projects), ['d:/repos/game']);
+  assert.equal(written.projects['d:/repos/game'].mcpServers.existing.url, 'http://127.0.0.1:1/');
+  assert.deepEqual(written.projects['d:/repos/game'].mcpServers[result.serverName], {
+    type: 'http',
+    url: 'http://127.0.0.1:8765/',
+  });
+});
+
+test('Claude Code creates a forward-slash project key when none exists', (t) => {
+  const options = { ...createTargetOptions(t), platform: 'win32' };
+  const configPath = path.join(options.homePath, '.claude.json');
+  const config = { ...CONFIG, projectPath: WINDOWS_PROJECT_PATH };
+  const result = configureTarget(config, 'claude_code', options);
+  const written = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+  assert.deepEqual(Object.keys(written.projects), ['D:/repos/game']);
+  assert.ok(written.projects['D:/repos/game'].mcpServers[result.serverName]);
+});
