@@ -6,6 +6,10 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Claude Code one-click configuration on Windows by writing forward-slash project scope paths and reusing existing scope keys regardless of drive-letter case. Contributed in [#22](https://github.com/FunplayAI/funplay-cocos-mcp/pull/22).
+
 ## [0.6.3] - 2026-09-12
 
 ### Fixed
