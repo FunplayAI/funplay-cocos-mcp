@@ -10,6 +10,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 - Fixed Claude Code one-click configuration on Windows by writing forward-slash project scope paths and reusing existing scope keys regardless of drive-letter case. Contributed in [#22](https://github.com/FunplayAI/funplay-cocos-mcp/pull/22).
 
+## [0.6.3] - 2026-09-12
+
+### Fixed
+
+- Fixed `Object.hasOwn is not a function` in older Cocos Creator editor runtimes (reported on 3.8.3), affecting Configure + Skills, JSONC configuration, and project prompts. Use compatible own-property checks while retaining duplicate-key validation and concurrent-edit protection. Contributed in [#21](https://github.com/FunplayAI/funplay-cocos-mcp/pull/21).
+
 ## [0.6.2] - 2026-09-11
 
 ### Added
