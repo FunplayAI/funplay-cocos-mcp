@@ -295,8 +295,19 @@ test('OpenCode config writes retain a symlink and the real file permissions', (t
 
 const WINDOWS_PROJECT_PATH = ['D:', 'repos', 'game'].join('\\');
 
+function createWindowsTargetOptions(t) {
+  return {
+    ...createTargetOptions(t),
+    platform: 'win32',
+    resolveGitRoot(projectPath) {
+      assert.equal(projectPath, WINDOWS_PROJECT_PATH);
+      return WINDOWS_PROJECT_PATH;
+    },
+  };
+}
+
 test('Claude Code scope path uses forward slashes on Windows', (t) => {
-  const options = { ...createTargetOptions(t), platform: 'win32' };
+  const options = createWindowsTargetOptions(t);
   const config = { ...CONFIG, projectPath: WINDOWS_PROJECT_PATH };
   const target = buildTargets(config, options).find((item) => item.id === 'claude_code');
 
@@ -313,7 +324,7 @@ test('Claude Code scope path is left untouched on POSIX', (t) => {
 });
 
 test('Claude Code reuses a project key that differs only by drive-letter case', (t) => {
-  const options = { ...createTargetOptions(t), platform: 'win32' };
+  const options = createWindowsTargetOptions(t);
   const configPath = path.join(options.homePath, '.claude.json');
   fs.writeFileSync(configPath, JSON.stringify({
     projects: { 'd:/repos/game': { mcpServers: { existing: { type: 'http', url: 'http://127.0.0.1:1/' } } } },
@@ -332,7 +343,7 @@ test('Claude Code reuses a project key that differs only by drive-letter case', 
 });
 
 test('Claude Code creates a forward-slash project key when none exists', (t) => {
-  const options = { ...createTargetOptions(t), platform: 'win32' };
+  const options = createWindowsTargetOptions(t);
   const configPath = path.join(options.homePath, '.claude.json');
   const config = { ...CONFIG, projectPath: WINDOWS_PROJECT_PATH };
   const result = configureTarget(config, 'claude_code', options);
