@@ -54,11 +54,15 @@ async function main() {
 
 async function bridgeStdioToHttp({ input, output, endpoint, timeoutMs }) {
   let sessionId = '';
+  let activeFraming = 'content-length';
 
   while (true) {
-    const message = await readMessage(input);
+    const { message, framing } = await readMessage(input);
     if (message === null) {
       return;
+    }
+    if (framing) {
+      activeFraming = framing;
     }
 
     let parsed = null;
@@ -67,7 +71,7 @@ async function bridgeStdioToHttp({ input, output, endpoint, timeoutMs }) {
       parsed = JSON.parse(message);
       requestId = getRequestId(parsed);
     } catch (error) {
-      await writeJsonRpcError(output, null, -32700, 'Parse error');
+      await writeJsonRpcError(output, null, -32700, 'Parse error', activeFraming);
       continue;
     }
 
@@ -83,7 +87,7 @@ async function bridgeStdioToHttp({ input, output, endpoint, timeoutMs }) {
       }
 
       if (response.statusCode >= 200 && response.statusCode < 300 && response.body.trim()) {
-        await writeMessage(output, response.body);
+        await writeMessage(output, response.body, activeFraming);
         continue;
       }
 
@@ -95,12 +99,12 @@ async function bridgeStdioToHttp({ input, output, endpoint, timeoutMs }) {
         const messageText = response.body.trim()
           ? `Cocos MCP server returned HTTP ${response.statusCode}: ${response.body}`
           : `Cocos MCP server returned HTTP ${response.statusCode}.`;
-        await writeJsonRpcError(output, requestId, -32000, messageText);
+        await writeJsonRpcError(output, requestId, -32000, messageText, activeFraming);
       }
     } catch (error) {
       console.error(`[Funplay Cocos MCP] ${error.message}`);
       if (requestId !== null) {
-        await writeJsonRpcError(output, requestId, -32000, `Proxy transport error: ${error.message}`);
+        await writeJsonRpcError(output, requestId, -32000, `Proxy transport error: ${error.message}`, activeFraming);
       }
     }
   }
@@ -165,7 +169,7 @@ function isNotification(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value) && value.method && !Object.prototype.hasOwnProperty.call(value, 'id'));
 }
 
-async function writeJsonRpcError(output, id, code, message) {
+async function writeJsonRpcError(output, id, code, message, framing = 'content-length') {
   await writeMessage(output, JSON.stringify({
     jsonrpc: '2.0',
     id,
@@ -173,7 +177,7 @@ async function writeJsonRpcError(output, id, code, message) {
       code,
       message
     }
-  }));
+  }), framing);
 }
 
 async function readMessage(input) {
@@ -182,7 +186,16 @@ async function readMessage(input) {
   while (true) {
     const line = await readHeaderLine(input);
     if (line === null) {
-      return headers.size === 0 ? null : Promise.reject(new Error('Unexpected EOF while reading MCP headers.'));
+      if (headers.size === 0) {
+        return { message: null, framing: 'content-length' };
+      }
+      return Promise.reject(new Error('Unexpected EOF while reading MCP headers.'));
+    }
+
+    const trimmed = line.trim();
+    if (headers.size === 0 && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
+      // Direct NDJSON line (standard MCP stdio specification)
+      return { message: trimmed, framing: 'ndjson' };
     }
 
     if (line === '') {
@@ -203,7 +216,7 @@ async function readMessage(input) {
   }
 
   const payload = await readExact(input, contentLength);
-  return payload.toString('utf8');
+  return { message: payload.toString('utf8'), framing: 'content-length' };
 }
 
 function readHeaderLine(input) {
@@ -224,7 +237,7 @@ function readHeaderLine(input) {
           if (chunks.length > 0 && chunks[chunks.length - 1][0] === 0x0d) {
             chunks.pop();
           }
-          resolve(Buffer.concat(chunks).toString('ascii'));
+          resolve(Buffer.concat(chunks).toString('utf8'));
           return;
         }
         chunks.push(byte);
@@ -233,7 +246,7 @@ function readHeaderLine(input) {
 
     function onEnd() {
       cleanup();
-      resolve(chunks.length === 0 ? null : Buffer.concat(chunks).toString('ascii'));
+      resolve(chunks.length === 0 ? null : Buffer.concat(chunks).toString('utf8'));
     }
 
     function onError(error) {
@@ -289,9 +302,27 @@ function readExact(input, length) {
   });
 }
 
-function writeMessage(output, json) {
-  const payload = Buffer.from(json, 'utf8');
+function writeMessage(output, json, framing = 'content-length') {
+  const body = framing === 'ndjson' ? JSON.stringify(JSON.parse(json)) : json;
+  const payload = Buffer.from(body, 'utf8');
   return new Promise((resolve, reject) => {
+    if (framing === 'ndjson') {
+      output.write(payload, (payloadError) => {
+        if (payloadError) {
+          reject(payloadError);
+          return;
+        }
+        output.write('\n', (newlineError) => {
+          if (newlineError) {
+            reject(newlineError);
+            return;
+          }
+          resolve();
+        });
+      });
+      return;
+    }
+
     output.write(`Content-Length: ${payload.length}\r\n\r\n`, 'ascii', (headerError) => {
       if (headerError) {
         reject(headerError);
