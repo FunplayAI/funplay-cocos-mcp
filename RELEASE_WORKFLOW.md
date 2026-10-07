@@ -349,18 +349,25 @@ Fix:
 - Rerun `npm run release:check`.
 - Confirm the command uses `releases/<version>/` and `v<version>`.
 
-### npm `ENEEDAUTH`
+### npm workflow returns `ENEEDAUTH`
 
 Cause:
 
-- The local machine is not logged in to npm.
+- The npm trusted publisher is missing or does not exactly match the GitHub
+  repository and workflow filename.
 
 Fix:
 
 ```bash
-npm adduser
-npm publish
+npm trust list funplay-cocos-mcp
+gh workflow run publish-npm.yml \
+  -R FunplayAI/funplay-cocos-mcp \
+  -f version=<version>
 ```
+
+Confirm the trust entry uses repository `FunplayAI/funplay-cocos-mcp`, workflow
+`publish-npm.yml`, and allows `npm publish`. Recreate the entry on npmjs.com or
+with `npm trust github` if any of those fields differ.
 
 ### MCP Registry `Package validation failed`
 
