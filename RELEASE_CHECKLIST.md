@@ -68,7 +68,8 @@ Use this checklist before publishing a new release of Funplay MCP for Cocos.
 - [ ] `server.json` npm package identifier and version match `package.json`
 - [ ] `server.json` npm transport type is `stdio`
 - [ ] npm package dry-run includes `bin/`, `lib/`, `panel/`, `browser.js`, `scene.js`, and `server.json`
-- [ ] npm credentials are available for `npm publish`
+- [ ] npm Trusted Publishing authorizes `FunplayAI/funplay-cocos-mcp` and `publish-npm.yml` for `npm publish`
+- [ ] The npm publishing workflow has `id-token: write` permission and uses a supported Node/npm version
 - [ ] The MCP Registry OIDC workflow has `id-token: write` permission
 
 ## 7. GitHub Release Readiness
@@ -89,9 +90,9 @@ Use this checklist before publishing a new release of Funplay MCP for Cocos.
 - [ ] Create or update the GitHub Release
 - [ ] Upload generated release assets
 - [ ] Verify the GitHub Release asset list
-- [ ] Publish npm package with `npm publish`
+- [ ] Verify `publish-npm.yml` publishes the npm package through GitHub OIDC
 - [ ] Verify npm package with `npm view funplay-cocos-mcp@<version>`
-- [ ] Publish MCP Registry metadata with the `publish-mcp-registry.yml` OIDC workflow
+- [ ] Verify `publish-mcp-registry.yml` waits for npm and publishes MCP Registry metadata through GitHub OIDC
 - [ ] Verify MCP Registry latest and specific-version endpoints
 
 ## 9. Post-Release

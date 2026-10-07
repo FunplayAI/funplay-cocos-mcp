@@ -1,0 +1,91 @@
+name: Publish npm
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, without the leading v
+        required: true
+        type: string
+
+concurrency:
+  group: publish-npm-${{ github.event.release.tag_name || inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Resolve version
+        id: version
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ -n "$RELEASE_TAG" ]]; then
+            version="${RELEASE_TAG#v}"
+          else
+            version="$INPUT_VERSION"
+          fi
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version: $version" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: v${{ steps.version.outputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Verify release metadata
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          server_version="$(jq -r '.version' server.json)"
+          server_package_version="$(jq -r '.packages[] | select(.registryType == "npm") | .version' server.json)"
+
+          test "$package_version" = "$VERSION"
+          test "$server_version" = "$VERSION"
+          test "$server_package_version" = "$VERSION"
+          git tag --points-at HEAD | grep -Fx "v$VERSION"
+
+      - name: Verify package
+        run: |
+          npm run check
+          npm test
+          npm run docs:check
+          npm run release:check
+          npm run pack:dry-run
+
+      - name: Publish package with npm Trusted Publishing
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          if npm view "${package_name}@${VERSION}" version >/dev/null 2>&1; then
+            echo "${package_name}@${VERSION} is already published."
+            exit 0
+          fi
+
+          npm publish --access public

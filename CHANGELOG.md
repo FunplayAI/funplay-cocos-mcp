@@ -6,9 +6,11 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-10-07
+
 ### Fixed
 
-- Fixed stdio wrapper initialization with standard MCP clients by supporting newline-delimited UTF-8 JSON-RPC messages (NDJSON), while retaining the existing `Content-Length` framing. NDJSON responses are serialized on a single line.
+- Fixed stdio wrapper initialization with standard MCP clients by supporting newline-delimited UTF-8 JSON-RPC messages (NDJSON), while retaining the existing `Content-Length` framing. NDJSON responses are serialized on a single line. Contributed in [#23](https://github.com/FunplayAI/funplay-cocos-mcp/pull/23).
 
 ## [0.6.4] - 2026-09-19
 

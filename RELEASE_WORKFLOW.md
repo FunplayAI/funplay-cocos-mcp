@@ -223,8 +223,26 @@ Confirm the release has all five assets and the public release body is organized
 
 ### 8. Publish To npm
 
+Publishing the GitHub Release triggers `publish-npm.yml`. The workflow checks
+out the matching tag, reruns package verification, and publishes with npm
+Trusted Publishing (GitHub OIDC). It does not use a saved npm token and npm
+automatically records provenance.
+
+The npm package must have this trusted publisher configured once on npmjs.com:
+
+- Organization/user: `FunplayAI`
+- Repository: `funplay-cocos-mcp`
+- Workflow: `publish-npm.yml`
+- Allowed action: `npm publish`
+
+The equivalent one-time npm CLI command is:
+
 ```bash
-npm publish
+npm trust github funplay-cocos-mcp \
+  --repo FunplayAI/funplay-cocos-mcp \
+  --file publish-npm.yml \
+  --allow-publish \
+  --yes
 ```
 
 Verify the published package:
@@ -236,13 +254,17 @@ npm view funplay-cocos-mcp@<version> version bin mcpName
 Notes:
 
 - `package.json` `mcpName` must match `server.json` `name`.
-- If `npm publish` returns `ENEEDAUTH`, run `npm adduser` with a publishing account and retry.
+- Trusted Publishing requires npm CLI 11.5.1 or newer, Node.js 22.14.0 or newer, and a GitHub-hosted runner. The workflow uses Node.js 24.
+- If the workflow returns `ENEEDAUTH`, confirm the npm trusted publisher's repository and workflow filename match exactly.
 - If the package name already exists under another owner, choose a scoped package name and update both `package.json` and `server.json`.
 
 ### 9. Publish To MCP Registry
 
-The preferred organization-safe path is the GitHub Actions OIDC workflow. It
-uses the repository identity and does not require a saved Registry token:
+Publishing the GitHub Release also triggers `publish-mcp-registry.yml`. It waits
+for the npm package to become publicly indexed, then publishes with GitHub OIDC
+without a saved Registry token.
+
+For a manual retry:
 
 ```bash
 gh workflow run publish-mcp-registry.yml \
