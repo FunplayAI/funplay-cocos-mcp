@@ -281,6 +281,8 @@ Example MCP client entry:
 
 The wrapper bridges stdio MCP traffic to the embedded Cocos HTTP endpoint. You can also run it with `npx funplay-cocos-mcp --url http://127.0.0.1:8765/`.
 
+The stdio transport supports standard newline-delimited UTF-8 JSON-RPC messages (NDJSON). The wrapper also accepts the existing `Content-Length` framing and writes responses using the same framing as the incoming message.
+
 ### 4. Verify the Connection
 
 Open your AI client and try a few safe requests first:

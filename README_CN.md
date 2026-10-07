@@ -281,6 +281,8 @@ npm install -g funplay-cocos-mcp
 
 这个 wrapper 会把 stdio MCP 流量桥接到 Cocos 内置 HTTP endpoint。也可以直接运行 `npx funplay-cocos-mcp --url http://127.0.0.1:8765/`。
 
+stdio 传输支持标准的换行分隔 UTF-8 JSON-RPC 消息（NDJSON）。wrapper 同时接受原有的 `Content-Length` 分帧格式，并使用与输入消息相同的分帧格式返回响应。
+
 ### 4. 验证连接
 
 先在 AI 客户端里试几个安全请求：

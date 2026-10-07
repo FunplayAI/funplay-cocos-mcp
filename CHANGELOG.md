@@ -6,6 +6,10 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed stdio wrapper initialization with standard MCP clients by supporting newline-delimited UTF-8 JSON-RPC messages (NDJSON), while retaining the existing `Content-Length` framing. NDJSON responses are serialized on a single line.
+
 ## [0.6.4] - 2026-09-19
 
 ### Fixed
