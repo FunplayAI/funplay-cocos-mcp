@@ -36,6 +36,27 @@ function fixture(t, mode = 'dashboard') {
   return { definition, panel };
 }
 
+function noticeClock(t) {
+  let now = 0;
+  let nextId = 0;
+  const timers = new Map();
+  // Node 20's experimental MockTimers throws on clearTimeout(undefined) or an
+  // already-fired timer; real browser timers allow both. Keep this UI fixture
+  // deterministic without relying on that version-specific implementation.
+  t.mock.method(global, 'setTimeout', (callback, delay) => {
+    const id = ++nextId;
+    timers.set(id, { callback, due: now + delay });
+    return id;
+  });
+  t.mock.method(global, 'clearTimeout', (id) => { timers.delete(id); });
+  return { tick(milliseconds) {
+    now += milliseconds;
+    for (const [id, timer] of [...timers]) {
+      if (timer.due <= now && timers.delete(id)) timer.callback();
+    }
+  } };
+}
+
 test('only the dashboard retains Recent Activity; Output and the standalone log window stay removed', (t) => {
   fixture(t);
   assert.deepEqual(Object.keys(manifest.panels).sort(), ['default', 'project-skills', 'settings', 'tool-exposure']);
@@ -160,22 +181,22 @@ test('clearing Recent Activity uses a dedicated action, not clear_logs', async (
 });
 
 test('success notices dismiss automatically and never dump raw results', (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const clock = noticeClock(t);
   const { panel } = fixture(t);
   panel.showNotice({ secret: 'do-not-display', content: 'raw result' });
   assert.equal(panel.$.panelNotice.hidden, false);
   assert.equal(panel.$.panelNoticeText.textContent, '操作已完成。');
   assert.equal(panel.$.panelNotice.getAttribute('role'), 'status');
-  t.mock.timers.tick(4500);
+  clock.tick(4500);
   assert.equal(panel.$.panelNotice.hidden, true);
 });
 
 test('errors cancel pending success dismissal and remain until dismissed', (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const clock = noticeClock(t);
   const { definition, panel } = fixture(t);
   panel.showNotice('已保存');
   panel.showNotice('保存失败，请重试', 'error');
-  t.mock.timers.tick(10000);
+  clock.tick(10000);
   assert.equal(panel.$.panelNotice.hidden, false);
   assert.equal(panel.$.panelNotice.getAttribute('role'), 'alert');
   assert.equal(panel.$.panelNoticeText.textContent, '保存失败，请重试');

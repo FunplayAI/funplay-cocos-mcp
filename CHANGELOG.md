@@ -6,6 +6,24 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-10-10
+
+### Added
+
+- Added read-only `check_asset_ready` in the Full profile: bounded native Asset Database queries confirm an exact asset's imported metadata and stable UUID/URL identity. Database readiness does not imply script compilation, an empty import queue, or runtime loading.
+- Added screenshot calibration metadata, including `captureId`, actual PNG dimensions, viewport zoom/DPR, and crop origin. Mouse click/drag and preview input support opt-in `image-pixels` coordinates, bound to the captured window and project. Stale or changed geometry is rejected; interrupted input reports uncertain delivery and attempts to release a held button without replaying.
+
+### Changed
+
+- Upgraded both built-in project Skills to v3 with concise entrypoints and on-demand Cocos-specific references for readiness, layout, nine-slice/importer settings, fonts/localization, and input validation. Preserve project baselines; do not proactively add SafeArea containers, scripts, or inset adjustments.
+- Project Skills version checks, diffs, backups, and restore now include managed reference files across all six supported clients, while preserving unrelated files and refusing to overwrite user-owned reference destinations.
+- Screenshot MCP responses retain native image content and add calibration text/structured metadata without duplicating Base64 in structured results or Recent Activity. Legacy mouse coordinate semantics remain unchanged; explicit unavailable window targets no longer fall back to another window.
+
+### Fixed
+
+- Game View screenshot cropping now prefers Creator's native preview WebView over text-matched toolbar elements, preserving the actual game render area and its calibrated input origin. Scene screenshots prefer the visible edit WebView; hidden, not-yet-ready, or ambiguous native viewport matches are rejected.
+- Native mouse input now supplies screen coordinates and consistent pressed-button flags, allowing Creator's Game View to receive actual button clicks and the complete drag start/move/end chain without changing legacy coordinate semantics.
+
 ## [0.6.5] - 2026-10-07
 
 ### Fixed

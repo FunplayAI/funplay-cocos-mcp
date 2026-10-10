@@ -161,6 +161,18 @@ test('tool object results include structuredContent', async () => {
   assert.equal(response.result.content[0].type, 'text');
 });
 
+test('screenshot responses include native pixels plus small calibration text and structured data', async () => {
+  const value = { ok: true, data: { captureId: 'capture_test', geometry: { image: { width: 100, height: 50 } } } };
+  const server = createServer({ callToolDetailed: async () => ({
+    value, text: 'data:image/png;base64,AAAA', metadataText: JSON.stringify(value),
+  }) });
+  const response = await server.handleRpcRequest({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'capture_editor_screenshot' } });
+  assert.deepEqual(response.result.content[0], { type: 'image', data: 'AAAA', mimeType: 'image/png' });
+  assert.deepEqual(JSON.parse(response.result.content[1].text), value);
+  assert.deepEqual(response.result.structuredContent, value);
+  assert.equal(JSON.stringify(response.result.structuredContent).includes('AAAA'), false);
+});
+
 test('structuredContent sanitizes circular values', async () => {
   const value = { ok: true };
   value.self = value;

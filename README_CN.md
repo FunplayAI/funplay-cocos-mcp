@@ -313,11 +313,11 @@ curl http://127.0.0.1:8765/tools
 - 新项目使用稳定的项目独立端口；MCP Server 面板会显示实际地址，也支持固定端口。
 - 如果配置端口被占用，服务会先通过项目身份识别同项目已有 listener；无法确认同项目时才会自动回退到下一个可用端口，面板与一键客户端配置会使用实际运行端口。
 - `GET /health` 和 `GET /tools` 是只读调试端点，方便不用 MCP 客户端也能快速检查本地服务。
-- 默认 `core` profile 暴露 39 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 105 个工具；也可以用 `custom` 按分类或工具名增删。
+- 默认 `core` profile 暴露 39 个高频工具；如果需要完整工具集，可在面板切到 `full`，暴露全部 106 个工具；也可以用 `custom` 按分类或工具名增删。
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
-- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code。选择客户端后可查看对应托管目录、版本、差异、本地修改、备份和恢复操作。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
+- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code、OpenCode。内置 v3 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。
@@ -337,11 +337,11 @@ curl http://127.0.0.1:8765/tools
 
 ## 核心特性
 
-- **105 个内置工具** — 覆盖场景层级、编辑器状态、选择工作流、Prefab、资产、资产依赖、项目指令、UI 创建、组件、文件、日志、脚本诊断、截图、运行态控制、构建/预览辅助、编辑器偏好、事件绑定和输入模拟
+- **106 个内置工具** — 覆盖场景层级、编辑器状态、选择工作流、Prefab、资产、资产依赖、项目指令、UI 创建、组件、文件、日志、脚本诊断、截图、运行态控制、构建/预览辅助、编辑器偏好、事件绑定和输入模拟
 - **统一主工具** — `execute_javascript` 同时支持 `scene` 和 `editor` 两种上下文
 - **Resources 与 Prompts** — 实时项目/日志资源，以及脚本修复、场景验证、可玩原型等可复用工作流
 - **Cocos 图形面板** — `Funplay > MCP Server` 是精简 Dashboard，并提供 Tool Exposure、MCP Settings、Project Skills 子窗口承载复杂工作流
-- **截图与输入支持** — 支持编辑器/场景/Game/Preview 截图，以及 Electron 级鼠标键盘事件
+- **截图与输入支持** — 支持编辑器/场景/Game/Preview 截图，以及 Electron 级鼠标键盘事件；鼠标点击和拖拽可绑定新截图的 `captureId`，使用实际 PNG 像素坐标
 - **厂商无关** — 兼容任意支持 HTTP JSON-RPC MCP 的 AI 客户端
 
 ## 与 Funplay MCP for Unity 的关系
@@ -355,14 +355,14 @@ Funplay MCP for Cocos 延续 Funplay MCP for Unity 的设计原则，并针对 C
 | 主执行工具 | `execute_javascript` | `execute_code` |
 | 主语言 | 场景/编辑器上下文中的 JavaScript | Unity 编辑器/运行态中的 C# |
 | 默认工具集 | `core`，39 个工具 | 聚焦版 `core` 工具集 |
-| 完整工具集 | 105 个工具，并支持 `custom` 暴露 | 79 个工具 |
+| 完整工具集 | 106 个工具，并支持 `custom` 暴露 | 79 个工具 |
 | 客户端配置 | 一键配置面板 | 一键配置窗口 |
 
 ## MCP 能力结构
 
 当前包提供四层能力：
 
-- **Tools** — `core` 下 39 个工具，`full` 下 105 个工具，并支持 `custom` include/exclude 规则和命名工具 profile
+- **Tools** — `core` 下 39 个工具，`full` 下 106 个工具，并支持 `custom` include/exclude 规则和命名工具 profile
 - **Primary execution** — `execute_javascript` 用于场景/运行态和编辑器/browser 自动化
 - **Prompts** — `fix_script_errors`、`create_playable_prototype`、`scene_validation`、`auto_wire_scene`，以及从 `mcp-prompts/*.md` 读取的带参数项目工作流。详见[项目隔离、Skills 与工作流配置](docs/PROJECT_WORKFLOWS.md)。
 - **Resources** — 项目上下文、场景摘要、当前选择、脚本诊断、资产选择、日志和 MCP 交互历史
@@ -415,7 +415,7 @@ Game View 通过原生预览工具栏启动，手动暂停/恢复按钮会保持
 
 ## 内置工具
 
-Funplay MCP for Cocos 当前在 `full` profile 下提供 **105 个工具函数**：
+Funplay MCP for Cocos 当前在 `full` profile 下提供 **106 个工具函数**：
 
 | 分类 | 工具 |
 |------|------|
@@ -424,7 +424,7 @@ Funplay MCP for Cocos 当前在 `full` profile 下提供 **105 个工具函数**
 | **项目指令** | `list_project_instructions`, `read_project_instruction`, `write_project_instruction`, `create_project_skill`, `create_cocos_mcp_project_skill` |
 | **项目与场景** | `get_project_info`, `get_scene_info`, `get_hierarchy`, `find_nodes`, `inspect_node`, `list_scenes`, `open_scene`, `run_scene_asset` |
 | **节点编辑** | `create_node`, `delete_node`, `set_node_transform` |
-| **资产与 Prefab** | `list_assets`, `inspect_asset`, `inspect_asset_dependencies`, `validate_asset_dependencies`, `open_asset`, `select_asset`, `delete_asset`, `list_prefabs`, `inspect_prefab`, `validate_prefab_references`, `duplicate_prefab`, `edit_prefab_json`, `create_prefab_from_node`, `create_prefab_instance`, `inspect_prefab_instance`, `apply_prefab_instance`, `revert_prefab_instance`, `instantiate_prefab` |
+| **资产与 Prefab** | `list_assets`, `inspect_asset`, `inspect_asset_dependencies`, `validate_asset_dependencies`, `check_asset_ready`, `open_asset`, `select_asset`, `delete_asset`, `list_prefabs`, `inspect_prefab`, `validate_prefab_references`, `duplicate_prefab`, `edit_prefab_json`, `create_prefab_from_node`, `create_prefab_instance`, `inspect_prefab_instance`, `apply_prefab_instance`, `revert_prefab_instance`, `instantiate_prefab` |
 | **组件** | `list_components`, `inspect_component`, `add_component`, `remove_component`, `set_component_property`, `reset_component_property` |
 | **UI** | `create_canvas`, `create_label`, `create_button`, `create_sprite` |
 | **相机** | `list_cameras`, `create_camera`, `set_camera_properties` |

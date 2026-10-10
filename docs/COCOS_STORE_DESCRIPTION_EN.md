@@ -9,7 +9,7 @@ Unlike an assistant that can only analyze project files, Funplay MCP for Cocos c
 ### Key Features
 
 - **Unified JavaScript execution**: Use `execute_javascript` in scene or editor context to combine operations such as creating UI, editing nodes, inspecting runtime state, and automating repetitive editor tasks.
-- **105 built-in tools**: Covers scenes and nodes, components, assets and prefabs, files, logs, script diagnostics, screenshots, runtime state, builds, previews, event binding, and input simulation.
+- **106 built-in tools**: Covers scenes and nodes, components, assets and prefabs, files, logs, script diagnostics, screenshots, runtime state, builds, previews, event binding, and input simulation.
 - **Live editor context**: Read the current project, active scene, hierarchy, selection, asset metadata, script errors, editor logs, and recent MCP activity.
 - **Scene and asset automation**: Create and open scenes, inspect or edit nodes and components, create prefabs, analyze asset dependencies, validate prefab references, and refresh the asset database.
 - **Preview and visual verification**: Use Browser Preview, Editor Game View, or Simulator Preview; retrieve the browser preview URL and verify results with editor, scene, or preview screenshots.

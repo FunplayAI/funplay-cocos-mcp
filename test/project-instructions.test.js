@@ -77,7 +77,9 @@ test('createCocosUiProjectSkill writes the responsive Cocos UI composition skill
   assert.match(content, /`Widget`/);
   assert.match(content, /`SafeArea`/);
   assert.match(content, /do not rebuild the entire prefab unless explicitly requested/);
-  assert.match(content, /Putting Layout and Widget on the same node/);
+  const referencePath = path.join(path.dirname(result.path), 'references', 'layout-and-adaptation.md');
+  assert.match(readProjectInstruction(projectPath, referencePath).content, /Putting Layout and Widget on the same node/);
+  assert.match(content, /\]\(references\/layout-and-adaptation.md\)/);
 });
 
 test('project instruction helpers reject traversal outside the project', () => {

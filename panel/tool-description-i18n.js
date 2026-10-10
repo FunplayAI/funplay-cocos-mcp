@@ -14,6 +14,7 @@ const ZH_TOOL_DESCRIPTIONS = {
   get_editor_state: '返回结构化编辑器状态快照，包括项目信息、运行时服务状态、当前选择和可见的 Electron 窗口。需要一份紧凑编辑器摘要时优先使用。',
   get_tool_catalog: '返回所有内置 MCP 工具及其 profile、分类和当前开放状态。修改自定义工具开放范围前使用。',
   check_for_updates: '检查最新的 Funplay Cocos MCP GitHub Release，并与当前安装版本比较。',
+  check_asset_ready: '有界检查 AssetDB 就绪状态；可核对指定资源已导入的 UUID/URL 身份及连续稳定读取。不证明导入队列、脚本编译、源文件内容或预览加载已完成。',
   get_selection: '以紧凑结构返回当前编辑器选择。下一步操作依赖选择状态时优先使用。',
   list_project_instructions: '列出项目 AI 指令文件和所选客户端的本地项目技能。',
   read_project_instruction: '读取 AGENTS.md、CLAUDE.md 或客户端技能目录下的 SKILL.md 等项目 AI 指令文件。',

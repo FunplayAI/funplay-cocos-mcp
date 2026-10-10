@@ -39,6 +39,48 @@ The manager detects the two built-in Skills in `.codex/skills` when their new `.
 
 New backups are stored alongside each client's Skills directory, under `skill-backups/<skill-name>/`. Updating one client's managed copy does not overwrite another client's managed copy.
 
+### Built-in v3 references
+
+Both built-ins now route from a concise `SKILL.md` to conditional references, instead of loading all specialist guidance on every task:
+
+- `funplay-cocos-mcp-workflow/references/project-readiness.md`: exact asset identity, separate import/compile/preview checks, and persistence.
+- `funplay-cocos-ui-composition/references/layout-and-adaptation.md`: design baselines, layout ownership, scrolling, and explicitly requested safe-area changes.
+- `references/sprites-and-importers.md`, `references/text-and-localization.md`, and `references/input-and-validation.md` in the UI Skill: nine-slice/importers, font/localization checks, and real input/visual validation respectively.
+
+The UI guidance preserves existing project composition and does not proactively introduce SafeArea containers, adaptation scripts, extra margins, or duplicate insets. New adaptation requires an explicit request or a demonstrated overlap confirmed with the user.
+
+Managed metadata tracks hashes for `SKILL.md` and each known reference. A missing/older reference prompts an update even when the entrypoint is current. Modified managed files require a confirmed backup update; an unowned conflicting reference is never overwritten, even with confirmation. Unrelated files are retained. Backups keep their existing `.md` entrypoint and add a `.md.files.json` companion for references and metadata; keep both files together for bundle restore. Legacy backups without a companion restore only the entrypoint. Each file write checks its read snapshot, but the bundle is not a cross-file filesystem transaction; a failed write must be reviewed before retrying.
+
+## Asset Database readiness
+
+Enable the Full profile (or explicitly expose `check_asset_ready` in a custom profile). Example tool arguments:
+
+```json
+{"target":"db://assets/ui/Main.prefab","waitMs":1500,"pollIntervalMs":100}
+```
+
+This read-only check uses native `query-ready`, asset-info, UUID, and URL queries. An exact target needs imported metadata, matching UUID/URL round trips, and two consecutive stable observations. Omitting `target` checks only database query readiness. `waitMs` is bounded to 0–10,000 ms; zero requests one bounded observation and cannot establish stable readiness. Busy, missing, importing, identity mismatch, timeout, unavailable, and unknown results are not success. No refresh or mutation is retried by this tool.
+
+`ready: true` is **not** proof that the importer queue is empty, source bytes are current, TypeScript compiled, or the runtime loaded the new asset. Check script diagnostics, exact persisted bindings, preview errors and runtime behavior separately. Refresh only the changed source when needed.
+
+## Screenshot-calibrated mouse input
+
+1. Capture the target with an editor/scene/game/preview screenshot tool; inspect the returned native image and `data.geometry`.
+2. Use its `captureId` with `coordinateSpace: "image-pixels"`. Coordinates are measured in the **exact returned PNG**, from its top-left corner, not a resized chat preview or a reference design image.
+3. Read back the resulting state or capture another screenshot to verify the requested action.
+
+Example click arguments (replace the ID and coordinates with the actual capture):
+
+```json
+{"coordinateSpace":"image-pixels","captureId":"capture_from_the_response","x":420,"y":260}
+```
+
+Supported by `simulate_mouse_click`, `simulate_mouse_drag`, and mouse actions of `simulate_preview_input`. Drag uses `startX/startY/endX/endY` in the same PNG. `windowId` can select an exact Electron window for capture and legacy input; a missing explicit target never falls back to a different window. Calibrated input targets the receipt's original window/project and does not require repeating its window/panel selectors.
+
+Metadata includes actual encoded image dimensions, viewport DPR/zoom, crop origin, and per-axis pixel-to-window scale. Receipts expire after 60 seconds, are bounded to 32 entries, and disappear when the extension reloads. Both endpoints are validated; hidden/destroyed windows, viewport/zoom/crop changes, renderer/canvas replacement, and observed editor scene changes require recapture. Scene identity and observable geometry are checked, not every runtime business-state change: `runtimeContentVerified` remains false, and cross-origin frame reloads may not be observable.
+
+Successful input reports `events_submitted` with `businessOutcomeVerified: false`. Failure reports `INPUT_NOT_SENT` or `INPUT_OUTCOME_UNKNOWN`; after a partial dispatch, the extension attempts a mouse-button release but never replays the action. Inspect state before retrying an uncertain outcome. Synthetic events are not proof of Button hit testing, absence of occlusion, or gameplay success. Desktop screenshots cannot calibrate Electron input. Omitting `coordinateSpace` preserves legacy window coordinates and panel-center offsets; keyboard input is unchanged.
+
 ## Project-authored MCP prompts
 
 Create Markdown files in `<Cocos project>/mcp-prompts/`. These are MCP workflow templates, not executable scripts or automatically applied instructions. A client explicitly requests a template through `prompts/get`.
