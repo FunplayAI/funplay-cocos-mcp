@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-10-13
+
+### Fixed
+
+- Fixed [#24](https://github.com/FunplayAI/funplay-cocos-mcp/issues/24): normal SSE GET probes no longer produce console warnings or fill the MCP runtime log. The server still returns HTTP 405 when SSE streams are unsupported, as required by Streamable HTTP; invalid Origin headers and unexpected HTTP methods retain their rejection warnings. POST tool calls, `/health`, `/tools`, and the console logging toggle are unchanged.
+
 ## [0.6.6] - 2026-10-10
 
 ### Added

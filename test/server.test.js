@@ -8,6 +8,7 @@ const {
   McpServer,
   SUPPORTED_PROTOCOL_VERSIONS,
 } = require('../lib/server');
+const { RuntimeLog } = require('../lib/runtime-log');
 
 function createServer(toolRegistry = {}, config = {}, options = {}) {
   return new McpServer({
@@ -68,13 +69,13 @@ function httpJson(port, payload, headers = {}) {
   });
 }
 
-function httpGet(port, path = '/', headers = {}) {
+function httpRequest(port, path = '/', headers = {}, method = 'GET') {
   return new Promise((resolve, reject) => {
     const request = http.request(
       {
         host: '127.0.0.1',
         port,
-        method: 'GET',
+        method,
         path,
         headers,
       },
@@ -94,6 +95,94 @@ function httpGet(port, path = '/', headers = {}) {
     request.end();
   });
 }
+
+function httpGet(port, path = '/', headers = {}) {
+  return httpRequest(port, path, headers);
+}
+
+function createLoggedServer(t, config = {}) {
+  const server = createServer({}, { port: 0, ...config });
+  server.runtimeLog = new RuntimeLog();
+  const printed = [];
+  for (const method of ['log', 'warn', 'error']) {
+    t.mock.method(console, method, (message) => printed.push({ method, message }));
+  }
+  return { server, printed };
+}
+
+for (const { path, enableConsoleLogging } of [
+  { path: '/', enableConsoleLogging: true },
+  { path: '/?probe=sse', enableConsoleLogging: true },
+  { path: '/mcp', enableConsoleLogging: true },
+  { path: '/', enableConsoleLogging: false },
+]) {
+  test(`SSE GET probes at ${path} stay silent (console logging: ${enableConsoleLogging})`, async (t) => {
+    const { server, printed } = createLoggedServer(t, { enableConsoleLogging });
+    await server.start();
+    try {
+      const initialized = await httpJson(server.getPort(), {
+        jsonrpc: '2.0', id: 1, method: 'initialize',
+        params: { protocolVersion: MCP_PROTOCOL_VERSION },
+      });
+      assert.equal(initialized.statusCode, 200);
+      server.runtimeLog.clear();
+      printed.length = 0;
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const response = await httpGet(server.getPort(), path, { Accept: 'text/event-stream' });
+        assert.equal(response.statusCode, 405);
+        assert.equal(response.headers['mcp-protocol-version'], MCP_PROTOCOL_VERSION);
+        assert.deepEqual(JSON.parse(response.body), {
+          error: 'Method Not Allowed: SSE streams are not supported',
+        });
+      }
+      assert.deepEqual(printed, []);
+      assert.deepEqual(server.runtimeLog.list(), []);
+
+      const tools = await httpJson(server.getPort(), {
+        jsonrpc: '2.0', id: 2, method: 'tools/list',
+      });
+      assert.equal(tools.statusCode, 200);
+      assert.deepEqual(JSON.parse(tools.body).result.tools, []);
+      assert.equal(server.runtimeLog.list()[0].message, 'RPC tools/list');
+      assert.ok(printed.every((entry) => entry.method === 'log'));
+    } finally {
+      await server.stop();
+    }
+  });
+}
+
+test('HTTP security and unexpected-method rejections still produce warnings', async (t) => {
+  const { server, printed } = createLoggedServer(t);
+  await server.start();
+  try {
+    server.runtimeLog.clear();
+    printed.length = 0;
+    const forbidden = await httpGet(server.getPort(), '/', {
+      Accept: 'text/event-stream', Origin: 'https://untrusted.example',
+    });
+    assert.equal(forbidden.statusCode, 403);
+    assert.deepEqual(JSON.parse(forbidden.body), { error: 'Forbidden: invalid Origin header' });
+    const unsupported = await httpRequest(server.getPort(), '/', {}, 'PUT');
+    assert.equal(unsupported.statusCode, 405);
+    assert.deepEqual(JSON.parse(unsupported.body), { error: 'Method Not Allowed' });
+    assert.equal(printed.length, 2);
+    assert.ok(printed.every((entry) => entry.method === 'warn'));
+    assert.match(printed[0].message, /invalid Origin header/);
+    assert.match(printed[1].message, /Rejected PUT \/: method not allowed/);
+    assert.equal(server.runtimeLog.list().length, 2);
+    assert.ok(server.runtimeLog.list().every((entry) => entry.level === 'warn'));
+
+    const health = await httpGet(server.getPort(), '/health');
+    const tools = await httpGet(server.getPort(), '/tools');
+    assert.equal(health.statusCode, 200);
+    assert.equal(tools.statusCode, 200);
+    assert.equal(JSON.parse(health.body).ok, true);
+    assert.deepEqual(JSON.parse(tools.body).tools, []);
+  } finally {
+    await server.stop();
+  }
+});
 
 test('initialize negotiates the current MCP protocol version by default', async () => {
   const server = createServer();
