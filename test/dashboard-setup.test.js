@@ -106,20 +106,22 @@ test('double clicks cannot configure or install twice', async (t) => {
   assert.equal(panel.$.clientTargetSelect.disabled, false);
 });
 
-test('OpenCode Configure + Skills routes every setup action to the selected client', async (t) => {
-  const skills = { supported: true, builtIns: [{ skillName: 'workflow', status: 'missing' }] };
-  const { panel, calls } = fixture(t, (name) => name === 'get-project-skills-state' ? skills : {}, skills);
-  panel.$.clientTargetSelect.value = 'opencode';
-  panel.state.clientTargets = [{ id: 'opencode', name: 'OpenCode', configPath: '/fixture/opencode.jsonc' }];
-  panel.state.projectSkillsByClient = { opencode: skills };
-  await panel.configureClientSetup(true);
-  assert.deepEqual(calls.map((call) => call.name), ['get-project-skills-state', 'configure-client', 'install-or-update-project-skill']);
-  assert.deepEqual(calls[0].args, [{ clientId: 'opencode' }]);
-  assert.deepEqual(calls[1].args, ['opencode']);
-  assert.deepEqual(calls[2].args, [{ skillName: 'workflow', clientId: 'opencode', onlyIfMissing: true }]);
-});
+for (const clientId of ['opencode', 'codebuddy']) {
+  test(`${clientId} Configure + Skills routes every setup action to the selected client`, async (t) => {
+    const skills = { supported: true, builtIns: [{ skillName: 'workflow', status: 'missing' }] };
+    const { panel, calls } = fixture(t, (name) => name === 'get-project-skills-state' ? skills : {}, skills);
+    panel.$.clientTargetSelect.value = clientId;
+    panel.state.clientTargets = [{ id: clientId, name: clientId, configPath: '/fixture/config.json' }];
+    panel.state.projectSkillsByClient = { [clientId]: skills };
+    await panel.configureClientSetup(true);
+    assert.deepEqual(calls.map((call) => call.name), ['get-project-skills-state', 'configure-client', 'install-or-update-project-skill']);
+    assert.deepEqual(calls[0].args, [{ clientId }]);
+    assert.deepEqual(calls[1].args, [clientId]);
+    assert.deepEqual(calls[2].args, [{ skillName: 'workflow', clientId, onlyIfMissing: true }]);
+  });
+}
 
-for (const clientId of ['claude_code', 'opencode']) {
+for (const clientId of ['claude_code', 'opencode', 'codebuddy']) {
   test(`${clientId} Configure + Skills installs real files without Object.hasOwn`, async (t) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-setup-compat-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -133,6 +135,9 @@ for (const clientId of ['claude_code', 'opencode']) {
       fs.mkdirSync(path.dirname(jsoncPath), { recursive: true });
       fs.writeFileSync(jsoncPath, '// preserve preference\n{"theme":"dark","mcp":{},}\n');
       target = buildTargets(config, options).find((item) => item.id === clientId);
+    }
+    if (clientId === 'codebuddy') {
+      fs.writeFileSync(target.configPath, '// preserve preference\n{"mcpServers":{"other":{"command":"keep"}},}\n');
     }
     const { panel, calls } = fixture(t, (name, args) => {
       if (name === 'get-project-skills-state') return getProjectSkillsState(projectPath, args);
@@ -157,7 +162,7 @@ for (const clientId of ['claude_code', 'opencode']) {
       assert.equal(calls.filter((call) => call.name === 'install-or-update-project-skill').length, 2);
       assert.equal(panel.$.clientActionStatus.className, 'action-status success');
       const written = fs.readFileSync(target.configPath, 'utf8');
-      if (clientId === 'opencode') assert.ok(written.startsWith('// preserve preference\n'));
+      if (clientId === 'opencode' || clientId === 'codebuddy') assert.ok(written.startsWith('// preserve preference\n'));
       await panel.configureClientSetup(true);
       assert.equal(fs.readFileSync(target.configPath, 'utf8'), written);
       assert.equal(calls.filter((call) => call.name === 'install-or-update-project-skill').length, 2);

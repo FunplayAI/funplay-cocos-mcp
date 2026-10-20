@@ -43,6 +43,18 @@ test('Kimi uses the nearest Git root, including .git files used by worktrees', (
   assert.equal(getProjectSkillsState(child, { clientId: 'kimi' }).projectPath, root);
 });
 
+test('CodeBuddy Skills stay beside the Cocos project config rather than the enclosing Git root', (t) => {
+  const root = project(t);
+  fs.mkdirSync(path.join(root, '.git'));
+  const child = path.join(root, 'games', 'cocos');
+  fs.mkdirSync(child, { recursive: true });
+  assert.equal(getSkillsDirectory({ clientId: 'codebuddy' }), '.codebuddy/skills');
+  assert.equal(getSkillProjectPath(child, { clientId: 'codebuddy' }), child);
+  const installed = updateBuiltInProjectSkill(child, { clientId: 'codebuddy' });
+  assert.ok(fs.existsSync(path.join(child, installed.write.path)));
+  assert.equal(fs.existsSync(path.join(root, '.codebuddy')), false);
+});
+
 test('legacy Codex UI v1 migrates with a backup and preserves the original file', (t) => {
   const root = project(t);
   const legacy = path.join(root, '.codex', 'skills', COCOS_UI_SKILL_NAME, 'SKILL.md');

@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-10-20
+
+### Added
+
+- Added CodeBuddy IDE 4.0+ to one-click MCP setup using the active Cocos project's `.mcp.json`, with comment-preserving JSONC updates and project-specific server names. Configure + Skills installs missing workflow/UI Skills under `.codebuddy/skills`; Project Skills and MCP instruction/Skill tools support the same client, including managed references, update notices, backups, and restore. Existing configuration and locally edited Skills remain protected.
+
 ## [0.6.7] - 2026-10-13
 
 ### Fixed

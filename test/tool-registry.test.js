@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createToolRegistry } = require('../lib/tool-registry');
+const { SKILL_PLATFORMS } = require('../lib/skill-platforms');
 const previewRuntime = require('../lib/preview-runtime');
 
 function createRegistry(profile, projectPath = path.resolve('/tmp/funplay-cocos-test-project'), configExtras = {}, overrides = {}) {
@@ -121,19 +122,26 @@ test('recommended project skill tool records managed template metadata', async (
   assert.equal(fs.existsSync(path.join(projectPath, result.value.data.manifest)), true);
 });
 
-test('Skills tool schemas and execution support OpenCode project directories', async (t) => {
-  const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-opencode-tools-'));
-  t.after(() => fs.rmSync(projectPath, { recursive: true, force: true }));
-  const registry = createRegistry('full', projectPath);
-  for (const name of ['list_project_instructions', 'create_project_skill', 'create_cocos_mcp_project_skill']) {
-    const tool = registry.listTools().find((entry) => entry.name === name);
-    assert.ok(tool.inputSchema.properties.clientId.enum.includes('opencode'));
-  }
-  const result = await registry.callToolDetailed('create_cocos_mcp_project_skill', { clientId: 'opencode' });
-  assert.equal(result.value.data.path, '.opencode/skills/funplay-cocos-mcp-workflow/SKILL.md');
-  assert.equal(fs.existsSync(path.join(projectPath, result.value.data.path)), true);
-  assert.equal(fs.existsSync(path.join(projectPath, '.agents')), false);
-});
+for (const clientId of ['opencode', 'codebuddy']) {
+  test(`Skills tool schemas and execution support ${clientId} project directories`, async (t) => {
+    const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), `funplay-${clientId}-tools-`));
+    t.after(() => fs.rmSync(projectPath, { recursive: true, force: true }));
+    const registry = createRegistry('full', projectPath);
+    for (const name of ['list_project_instructions', 'create_project_skill', 'create_cocos_mcp_project_skill']) {
+      const tool = registry.listTools().find((entry) => entry.name === name);
+      assert.deepEqual(tool.inputSchema.properties.clientId.enum, SKILL_PLATFORMS.map((platform) => platform.id));
+    }
+    const result = await registry.callToolDetailed('create_cocos_mcp_project_skill', { clientId });
+    assert.equal(result.value.data.path, `.${clientId}/skills/funplay-cocos-mcp-workflow/SKILL.md`);
+    assert.equal(fs.existsSync(path.join(projectPath, result.value.data.path)), true);
+    assert.equal(fs.existsSync(path.join(projectPath, '.agents')), false);
+    const custom = await registry.callToolDetailed('create_project_skill', { clientId, skillName: 'project-review' });
+    assert.equal(custom.value.data.path, `.${clientId}/skills/project-review/SKILL.md`);
+    const listed = await registry.callToolDetailed('list_project_instructions', { clientId });
+    assert.equal(listed.value.ok, true);
+    assert.ok(JSON.stringify(listed.value.data).includes(result.value.data.path));
+  });
+}
 
 test('create_scene serializes and persists a scene without an interactive save dialog', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-cocos-scene-'));

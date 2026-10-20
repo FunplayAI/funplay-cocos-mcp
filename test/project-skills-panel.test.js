@@ -29,6 +29,7 @@ test('Skills notice follows the selected client and hides for current or unsuppo
     state: { config: { lastClientTargetId: 'codex' }, projectSkillsByClient: {
       codex: { clientId: 'codex', clientName: 'Codex', supported: true, builtIns: [{ skillName: 'workflow', title: 'Workflow', status: 'missing' }] },
       claude_code: { clientId: 'claude_code', clientName: 'Claude Code', supported: true, builtIns: [{ skillName: 'workflow', status: 'current' }] },
+      codebuddy: { clientId: 'codebuddy', clientName: 'CodeBuddy', supported: true, builtIns: [{ skillName: 'workflow', title: 'Workflow', status: 'missing' }] },
     } },
   };
   panel.renderProjectSkillsNotice();
@@ -39,6 +40,13 @@ test('Skills notice follows the selected client and hides for current or unsuppo
   panel.renderProjectSkillsNotice();
   assert.equal(notice.classList.contains('visible'), false);
   assert.equal(panel.getBuiltInProjectSkill('workflow').status, 'current');
+  select.value = 'codebuddy';
+  panel.renderProjectSkillsNotice();
+  assert.equal(notice.classList.contains('visible'), true);
+  assert.match(text.textContent, /CodeBuddy/);
+  panel.state.projectSkillsByClient.codebuddy.builtIns[0].status = 'current';
+  panel.renderProjectSkillsNotice();
+  assert.equal(notice.classList.contains('visible'), false);
   select.value = 'vscode';
   panel.renderProjectSkillsNotice();
   assert.equal(notice.classList.contains('visible'), false);

@@ -12,6 +12,7 @@ const {
   getTargetStatuses,
   SERVER_NAME,
 } = require('../lib/client-config');
+const { parseJsonc } = require('../lib/jsonc');
 
 const CONFIG = {
   host: '127.0.0.1',
@@ -32,6 +33,86 @@ function createTargetOptions(t, env = {}) {
     platform: 'linux',
   };
 }
+
+function createCodeBuddyFixture(t) {
+  const options = createTargetOptions(t);
+  const projectPath = path.join(options.homePath, 'games', 'cocos');
+  fs.mkdirSync(projectPath, { recursive: true });
+  const config = { ...CONFIG, projectPath };
+  const target = buildTargets(config, options).find((item) => item.id === 'codebuddy');
+  return { options, config, target };
+}
+
+test('CodeBuddy uses the Cocos project root, not CLI global storage or the enclosing Git root', (t) => {
+  const { options, config, target } = createCodeBuddyFixture(t);
+  fs.mkdirSync(path.join(options.homePath, '.git'));
+  assert.equal(target.name, 'CodeBuddy IDE');
+  assert.equal(target.configPath, path.join(config.projectPath, '.mcp.json'));
+  assert.equal(target.rootKey, 'mcpServers');
+  assert.equal(target.isJsonc, true);
+  assert.deepEqual(target.entry, { type: 'http', url: 'http://127.0.0.1:8765/' });
+  assert.deepEqual(JSON.parse(formatTargetPreview(target)), {
+    mcpServers: { [target.serverName]: target.entry },
+  });
+  configureTarget(config, 'codebuddy', options);
+  assert.equal(fs.existsSync(path.join(options.homePath, '.codebuddy')), false);
+  assert.equal(fs.existsSync(path.join(options.homePath, '.mcp.json')), false);
+  assert.equal(getTargetStatuses(config, options).find((item) => item.id === 'codebuddy').configured, true);
+});
+
+test('CodeBuddy requires project context instead of creating a config in the process working directory', (t) => {
+  const options = createTargetOptions(t);
+  assert.equal(buildTargets(CONFIG, options).some((item) => item.id === 'codebuddy'), false);
+  assert.throws(() => configureTarget(CONFIG, 'codebuddy', options), /Unknown MCP client target/);
+  assert.deepEqual(fs.readdirSync(options.homePath), []);
+});
+
+test('CodeBuddy setup preserves comments, other servers, custom fields and file mode', (t) => {
+  const { options, config, target } = createCodeBuddyFixture(t);
+  const original = '\uFEFF{\r\n\t// keep my project MCP servers\r\n\t"mcpServers": {\r\n\t\t"other": {"command":"keep","args":["--project",],},\r\n\t},\r\n\t"preferences": {"theme":"dark",},\r\n}\r\n';
+  fs.writeFileSync(target.configPath, original, { mode: 0o640 });
+  const first = configureTarget(config, 'codebuddy', options);
+  const written = fs.readFileSync(target.configPath, 'utf8');
+  assert.ok(written.startsWith('\uFEFF{\r\n\t// keep my project MCP servers\r\n'));
+  assert.ok(written.includes('"other": {"command":"keep","args":["--project",],}'));
+  assert.ok(written.includes('"preferences": {"theme":"dark",}'));
+  assert.deepEqual(parseJsonc(written).mcpServers[target.serverName], target.entry);
+  assert.equal(fs.statSync(target.configPath).mode & 0o777, 0o640);
+  configureTarget(config, 'codebuddy', options);
+  assert.equal(fs.readFileSync(target.configPath, 'utf8'), written, 'repeated setup must be byte-for-byte idempotent');
+
+  const customized = parseJsonc(written);
+  customized.mcpServers[target.serverName].headers = { 'X-Project': 'keep' };
+  customized.mcpServers[target.serverName].timeout = 15000;
+  fs.writeFileSync(target.configPath, JSON.stringify(customized));
+  const updated = { ...config, port: 9000, clientConfigEntries: { codebuddy: first } };
+  configureTarget(updated, 'codebuddy', options);
+  assert.deepEqual(parseJsonc(fs.readFileSync(target.configPath, 'utf8')).mcpServers[target.serverName], {
+    type: 'http', url: 'http://127.0.0.1:9000/', headers: { 'X-Project': 'keep' }, timeout: 15000,
+  });
+  assert.equal(getTargetStatuses(config, options).find((item) => item.id === 'codebuddy').configured, false);
+  assert.equal(getTargetStatuses(updated, options).find((item) => item.id === 'codebuddy').configured, true);
+});
+
+test('CodeBuddy leaves malformed, ambiguous and non-object project configs unchanged', (t) => {
+  const { options, config, target } = createCodeBuddyFixture(t);
+  for (const original of ['{"mcpServers":', '[]', '{"mcpServers":[]}', '{"mcpServers":{},"mcpServers":{}}']) {
+    fs.writeFileSync(target.configPath, original);
+    assert.equal(getTargetStatuses(config, options).find((item) => item.id === 'codebuddy').configured, false);
+    assert.throws(() => configureTarget(config, 'codebuddy', options));
+    assert.equal(fs.readFileSync(target.configPath, 'utf8'), original);
+  }
+});
+
+test('CodeBuddy does not confuse an SSE entry with the configured HTTP endpoint', (t) => {
+  const { options, config, target } = createCodeBuddyFixture(t);
+  fs.writeFileSync(target.configPath, JSON.stringify({ mcpServers: {
+    [target.serverName]: { type: 'sse', url: target.entry.url },
+  } }));
+  assert.equal(getTargetStatuses(config, options).find((item) => item.id === 'codebuddy').configured, false);
+  configureTarget(config, 'codebuddy', options);
+  assert.equal(getTargetStatuses(config, options).find((item) => item.id === 'codebuddy').configured, true);
+});
 
 test('Qoder and Kimi Code targets use their official user-level MCP files', (t) => {
   const options = createTargetOptions(t);

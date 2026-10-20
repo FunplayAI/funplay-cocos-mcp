@@ -19,7 +19,7 @@
 
 ---
 
-Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, Kimi Code, and OpenCode inspect and operate your running Cocos project.
+Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, Kimi Code, OpenCode, and CodeBuddy inspect and operate your running Cocos project.
 
 The package follows the same product direction as Funplay MCP for Unity: keep the default tool surface focused, provide a one-click client configuration window, and make one high-flexibility execution tool the primary workflow.
 
@@ -256,6 +256,26 @@ One-click configuration prefers an existing `opencode.jsonc`. It supports commen
 
 </details>
 
+<details>
+<summary>CodeBuddy (IDE 4.0+)</summary>
+
+One-click setup writes `<Cocos project>/.mcp.json`, the project configuration supported by [CodeBuddy IDE 4.0+](https://intl.cloud.tencent.com/zh/document/product/1256/77264). It preserves other servers, comments, and trailing commas. Open this Cocos project folder as the CodeBuddy workspace, reload the client if necessary, and enable/approve the MCP server when prompted. Older IDE versions and the standalone CodeBuddy editor extension have different configuration locations; this target does not write their global settings or the CLI's global files.
+
+**Configure + Skills** also installs missing built-in Skills into `<Cocos project>/.codebuddy/skills`, following the [official Skills directory](https://www.codebuddy.cn/docs/ide/Features/Skills). Existing Skills are kept; review updates in **Project Skills**.
+
+```json
+{
+  "mcpServers": {
+    "funplay_cocos": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/"
+    }
+  }
+}
+```
+
+</details>
+
 ### Optional: npm stdio Wrapper
 
 If your MCP client prefers a local `stdio` command, install the npm wrapper after starting the Cocos editor server:
@@ -317,7 +337,7 @@ Try a higher-level prompt in your AI client:
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
-- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, and OpenCode. Built-in v3 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
+- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, OpenCode, and CodeBuddy. Built-in v3 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -330,7 +350,7 @@ Try a higher-level prompt in your AI client:
 
 - **`execute_javascript` First** — One high-flexibility JavaScript tool can orchestrate scene/runtime work and editor-side automation without flooding AI clients with too many narrow tool calls
 - **Embedded Cocos Extension** — No separate Python daemon or external bridge process is required for the Cocos-side plugin
-- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Kiro, Qoder, Kimi Code, Codex, and OpenCode directly from Cocos Creator
+- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Kiro, Qoder, Kimi Code, Codex, OpenCode, and CodeBuddy (IDE 4.0+) directly from Cocos Creator
 - **Project Context Built In** — Exposes live project, scene, selection, script diagnostics, logs, and interaction-history resources
 - **Focused by Default, Full When Needed** — `core` reduces tool-list noise; `full` exposes every available tool; `custom` plus saved profiles lets you tune and restore tool exposure by category or tool
 - **Visual Validation** — Scene/editor/preview screenshots and input simulation help AI verify UI and gameplay changes

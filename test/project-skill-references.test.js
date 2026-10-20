@@ -99,6 +99,25 @@ test('modified owned references require confirmation and their exact notes can b
   assert.equal(getBuiltInProjectSkillState(root, options).modifiedReferenceCount, 1);
 });
 
+test('CodeBuddy keeps local Skill references during setup and restores them from its own backup', (t) => {
+  const root = project(t);
+  const options = { clientId: 'codebuddy', skillName: COCOS_UI_SKILL_NAME };
+  const installed = updateBuiltInProjectSkill(root, options);
+  const reference = installed.state.references[0];
+  const custom = `${fs.readFileSync(path.join(root, reference.path), 'utf8')}\nKeep our project-specific UI rules.\n`;
+  fs.writeFileSync(path.join(root, reference.path), custom);
+  assert.equal(updateBuiltInProjectSkill(root, { ...options, onlyIfMissing: true }).skipped, true);
+  assert.equal(fs.readFileSync(path.join(root, reference.path), 'utf8'), custom);
+  assert.throws(() => updateBuiltInProjectSkill(root, options), /local modifications/);
+  const updated = updateBuiltInProjectSkill(root, { ...options, allowModified: true });
+  assert.ok(updated.backup.path.startsWith('.codebuddy/skill-backups/'));
+  assert.equal(updated.state.current, true);
+  restoreLatestBuiltInProjectSkillBackup(root, options);
+  assert.equal(fs.readFileSync(path.join(root, reference.path), 'utf8'), custom);
+  assert.equal(getBuiltInProjectSkillState(root, options).modifiedReferenceCount, 1);
+  assert.equal(fs.existsSync(path.join(root, '.agents')), false);
+});
+
 test('unowned reference collisions fail before writing either SKILL.md or a manifest', (t) => {
   const root = project(t);
   const options = { skillName: COCOS_UI_SKILL_NAME };

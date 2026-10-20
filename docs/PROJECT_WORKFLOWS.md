@@ -7,6 +7,7 @@
 - 临时回退端口不会被一键配置写入客户端。先解决冲突或固定端口，避免重启后指向错误项目。
 - 一键配置保留其他 MCP 配置。只有当前编辑器正在运行、旧 `funplay_cocos` 条目准确指向当前端口且仍是工具生成的简单格式时，才会迁移旧条目；其他旧条目保留供人工检查。手动改过地址的项目条目不会被静默覆盖。
 - Claude Code 使用 `~/.claude.json` 的 `projects[Git 仓库根目录].mcpServers`，不是所有项目共享的顶层条目。没有 Git 仓库时使用 Cocos 项目目录。这里的 Claude Code 配置不是 Claude Desktop 配置。
+- CodeBuddy 使用 IDE 4.0 起支持的 `<Cocos 项目>/.mcp.json`，不写 CLI 或旧编辑器插件的全局配置。请在 CodeBuddy 中打开该 Cocos 项目目录，并按客户端提示启用或批准服务器；不会自动放宽 MCP 审批设置。
 
 ## Client-specific managed Skills
 
@@ -28,10 +29,11 @@ Script cards separate the execution summary, scoped console logs, and return val
 | Qoder | `.qoder/skills` |
 | Kimi Code | `<nearest Git root>/.kimi-code/skills` (project directory when no Git root exists) |
 | OpenCode | `.opencode/skills` |
+| CodeBuddy | `.codebuddy/skills` |
 
 The manager checks these **managed project directories**, not every user-level or cross-client compatibility directory an agent may also discover. It does not change global Skills, agent rules, or user-authored `AGENTS.md` / `CLAUDE.md` files. Open the AI client at the relevant project/Git root so it can discover the files.
 
-Client paths were checked against the official [Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), [Claude Code](https://code.claude.com/docs/en/skills#where-skills-live), [Cursor](https://cursor.com/docs/skills), [Qoder](https://docs.qoder.com/cli/Skills), [Kimi Code](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html#skill-locations), and [OpenCode](https://opencode.ai/docs/skills) documentation.
+Client paths were checked against the official [Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), [Claude Code](https://code.claude.com/docs/en/skills#where-skills-live), [Cursor](https://cursor.com/docs/skills), [Qoder](https://docs.qoder.com/cli/Skills), [Kimi Code](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html#skill-locations), [OpenCode](https://opencode.ai/docs/skills), and [CodeBuddy](https://www.codebuddy.cn/docs/ide/Features/Skills) documentation. CodeBuddy's project MCP location follows its [official IDE release notes](https://intl.cloud.tencent.com/zh/document/product/1256/77264).
 
 ### Legacy Codex installs
 
