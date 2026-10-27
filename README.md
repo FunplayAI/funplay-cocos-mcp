@@ -19,7 +19,7 @@
 
 ---
 
-Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, Kimi Code, OpenCode, and CodeBuddy inspect and operate your running Cocos project.
+Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, Kimi Code, OpenCode, CodeBuddy, and DeepSeek Harness (DSH) inspect and operate your running Cocos project.
 
 The package follows the same product direction as Funplay MCP for Unity: keep the default tool surface focused, provide a one-click client configuration window, and make one high-flexibility execution tool the primary workflow.
 
@@ -276,6 +276,23 @@ One-click setup writes `<Cocos project>/.mcp.json`, the project configuration su
 
 </details>
 
+<details>
+<summary>DeepSeek Harness (DSH)</summary>
+
+Select **DeepSeek Harness (DSH)** in the MCP Server panel. Configure generates `<Cocos project>/.dsh/funplay-cocos-mcp.patch.json`, a JSON-formatted YAML overlay for the [official Cordis MCP client](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md). It does not change `$DSH_HOME`, global/profile YAML, dependencies, credentials, or approval settings.
+
+**The overlay is not auto-loaded.** Start DSH from the Cocos project directory using the exact command shown in the panel, or add its `--patch` argument to your existing DSH launch command. For example, with `dsh` installed:
+
+```sh
+dsh web --patch '/absolute/path/to/cocos-project/.dsh/funplay-cocos-mcp.patch.json'
+```
+
+When launching through npm, use `npx @deepseek-ai/dsh web --patch <the same absolute path>`. Other official profiles can use the same overlay through `--patch`; third-party desktop launchers may require their own launch configuration. Keep Cocos and its MCP server running. The generated overlay uses the project's actual server name and URL, not the legacy example name/port.
+
+**Configure + Skills** also installs missing built-ins under `<nearest Git root>/.dsh/skills`, or under the Cocos project when no Git root exists, following [DSH's filesystem Skills provider](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md). Existing copies remain protected and can be reviewed in Project Skills. Multiple Cocos projects inside one Git repository share that Skills root but have separate MCP overlays.
+
+</details>
+
 ### Optional: npm stdio Wrapper
 
 If your MCP client prefers a local `stdio` command, install the npm wrapper after starting the Cocos editor server:
@@ -337,7 +354,7 @@ Try a higher-level prompt in your AI client:
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
-- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, OpenCode, and CodeBuddy. Built-in v3 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
+- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, OpenCode, CodeBuddy, and DSH. Built-in v3 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -350,7 +367,7 @@ Try a higher-level prompt in your AI client:
 
 - **`execute_javascript` First** — One high-flexibility JavaScript tool can orchestrate scene/runtime work and editor-side automation without flooding AI clients with too many narrow tool calls
 - **Embedded Cocos Extension** — No separate Python daemon or external bridge process is required for the Cocos-side plugin
-- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Kiro, Qoder, Kimi Code, Codex, OpenCode, and CodeBuddy (IDE 4.0+) directly from Cocos Creator
+- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Kiro, Qoder, Kimi Code, Codex, OpenCode, and CodeBuddy (IDE 4.0+), or generate a DSH overlay with an explicit `--patch` launch command
 - **Project Context Built In** — Exposes live project, scene, selection, script diagnostics, logs, and interaction-history resources
 - **Focused by Default, Full When Needed** — `core` reduces tool-list noise; `full` exposes every available tool; `custom` plus saved profiles lets you tune and restore tool exposure by category or tool
 - **Visual Validation** — Scene/editor/preview screenshots and input simulation help AI verify UI and gameplay changes

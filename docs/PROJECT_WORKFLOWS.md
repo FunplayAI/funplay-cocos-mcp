@@ -8,6 +8,7 @@
 - 一键配置保留其他 MCP 配置。只有当前编辑器正在运行、旧 `funplay_cocos` 条目准确指向当前端口且仍是工具生成的简单格式时，才会迁移旧条目；其他旧条目保留供人工检查。手动改过地址的项目条目不会被静默覆盖。
 - Claude Code 使用 `~/.claude.json` 的 `projects[Git 仓库根目录].mcpServers`，不是所有项目共享的顶层条目。没有 Git 仓库时使用 Cocos 项目目录。这里的 Claude Code 配置不是 Claude Desktop 配置。
 - CodeBuddy 使用 IDE 4.0 起支持的 `<Cocos 项目>/.mcp.json`，不写 CLI 或旧编辑器插件的全局配置。请在 CodeBuddy 中打开该 Cocos 项目目录，并按客户端提示启用或批准服务器；不会自动放宽 MCP 审批设置。
+- DeepSeek Harness（DSH）生成独立的 `<Cocos 项目>/.dsh/funplay-cocos-mcp.patch.json` Cordis 覆盖层，以 JSON（有效 YAML）格式配置官方 `@deepseek-ai/dsh-mcp-client` 的 `streamable-http` 连接。不会修改全局/profile YAML、安装依赖或改变审批设置。**文件不会自动加载**：请在 Cocos 项目目录运行面板显示的 `dsh web --patch '<绝对路径>'`，或给原启动命令追加相同 `--patch` 参数。配置状态表示文件已生成，不代表 DSH 已连接；同一 DSH Host 加载的服务器可被该 Host 的其他会话看到，不应把项目覆盖层当成会话权限隔离。
 
 ## Client-specific managed Skills
 
@@ -30,10 +31,13 @@ Script cards separate the execution summary, scoped console logs, and return val
 | Kimi Code | `<nearest Git root>/.kimi-code/skills` (project directory when no Git root exists) |
 | OpenCode | `.opencode/skills` |
 | CodeBuddy | `.codebuddy/skills` |
+| DeepSeek Harness (DSH) | `<nearest Git root>/.dsh/skills` (project directory when no Git root exists) |
 
 The manager checks these **managed project directories**, not every user-level or cross-client compatibility directory an agent may also discover. It does not change global Skills, agent rules, or user-authored `AGENTS.md` / `CLAUDE.md` files. Open the AI client at the relevant project/Git root so it can discover the files.
 
 Client paths were checked against the official [Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), [Claude Code](https://code.claude.com/docs/en/skills#where-skills-live), [Cursor](https://cursor.com/docs/skills), [Qoder](https://docs.qoder.com/cli/Skills), [Kimi Code](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html#skill-locations), [OpenCode](https://opencode.ai/docs/skills), and [CodeBuddy](https://www.codebuddy.cn/docs/ide/Features/Skills) documentation. CodeBuddy's project MCP location follows its [official IDE release notes](https://intl.cloud.tencent.com/zh/document/product/1256/77264).
+
+DSH's launch overlay and Skills locations follow its official [CLI reference](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/cli/reference/README.md), [MCP client](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md), and [filesystem Skills provider](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md). DSH is in developer preview; this integration targets the official launcher rather than guessing third-party desktop configuration paths. A dedicated overlay must remain a single JSON `insert` containing this project's MCP row. Malformed or unrelated content, duplicate keys, disabled entries and manually repointed endpoints are not overwritten. Custom HTTP headers and timeouts are preserved when an owned endpoint changes. DSH Skills follow the Git root, so projects in the same repository share the managed copies and backups.
 
 ### Legacy Codex installs
 

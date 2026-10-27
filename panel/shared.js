@@ -967,7 +967,7 @@ const STYLE = `
   .connection-status.configured, .action-status.success { color: #65cd89; }
   .connection-status.blocked, .action-status.warning { color: #e1af61; }
   .action-status.error { color: #ed9191; }
-  .action-status { margin: 8px 0; font-size: 12px; overflow-wrap: anywhere; }
+  .action-status { margin: 8px 0; font-size: 12px; white-space: pre-line; overflow-wrap: anywhere; }
   .config-location { margin-top: 3px; white-space: pre-line; overflow-wrap: anywhere; }
   .dashboard .preview-details { margin-top: 10px; font-size: 12px; }
   .compact-warning { color: #e1af61; font-size: 12px; margin-top: 8px; }
@@ -1883,7 +1883,7 @@ function createMethods(mode) {
         this.$.clientTargetStatus.textContent = this.t('client.no_targets');
         return;
       }
-      const configured = target.configured ? this.t('client.configured') : this.t('client.not_configured');
+      const configured = target.configured ? this.t(target.launchCommand ? 'client.patch_generated' : 'client.configured') : this.t('client.not_configured');
       const blocked = this.state && this.state.clientConfig && this.state.clientConfig.configurationBlocked;
       const skills = this.selectedProjectSkills();
       const busy = Boolean(this.configuringClient);
@@ -1895,7 +1895,8 @@ function createMethods(mode) {
       this.$.clientTargetStatus.classList.remove('configured', 'blocked', 'unconfigured');
       this.$.clientTargetStatus.classList.add(blocked ? 'blocked' : target.configured ? 'configured' : 'unconfigured');
       this.$.clientTargetStatus.textContent = blocked ? this.t('client.fallback_blocked') : `${this.t('client.status')}: ${configured}`;
-      this.setText('clientTargetDetails', `${target.configPath}\n${target.serverName || ''} → ${this.state && this.state.clientConfig && this.state.clientConfig.url || ''}`);
+      const launchHint = target.launchCommand ? `\n${this.t('client.patch_launch_hint', { command: target.launchCommand })}` : '';
+      this.setText('clientTargetDetails', `${target.configPath}\n${target.serverName || ''} → ${this.state && this.state.clientConfig && this.state.clientConfig.url || ''}${launchHint}`);
       this.renderProjectSkillsNotice();
       const previews = this.state && this.state.clientConfig && Array.isArray(this.state.clientConfig.targets)
         ? this.state.clientConfig.targets
@@ -2450,7 +2451,7 @@ function createMethods(mode) {
         if (includeSkills && (!skills || !skills.supported || skills.error || !Array.isArray(skills.builtIns))) {
           throw new Error(skills && skills.error || this.t('skills_manager.unsupported'));
         }
-        await request('configure-client', targetId);
+        const connection = await request('configure-client', targetId);
         configured = true;
         const installed = [];
         const preserved = [];
@@ -2463,9 +2464,15 @@ function createMethods(mode) {
           if (outcome.installed) installed.push(skill.skillName);
           else if (!outcome.alreadyCurrent) preserved.push(skill.skillName);
         }
-        this.showClientAction(this.t(preserved.length ? 'client.setup_review' : includeSkills ? 'client.setup_complete' : 'client.configure_complete', {
+        const completionKey = preserved.length ? 'client.setup_review'
+          : connection && connection.launchCommand
+            ? (includeSkills ? 'client.patch_setup_complete' : 'client.patch_configure_complete')
+            : includeSkills ? 'client.setup_complete' : 'client.configure_complete';
+        const launchHint = connection && connection.launchCommand
+          ? `\n${this.t('client.patch_launch_hint', { command: connection.launchCommand })}` : '';
+        this.showClientAction(this.t(completionKey, {
           count: installed.length,
-        }), preserved.length ? 'warning' : 'success');
+        }) + launchHint, preserved.length ? 'warning' : 'success');
       } catch (error) {
         const message = this.t(configured ? 'client.setup_partial' : 'client.configure_failed', { error: error.message });
         this.showClientAction(message, 'error');

@@ -106,7 +106,7 @@ test('double clicks cannot configure or install twice', async (t) => {
   assert.equal(panel.$.clientTargetSelect.disabled, false);
 });
 
-for (const clientId of ['opencode', 'codebuddy']) {
+for (const clientId of ['opencode', 'codebuddy', 'deepseek_harness']) {
   test(`${clientId} Configure + Skills routes every setup action to the selected client`, async (t) => {
     const skills = { supported: true, builtIns: [{ skillName: 'workflow', status: 'missing' }] };
     const { panel, calls } = fixture(t, (name) => name === 'get-project-skills-state' ? skills : {}, skills);
@@ -121,7 +121,7 @@ for (const clientId of ['opencode', 'codebuddy']) {
   });
 }
 
-for (const clientId of ['claude_code', 'opencode', 'codebuddy']) {
+for (const clientId of ['claude_code', 'opencode', 'codebuddy', 'deepseek_harness']) {
   test(`${clientId} Configure + Skills installs real files without Object.hasOwn`, async (t) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-setup-compat-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -169,6 +169,15 @@ for (const clientId of ['claude_code', 'opencode', 'codebuddy']) {
       assert.equal(panel.$.clientActionStatus.className, 'action-status success');
       assert.equal(panel.configuringClient, false);
       assert.equal(panel.$.configureWithSkillsBtn.disabled, false);
+      if (clientId === 'deepseek_harness') {
+        assert.match(panel.$.clientActionStatus.textContent, /需手动加载/);
+        assert.match(panel.$.clientActionStatus.textContent, /dsh web --patch/);
+        panel.state.clientTargets = getTargetStatuses(config, options).filter((item) => item.id === clientId);
+        panel.renderClientTargetStatus();
+        assert.match(panel.$.clientTargetStatus.textContent, /需 --patch 加载/);
+        assert.match(panel.$.clientTargetDetails.textContent, /此 Cocos 项目目录/);
+        assert.match(panel.$.clientTargetDetails.textContent, /dsh web --patch/);
+      }
     } finally {
       if (descriptor) Object.defineProperty(Object, 'hasOwn', descriptor);
     }

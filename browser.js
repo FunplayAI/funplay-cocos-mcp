@@ -728,6 +728,7 @@ class ExtensionService {
       configPath: target.configPath,
       isToml: Boolean(target.isToml),
       preview: this.formatClientTargetPreview(target),
+      ...(target.launchCommand ? { launchCommand: target.launchCommand } : {}),
     }));
     const baseUrl = url.replace(/\/$/, '');
     return {

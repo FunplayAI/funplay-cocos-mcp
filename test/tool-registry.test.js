@@ -122,7 +122,7 @@ test('recommended project skill tool records managed template metadata', async (
   assert.equal(fs.existsSync(path.join(projectPath, result.value.data.manifest)), true);
 });
 
-for (const clientId of ['opencode', 'codebuddy']) {
+for (const [clientId, directory] of [['opencode', '.opencode'], ['codebuddy', '.codebuddy'], ['deepseek_harness', '.dsh']]) {
   test(`Skills tool schemas and execution support ${clientId} project directories`, async (t) => {
     const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), `funplay-${clientId}-tools-`));
     t.after(() => fs.rmSync(projectPath, { recursive: true, force: true }));
@@ -132,11 +132,11 @@ for (const clientId of ['opencode', 'codebuddy']) {
       assert.deepEqual(tool.inputSchema.properties.clientId.enum, SKILL_PLATFORMS.map((platform) => platform.id));
     }
     const result = await registry.callToolDetailed('create_cocos_mcp_project_skill', { clientId });
-    assert.equal(result.value.data.path, `.${clientId}/skills/funplay-cocos-mcp-workflow/SKILL.md`);
+    assert.equal(result.value.data.path, `${directory}/skills/funplay-cocos-mcp-workflow/SKILL.md`);
     assert.equal(fs.existsSync(path.join(projectPath, result.value.data.path)), true);
     assert.equal(fs.existsSync(path.join(projectPath, '.agents')), false);
     const custom = await registry.callToolDetailed('create_project_skill', { clientId, skillName: 'project-review' });
-    assert.equal(custom.value.data.path, `.${clientId}/skills/project-review/SKILL.md`);
+    assert.equal(custom.value.data.path, `${directory}/skills/project-review/SKILL.md`);
     const listed = await registry.callToolDetailed('list_project_instructions', { clientId });
     assert.equal(listed.value.ok, true);
     assert.ok(JSON.stringify(listed.value.data).includes(result.value.data.path));

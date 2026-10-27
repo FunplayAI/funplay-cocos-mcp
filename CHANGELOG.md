@@ -6,6 +6,13 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.9] - 2026-10-27
+
+### Added
+
+- Added DeepSeek Harness (DSH) support for [#25](https://github.com/FunplayAI/funplay-cocos-mcp/issues/25): generate a dedicated project-local Cordis overlay using the official Streamable HTTP MCP client. The dashboard displays an explicit `dsh web --patch` launch command; the overlay is not auto-loaded and existing global/profile YAML is never edited. Malformed, unrelated, disabled, or manually repointed entries remain protected, and owned endpoint updates are atomic.
+- Configure + Skills, Project Skills, and MCP instruction/Skill tools now support DSH's nearest-Git-root `.dsh/skills` directory, including managed references, update notices, backups, and restore. Existing or locally edited Skills are preserved.
+
 ## [0.6.8] - 2026-10-20
 
 ### Added

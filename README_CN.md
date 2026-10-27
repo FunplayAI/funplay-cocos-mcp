@@ -19,7 +19,7 @@
 
 ---
 
-Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy 等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
+Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy、DeepSeek Harness（DSH）等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
 
 这个项目延续 Funplay MCP for Unity 的产品方向：默认工具面保持聚焦，提供一键客户端配置，并围绕一个高灵活度主执行工具组织工作流。
 
@@ -276,6 +276,23 @@ url = "http://127.0.0.1:8765/"
 
 </details>
 
+<details>
+<summary>DeepSeek Harness（DSH）</summary>
+
+在 MCP Server 面板选择 **DeepSeek Harness (DSH)**，点击配置会生成 `<Cocos 项目>/.dsh/funplay-cocos-mcp.patch.json`，这是供 [官方 Cordis MCP 客户端](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md) 使用的 JSON 格式 YAML 覆盖层。不会修改 `$DSH_HOME`、全局或 profile YAML、依赖、凭据及审批设置。
+
+**该文件不会自动加载。** 请在 Cocos 项目目录使用面板显示的完整命令启动 DSH，或将其中的 `--patch` 参数追加到原有 DSH 启动命令。例如已安装 `dsh` 时：
+
+```sh
+dsh web --patch '/absolute/path/to/cocos-project/.dsh/funplay-cocos-mcp.patch.json'
+```
+
+通过 npm 启动时使用 `npx @deepseek-ai/dsh web --patch <同一绝对路径>`。其他官方 profile 也可通过 `--patch` 使用此文件；第三方桌面启动器可能需要单独设置启动参数。请保持 Cocos 及其 MCP 服务运行。生成文件会使用当前项目实际的服务器名称与 URL，不沿用旧示例名称及端口。
+
+“配置 + Skills”还会按 [DSH 文件系统 Skills 规范](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md)，将缺少的内置 Skills 安装到 `<最近 Git 根目录>/.dsh/skills`；没有 Git 仓库时使用 Cocos 项目目录。已有文件保持不变，可在“项目 Skills”中检查更新。同一 Git 仓库中的多个 Cocos 项目共用 Skills 根目录，但各有独立 MCP 覆盖层。
+
+</details>
+
 ### 可选：npm stdio Wrapper
 
 如果 MCP 客户端更适合使用本地 `stdio` 命令，可以在启动 Cocos 编辑器内置服务后安装 npm wrapper：
@@ -337,7 +354,7 @@ curl http://127.0.0.1:8765/tools
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
-- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code、OpenCode、CodeBuddy。内置 v3 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
+- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code、OpenCode、CodeBuddy、DSH。内置 v3 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。
@@ -350,7 +367,7 @@ curl http://127.0.0.1:8765/tools
 
 - **`execute_javascript` 主工具优先** — 一个高灵活度 JavaScript 工具就能编排场景/运行态和编辑器自动化，避免 AI 客户端被大量细碎工具干扰
 - **嵌入式 Cocos 扩展** — Cocos 侧不需要单独 Python 守护进程或外部 bridge
-- **一键客户端配置** — 在 Cocos Creator 内直接配置 Claude Code、Cursor、VS Code、Trae、Kiro、Qoder、Kimi Code、Codex、OpenCode、CodeBuddy（IDE 4.0+）
+- **一键客户端配置** — 在 Cocos Creator 内直接配置 Claude Code、Cursor、VS Code、Trae、Kiro、Qoder、Kimi Code、Codex、OpenCode、CodeBuddy（IDE 4.0+），或生成 DSH 配置文件及明确的 `--patch` 启动命令
 - **内建项目上下文** — 直接暴露项目、场景、选择、脚本诊断、日志和交互历史资源
 - **默认聚焦，必要时全量** — `core` 降低工具列表噪音，需要时切到 `full` 暴露全部工具；`custom` 与保存的 profile 可按分类或工具名调整并恢复
 - **可视化验证** — 截图和输入模拟让 AI 能验证 UI 与玩法改动
