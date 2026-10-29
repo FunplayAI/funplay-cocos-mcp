@@ -13,6 +13,7 @@ const {
   SERVER_NAME,
 } = require('../lib/client-config');
 const { parseJsonc } = require('../lib/jsonc');
+const { serverUrl } = require('../lib/project-context');
 
 const CONFIG = {
   host: '127.0.0.1',
@@ -50,7 +51,7 @@ test('CodeBuddy uses the Cocos project root, not CLI global storage or the enclo
   assert.equal(target.configPath, path.join(config.projectPath, '.mcp.json'));
   assert.equal(target.rootKey, 'mcpServers');
   assert.equal(target.isJsonc, true);
-  assert.deepEqual(target.entry, { type: 'http', url: 'http://127.0.0.1:8765/' });
+  assert.deepEqual(target.entry, { type: 'http', url: serverUrl(config) });
   assert.deepEqual(JSON.parse(formatTargetPreview(target)), {
     mcpServers: { [target.serverName]: target.entry },
   });
@@ -88,7 +89,7 @@ test('CodeBuddy setup preserves comments, other servers, custom fields and file 
   const updated = { ...config, port: 9000, clientConfigEntries: { codebuddy: first } };
   configureTarget(updated, 'codebuddy', options);
   assert.deepEqual(parseJsonc(fs.readFileSync(target.configPath, 'utf8')).mcpServers[target.serverName], {
-    type: 'http', url: 'http://127.0.0.1:9000/', headers: { 'X-Project': 'keep' }, timeout: 15000,
+    type: 'http', url: serverUrl(updated), headers: { 'X-Project': 'keep' }, timeout: 15000,
   });
   assert.equal(getTargetStatuses(config, options).find((item) => item.id === 'codebuddy').configured, false);
   assert.equal(getTargetStatuses(updated, options).find((item) => item.id === 'codebuddy').configured, true);
@@ -306,7 +307,7 @@ for (const extension of ['jsonc', 'json']) {
     const updated = { ...projectConfig, port: 9123, clientConfigEntries: { opencode: owned } };
     configureTarget(updated, 'opencode', options);
     const written = fs.readFileSync(file, 'utf8');
-    assert.equal(written.replace('http://127.0.0.1:9123/', owned.url), before);
+    assert.equal(written.replace(serverUrl(updated), owned.url), before);
     assert.ok(written.includes('"timeout": 15000,'), 'custom legacy entries are retained');
     assert.ok(written.includes('/* other server */ "other": {"type":"local","command":["keep",],}'));
     assert.equal(getTargetStatuses(updated, options).find((target) => target.id === 'opencode').configured, true);
@@ -348,13 +349,13 @@ test('OpenCode never overwrites malformed JSONC or conflicting entries', (t) => 
   }
 });
 
-test('OpenCode migrates only generated legacy entries and retains comments and other projects', (t) => {
+test('OpenCode adds a scoped entry while preserving historical shared entries, comments and other projects', (t) => {
   const options = createTargetOptions(t);
   const file = writeOpenCodeConfig(options, '{\n  "mcp": {\n    // existing integration\n    "other": {"type":"local","command":["keep"]},\n    "funplay_cocos": {"type":"remote","url":"http://127.0.0.1:8123/"},\n  },\n}\n');
   const config = { ...OPENCODE_CONFIG, projectPath: path.join(options.homePath, 'project'), migrateLegacy: true };
   const result = configureTarget(config, 'opencode', options);
   const written = fs.readFileSync(file, 'utf8');
-  assert.equal(written.includes('"funplay_cocos"'), false);
+  assert.equal(written.includes('"funplay_cocos"'), true);
   assert.ok(written.includes(`"${result.serverName}"`));
   assert.ok(written.includes('// existing integration\n    "other": {"type":"local","command":["keep"]}'));
   assert.equal(getTargetStatuses(config, options).find((target) => target.id === 'opencode').configured, true);
@@ -419,7 +420,7 @@ test('Claude Code reuses a project key that differs only by drive-letter case', 
   assert.equal(written.projects['d:/repos/game'].mcpServers.existing.url, 'http://127.0.0.1:1/');
   assert.deepEqual(written.projects['d:/repos/game'].mcpServers[result.serverName], {
     type: 'http',
-    url: 'http://127.0.0.1:8765/',
+    url: serverUrl(config),
   });
 });
 

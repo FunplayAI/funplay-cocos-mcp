@@ -56,7 +56,7 @@ test('a missing reference triggers preview/update even with an unchanged current
   assert.equal(state.modified, false);
   assert.equal(state.missingReferenceCount, 1);
   const preview = previewBuiltInProjectSkillUpdate(root, options);
-  assert.ok(preview.diff.includes(`+++ template-v3/${missing.relativePath}`));
+  assert.ok(preview.diff.includes(`+++ template-v4/${missing.relativePath}`));
   const repaired = updateBuiltInProjectSkill(root, options);
   assert.equal(repaired.state.current, true);
   assert.equal(fs.readFileSync(path.join(root, installed.state.path), 'utf8'), entrypoint);
@@ -184,7 +184,7 @@ test('reference backup paths cannot escape their predefined bundle', (t) => {
 test('the direct workflow creator exports references in a custom skill folder too', (t) => {
   const root = project(t);
   const created = createCocosMcpProjectSkill(root, { skillName: 'custom-cocos-workflow', clientId: 'opencode' });
-  assert.equal(created.references.length, 1);
+  assert.equal(created.references.length, getProjectSkillReferences(COCOS_MCP_SKILL_NAME).length);
   const reference = path.join(root, '.opencode/skills/custom-cocos-workflow/references/project-readiness.md');
   assert.equal(fs.existsSync(reference), true);
   assert.throws(() => createCocosMcpProjectSkill(root, { skillName: 'custom-cocos-workflow', clientId: 'opencode', overwrite: false }), /already exists/);
@@ -201,5 +201,5 @@ test('direct built-in creators retain explicit title, description and instructio
   assert.match(content, /description: "Use for this project only\."/);
   assert.match(content, /Preserve the user-authored rule\./);
   assert.ok(created.backup);
-  assert.equal(created.references.length, 1);
+  assert.equal(created.references.length, getProjectSkillReferences(COCOS_MCP_SKILL_NAME).length);
 });

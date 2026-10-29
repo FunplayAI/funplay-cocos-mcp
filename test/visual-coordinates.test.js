@@ -372,6 +372,7 @@ test('a failed cleanup remains uncertain and its delivery metadata reaches nativ
   const server = new McpServer({ toolRegistry: registry, config: {}, interactionLog: { add() {} }, runtimeLog: { add() {} } });
   const response = await server.handleRpcRequest({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: {
     name: 'simulate_mouse_click', arguments: { coordinateSpace: 'image-pixels', captureId: geometry.captureId, x: 100, y: 100 },
+    _meta: { expected_context: server.getProjectContext().expected_context },
   } });
   assert.equal(response.result.isError, true);
   const value = response.result.structuredContent;

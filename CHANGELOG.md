@@ -6,6 +6,22 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-29
+
+### Added
+
+- Project-scoped MCP URLs and explicit project/extension-session guards for mutating legacy-URL calls. Initialize, tool results and screenshot geometry carry structural identity evidence. Old URLs remain readable; writes require a verified `expected_context` pin. These checks prevent accidental misrouting, not unauthorized access.
+- Opt-in `timing: "frame-paced"` for calibrated mouse drags: unscaled duration/holds, separate target-renderer animation frames, bounded receipts, retained request-key deduplication, same-tool status/cancel, stale/focus/pause checks and owned shutdown cleanup. Renderer frames are explicitly not native Game View Update evidence or gameplay acceptance. Legacy step timing remains the default.
+
+### Changed
+
+- One-click setup generates project-bound URLs. The existing Skills notice also reports old endpoints and offers explicit combined reconfiguration; unreadable, unsupported, unverified and manually repointed entries remain protected, including custom headers/timeouts and historical shared entries. TOML updates retain the existing conservative URL-block editor, not a full-document TOML validator.
+- Built-in workflow/UI Skills v4 add conditional identity/input guidance with managed reference updates, legacy-v3 recognition and protection for locally modified content. Core/Full tool counts and project settings are unchanged.
+
+### Fixed
+
+- Frame-paced input recognizes native Game View child focus inside the captured foreground window, and a focus handoff after release no longer marks a finished drag as failed. Window focus loss while a button is held still interrupts input and attempts owned release cleanup.
+
 ## [0.6.10] - 2026-10-29
 
 ### Fixed

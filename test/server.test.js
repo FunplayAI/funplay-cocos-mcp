@@ -222,7 +222,7 @@ test('tool execution failures are returned as MCP tool errors', async () => {
     jsonrpc: '2.0',
     id: 2,
     method: 'tools/call',
-    params: { name: 'example', arguments: {} },
+    params: { name: 'example', arguments: {}, _meta: { expected_context: server.getProjectContext().expected_context } },
   });
 
   assert.equal(response.error, undefined);
@@ -243,7 +243,7 @@ test('tool object results include structuredContent', async () => {
     jsonrpc: '2.0',
     id: 4,
     method: 'tools/call',
-    params: { name: 'example', arguments: {} },
+    params: { name: 'example', arguments: {}, _meta: { expected_context: server.getProjectContext().expected_context } },
   });
 
   assert.deepEqual(response.result.structuredContent, value);
@@ -255,7 +255,7 @@ test('screenshot responses include native pixels plus small calibration text and
   const server = createServer({ callToolDetailed: async () => ({
     value, text: 'data:image/png;base64,AAAA', metadataText: JSON.stringify(value),
   }) });
-  const response = await server.handleRpcRequest({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'capture_editor_screenshot' } });
+  const response = await server.handleRpcRequest({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'capture_editor_screenshot', _meta: { expected_context: server.getProjectContext().expected_context } } });
   assert.deepEqual(response.result.content[0], { type: 'image', data: 'AAAA', mimeType: 'image/png' });
   assert.deepEqual(JSON.parse(response.result.content[1].text), value);
   assert.deepEqual(response.result.structuredContent, value);
@@ -276,7 +276,7 @@ test('structuredContent sanitizes circular values', async () => {
     jsonrpc: '2.0',
     id: 5,
     method: 'tools/call',
-    params: { name: 'example', arguments: {} },
+    params: { name: 'example', arguments: {}, _meta: { expected_context: server.getProjectContext().expected_context } },
   });
 
   assert.deepEqual(response.result.structuredContent, { ok: true, self: '[Circular]' });

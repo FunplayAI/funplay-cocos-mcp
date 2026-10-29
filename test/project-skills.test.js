@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+const { getProjectSkillReferences } = require('../lib/project-skill-references');
 const {
   COCOS_UI_SKILL_NAME,
   buildCocosUiProjectSkillContent,
@@ -73,7 +74,7 @@ test('both built-in Cocos skills have independent state, manifests, and updates'
   });
   assert.equal(installed.state.skillId, 'cocos-ui-composition');
   assert.equal(installed.state.status, 'current');
-  assert.equal(installed.state.templateVersion, 3);
+  assert.equal(installed.state.templateVersion, 4);
   assert.equal(getCocosMcpProjectSkillState(projectPath).status, 'missing');
 
   const preview = previewBuiltInProjectSkillUpdate(projectPath, {
@@ -141,18 +142,18 @@ for (const managed of [true, false]) {
     assert.equal(before.status, 'update-available');
     assert.equal(before.modified, false);
     assert.equal(before.installedTemplateVersion, 1);
-    assert.equal(before.templateVersion, 3);
+    assert.equal(before.templateVersion, 4);
 
     const preview = previewBuiltInProjectSkillUpdate(projectPath, options);
     assert.ok(preview.addedLines > 0);
     assert.ok(preview.removedLines > 0);
-    assert.equal(preview.references.length, 4);
+    assert.equal(preview.references.length, getProjectSkillReferences(COCOS_UI_SKILL_NAME).length);
     assert.equal(readProjectInstruction(projectPath, target).content, UI_SKILL_V1_CONTENT);
 
     const result = updateBuiltInProjectSkill(projectPath, options);
     assert.equal(result.updated, true);
     assert.equal(result.state.status, 'current');
-    assert.equal(result.state.installedTemplateVersion, 3);
+    assert.equal(result.state.installedTemplateVersion, 4);
     assert.equal(result.state.backupCount, 1);
     assert.equal(readProjectInstruction(projectPath, result.backup.path).content, UI_SKILL_V1_CONTENT);
     assert.equal(readProjectInstruction(projectPath, target).content, buildCocosUiProjectSkillContent());

@@ -125,8 +125,8 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 | `simulate_key_combo` | `full` | mutating | [core] Send a low-level Electron modified key press such as Ctrl+S or Cmd+P. |
 | `simulate_key_press` | `full` | mutating | [core] Send a low-level Electron key press to the editor, preview, or simulator window. |
 | `simulate_mouse_click` | `full` | mutating | [core] Send a low-level Electron mouse click to the editor, preview, or simulator window. |
-| `simulate_mouse_drag` | `full` | mutating | [core] Send a low-level Electron mouse drag to the editor, preview, or simulator window. |
-| `simulate_preview_input` | `full` | mutating | [core] Convenience wrapper for low-level preview/simulator input. Uses mouse click by default or key press when keyCode is provided. |
+| `simulate_mouse_drag` | `full` | mutating | [core] Send an Electron mouse drag. Legacy steps remain supported; opt into frame-paced timing for bounded, cancellable, idempotent movement across target-renderer frames. Frame delivery is not gameplay acceptance. |
+| `simulate_preview_input` | `full` | mutating | [core] Preview/simulator input wrapper. Defaults to click or key press; drag mode also supports frame-paced timing and same-tool status/cancel receipts. Renderer input delivery is not game acceptance. |
 
 ### Instructions
 

@@ -69,6 +69,25 @@ test('client configuration button is disabled during temporary port fallback', (
   assert.match(details.textContent, /cocos-project-hash/);
 });
 
+test('connection migration shares the Skills notice and remains visible until both concerns are resolved', () => {
+  const panel = { ...panelMethods(), language: 'zh',
+    $: { projectSkillsNotice: fakeElement(), projectSkillsNoticeText: fakeElement(), openProjectSkillsNoticeBtn: fakeElement(),
+      clientTargetSelect: { value: 'codex' } },
+    state: { clientTargets: [{ id: 'codex', name: 'Codex', needsReconfigure: true, canReconfigure: true }],
+      projectSkillsByClient: { codex: { clientId: 'codex', supported: true, builtIns: [{ skillName: 'workflow', status: 'update-available' }] } } } };
+  panel.renderProjectSkillsNotice();
+  assert.match(panel.$.projectSkillsNoticeText.textContent, /旧地址/);
+  assert.match(panel.$.projectSkillsNoticeText.textContent, /workflow/);
+  assert.match(panel.$.openProjectSkillsNoticeBtn.textContent, /重新配置 MCP \+ Skills/);
+  panel.state.clientTargets[0].needsReconfigure = false;
+  panel.renderProjectSkillsNotice();
+  assert.equal(panel.$.projectSkillsNotice.classList.contains('visible'), true);
+  assert.doesNotMatch(panel.$.projectSkillsNoticeText.textContent, /旧地址/);
+  panel.state.projectSkillsByClient.codex.builtIns[0].status = 'current';
+  panel.renderProjectSkillsNotice();
+  assert.equal(panel.$.projectSkillsNotice.classList.contains('visible'), false);
+});
+
 test('Skills read errors remain visible instead of looking like a current installation', () => {
   const notice = fakeElement();
   const text = fakeElement();

@@ -1466,13 +1466,16 @@ function createMethods(mode) {
           ? [projectSkills.official]
           : [];
       const attention = builtIns.filter((skill) => skill.status !== 'current');
+      const target = (this.state && this.state.clientTargets || []).find((item) => item.id === this.selectedSkillClientId());
+      const connectionNotice = target && (target.needsReconfigure || target.readError);
+      this.setText('openProjectSkillsNoticeBtn', this.t(connectionNotice
+        ? projectSkills.supported ? 'client.reconfigure_skills' : 'client.reconfigure'
+        : 'skills_manager.manage'));
+      this.setDisabled(this.$.openProjectSkillsNoticeBtn, Boolean(target && target.readError) || Boolean(connectionNotice && projectSkills.error)
+        || Boolean(target && target.needsReconfigure && target.canReconfigure === false) || Boolean(this.configuringClient)
+        || Boolean(connectionNotice && this.state && this.state.clientConfig && this.state.clientConfig.configurationBlocked));
       this.$.projectSkillsNotice.classList.remove('visible', 'missing', 'update', 'modified');
-      if (projectSkills.error) {
-        this.$.projectSkillsNoticeText.textContent = `${projectSkills.clientName || projectSkills.clientId}\n${this.t('skills_manager.read_error', { error: projectSkills.error })}`;
-        this.$.projectSkillsNotice.classList.add('visible', 'modified');
-        return;
-      }
-      if (!attention.length) {
+      if (!attention.length && !connectionNotice && !projectSkills.error) {
         this.$.projectSkillsNoticeText.textContent = '';
         return;
       }
@@ -1492,9 +1495,13 @@ function createMethods(mode) {
         });
       }).filter(Boolean);
 
-      this.$.projectSkillsNoticeText.textContent = `${projectSkills.clientName || projectSkills.clientId}\n${notices.join('\n')}`;
+      if (projectSkills.error) notices.unshift(this.t('skills_manager.read_error', { error: projectSkills.error }));
+      if (connectionNotice) notices.unshift(target.readError
+        ? this.t('client.config_read_error', { error: target.readError })
+        : this.t(target.canReconfigure === false ? 'client.legacy_unverified' : 'client.legacy_endpoint'));
+      this.$.projectSkillsNoticeText.textContent = `${projectSkills.clientName || target && target.name || projectSkills.clientId}\n${notices.join('\n')}`;
       this.$.projectSkillsNotice.classList.add('visible');
-      if (attention.some((skill) => skill.status === 'modified')) {
+      if (projectSkills.error || attention.some((skill) => skill.status === 'modified')) {
         this.$.projectSkillsNotice.classList.add('modified');
       } else if (attention.some((skill) => skill.status === 'update-available')) {
         this.$.projectSkillsNotice.classList.add('update');
@@ -1930,18 +1937,20 @@ function createMethods(mode) {
         this.$.clientTargetStatus.textContent = this.t('client.no_targets');
         return;
       }
-      const configured = target.configured ? this.t(target.launchCommand ? 'client.patch_generated' : 'client.configured') : this.t('client.not_configured');
+      const configured = target.needsReconfigure ? this.t('client.needs_reconfigure') : target.configured ? this.t(target.launchCommand ? 'client.patch_generated' : 'client.configured') : this.t('client.not_configured');
       const blocked = this.state && this.state.clientConfig && this.state.clientConfig.configurationBlocked;
+      const unsafeConfig = Boolean(target.readError || target.needsReconfigure && target.canReconfigure === false);
       const skills = this.selectedProjectSkills();
       const busy = Boolean(this.configuringClient);
       this.setDisabled(this.$.clientTargetSelect, busy);
-      this.setDisabled(this.$.configureClientBtn, blocked || busy);
-      this.setDisabled(this.$.configureWithSkillsBtn, blocked || busy || !skills.supported || Boolean(skills.error));
+      this.setDisabled(this.$.configureClientBtn, blocked || busy || unsafeConfig);
+      this.setDisabled(this.$.configureWithSkillsBtn, blocked || busy || unsafeConfig || !skills.supported || Boolean(skills.error));
       this.setText('configureSkillsHint', skills.error ? this.t('skills_manager.read_error', { error: skills.error })
         : this.t(skills.supported ? 'client.skills_setup_hint' : 'skills_manager.unsupported'));
       this.$.clientTargetStatus.classList.remove('configured', 'blocked', 'unconfigured');
       this.$.clientTargetStatus.classList.add(blocked ? 'blocked' : target.configured ? 'configured' : 'unconfigured');
-      this.$.clientTargetStatus.textContent = blocked ? this.t('client.fallback_blocked') : `${this.t('client.status')}: ${configured}`;
+      this.$.clientTargetStatus.textContent = blocked ? this.t('client.fallback_blocked') : target.readError
+        ? this.t('client.config_read_error', { error: target.readError }) : `${this.t('client.status')}: ${configured}`;
       const launchHint = target.launchCommand ? `\n${this.t('client.patch_launch_hint', { command: target.launchCommand })}` : '';
       this.setText('clientTargetDetails', `${target.configPath}\n${target.serverName || ''} → ${this.state && this.state.clientConfig && this.state.clientConfig.url || ''}${launchHint}`);
       this.renderProjectSkillsNotice();
@@ -2490,6 +2499,11 @@ function createMethods(mode) {
         this.showClientAction(this.t('client.fallback_blocked'), 'warning');
         return;
       }
+      const target = (this.state && this.state.clientTargets || []).find((item) => item.id === targetId);
+      if (target && (target.readError || target.needsReconfigure && target.canReconfigure === false)) {
+        this.showClientAction(target.readError ? this.t('client.config_read_error', { error: target.readError }) : this.t('client.legacy_unverified'), 'error');
+        return;
+      }
       this.configuringClient = true;
       this.renderClientTargetStatus();
       this.showClientAction(this.t('client.configuring'));
@@ -2726,7 +2740,12 @@ function createMethods(mode) {
       this.on(this.$.openToolsBtn, 'click', () => this.runAction(() => request('open-panel', 'tool-exposure'), { notify: false }));
       this.on(this.$.openSettingsBtn, 'click', () => this.runAction(() => request('open-panel', 'settings'), { notify: false }));
       this.on(this.$.openProjectSkillsBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills'), { notify: false }));
-      this.on(this.$.openProjectSkillsNoticeBtn, 'click', () => this.runAction(() => request('open-panel', 'project-skills'), { notify: false }));
+      this.on(this.$.openProjectSkillsNoticeBtn, 'click', () => {
+        const target = (this.state && this.state.clientTargets || []).find((item) => item.id === this.selectedSkillClientId());
+        return target && (target.needsReconfigure || target.readError)
+          ? this.configureClientSetup(Boolean(this.selectedProjectSkills().supported))
+          : this.runAction(() => request('open-panel', 'project-skills'), { notify: false });
+      });
       this.on(this.$.openDashboardBtn, 'click', () => this.runAction(() => request('open-panel', 'default'), { notify: false }));
       this.on(this.$.enabledInput, 'change', () => this.handleEnableToggle());
       this.on(this.$.portInput, 'change', () => this.persistConfig({ showNotice: true }));

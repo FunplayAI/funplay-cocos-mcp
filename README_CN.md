@@ -537,6 +537,32 @@ Editor 上下文脚本可以访问 `Editor`、`fs`、`path`、`os`、`require`�
 
 `enableConsoleLogging` 默认开启。在 **MCP 设置 > 控制台日志 > 打印 MCP 日志** 取消勾选，即可停止扩展及 HTTP 服务向 Cocos 控制台打印 MCP 信息、警告和错误。设置立即生效并按项目保存，不会重启 MCP、清空历史、静音项目脚本日志或影响 stdio 协议输出。
 
+## v0.7.0：项目专属连接与跨渲染帧拖拽
+
+新生成的 MCP 地址使用 `http://127.0.0.1:<端口>/mcp/project/<项目标识>/`，保留已有固定端口。
+写入前需独立核对 `initialize.funplay.context` 中的 `project_path` 和 `project_id`，不能把任意响应服务当成目标项目。
+旧 `/`、`/mcp` 地址仍允许读取；写入需把核对过的 `expected_context` 放在工具参数或 `params._meta.expected_context` 中。
+项目专属地址绑定项目；显式标识还会固定扩展/编辑器实例，重载后旧标识可能失效。这是防串线机制，不是身份认证。
+
+旧客户端可从现有连接/Skills 提示卡显式重新配置，然后重连或重启客户端。
+其他项目、手动修改的地址、自定义请求头与超时、历史通用条目和本地 Skills 修改会保留；配置不可读或归属不明时不会自动覆盖。
+
+Full 工具 `simulate_mouse_drag` 默认保留旧 `steps`/`stepDelayMs` 模式。
+需要跨渲染帧测试时，显式传入 `timing: "frame-paced"`、`coordinateSpace: "image-pixels"`、
+新截图的 `captureId`、唯一的 `requestKey`，以及从该 PNG 量取的起止坐标。
+`durationMs` 范围 50～10000，默认 600；`pressHoldMs`、`endHoldMs` 范围 0～2000，默认 100。
+`waitMs` 默认 1200，超过等待时间可先返回运行中的回执，而不是宣称拖拽完成。
+
+通过**同一个工具**传 `action: "status"` 和 `jobId` 或 `requestKey` 查询；传 `action: "cancel"` 取消时无需坐标。
+相同且仍保留的请求不会重复发送，不同参数复用同一个 key 会报冲突。
+仅保留最近 32 份回执，不能跨淘汰或编辑器重载充当持久事务；回执丢失时先检查实际状态，不自动换 key 重放。
+`simulate_preview_input` 的拖拽模式也支持这些字段，但回执按原始工具分别归属，并遵守当前工具开放范围。
+
+这里观察的是目标 Electron 渲染器的帧，不是经过验证的原生 Game View 游戏 Update 帧。
+回执明确返回 `nativeGameUpdateVerified: false`、`businessOutcomeVerified: false`，游戏行为仍需独立回读或截图确认。
+Game View 的暂停/停止状态另行检查；失焦、截图过期、几何变化、帧停滞和取消会中断并尝试释放本次按键。
+释放失败时保留窗口锁，需显式取消该任务重试清理；不会自动更改项目输入或后台运行策略。
+
 ## 架构
 
 ```text

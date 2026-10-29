@@ -542,6 +542,53 @@ reconfigure MCP clients after changing the address.
 
 `enableConsoleLogging` defaults to `true`. Turn it off in **MCP Settings > Console Logs > Print MCP logs** to stop the extension and HTTP server from printing MCP information, warnings, and errors to the Cocos console. It takes effect immediately, persists per project, and does not restart MCP, clear history, mute project-script logs, or change stdio protocol output.
 
+## v0.7.0: project-bound connections and frame-paced input
+
+New generated MCP URLs use `http://127.0.0.1:<port>/mcp/project/<project-id>/`.
+Existing pinned ports are preserved. Independently compare
+`initialize.funplay.context.project_path` and `project_id` with your intended project
+before writing. Legacy `/` and `/mcp` endpoints remain readable, but mutations need
+the verified `expected_context` token, either in tool arguments or
+`params._meta.expected_context`. A scoped URL binds the project; an explicit token
+also pins the extension/Editor lifetime. Reinitializing an arbitrary responding
+server is not proof that it is the intended project. This is routing protection,
+not authentication.
+
+For old configurations, use the existing connection/Skills notice to reconfigure,
+then reconnect/restart your MCP client. Migration preserves unrelated entries,
+custom headers/timeouts, historical shared entries and locally edited Skills.
+Unreadable or unverified configurations require review instead of an automatic rewrite.
+
+The Full-profile `simulate_mouse_drag` keeps legacy `steps`/`stepDelayMs` by default.
+For a new calibrated gesture, explicitly use:
+
+```json
+{
+  "timing": "frame-paced",
+  "coordinateSpace": "image-pixels",
+  "captureId": "<fresh screenshot captureId>",
+  "requestKey": "drag-test-001",
+  "startX": 100, "startY": 100, "endX": 300, "endY": 200,
+  "durationMs": 600, "pressHoldMs": 100, "endHoldMs": 100,
+  "waitMs": 1200
+}
+```
+
+Measure coordinates from that exact PNG. A running response is only an
+acknowledgment. Query the same tool with `action: "status"` and its `jobId` or
+`requestKey`; cancel with `action: "cancel"`, without coordinates. Retained
+identical starts recover their original receipt rather than replaying. Only the
+latest 32 receipts are retained, not across eviction or Editor reload. Missing
+receipts require state inspection before any new gesture. `simulate_preview_input`
+supports the same fields in drag mode, with separate receipt ownership and tool exposure.
+
+Frames come from the target Electron renderer, not a verified native Game View
+engine Update loop. Receipts explicitly report `nativeGameUpdateVerified: false`
+and `businessOutcomeVerified: false`. Game View pause/stop is checked separately.
+Focus loss, stale geometry, stalled frames or cancellation interrupt input and
+attempt only the owned release. Failed release keeps that window locked until
+explicit cleanup succeeds. No project input/background policies are changed.
+
 ## Architecture
 
 ```text

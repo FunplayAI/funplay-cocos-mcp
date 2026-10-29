@@ -3,6 +3,8 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
+const { serverUrl, projectContext } = require('./lib/project-context');
 const manifest = require('./package.json');
 const { getServerName, formatTargetPreview, buildTargets, configureTarget, getTargetStatuses } = require('./lib/client-config');
 const { readOptionalText, writeTextIfUnchanged } = require('./lib/atomic-file');
@@ -23,6 +25,7 @@ const { PromptProvider } = require('./lib/prompts');
 const { InteractionLog } = require('./lib/interaction-log');
 const { RuntimeLog } = require('./lib/runtime-log');
 const { captureScriptExecution } = require('./lib/script-execution');
+const { cancelFrameDrags } = require('./lib/input');
 const { checkForUpdate } = require('./lib/update-checker');
 const { installLatestUpdate } = require('./lib/updater');
 const {
@@ -60,6 +63,7 @@ class ExtensionService {
     this.lastInstallInfo = null;
     this.lastGlobalInstallInfo = null;
     this.lastServerError = null;
+    this.instanceId = crypto.randomBytes(16).toString('hex');
   }
 
   log(level, message, details) {
@@ -98,12 +102,9 @@ class ExtensionService {
     return result;
   }
 
-  unload() {
+  async unload() {
     this.log('info', 'Extension unloading...');
-    if (this.server) {
-      this.server.stop();
-      this.server = null;
-    }
+    await this.stopServer();
     this.log('info', 'Extension unloaded.');
   }
 
@@ -148,6 +149,7 @@ class ExtensionService {
       projectPath: getProjectPath(),
       projectName: getProjectName(),
       projectIdentity: getProjectIdentity(),
+      projectContext: projectContext({ projectIdentity: getProjectIdentity(), projectPath: getProjectPath(), instanceId: this.instanceId }),
       cocosVersion: getCocosVersion(),
       packagePath: path.dirname(__filename),
     });
@@ -183,6 +185,9 @@ class ExtensionService {
       serverVersion: manifest.version || '0.0.0',
       projectName: getProjectName(),
       projectIdentity: getProjectIdentity(),
+      projectPath: getProjectPath(),
+      instanceId: this.instanceId,
+      getActiveContext: () => projectContext({ projectIdentity: getProjectIdentity(), projectPath: getProjectPath(), instanceId: this.instanceId }),
     });
 
     try {
@@ -205,6 +210,7 @@ class ExtensionService {
 
   async stopServer() {
     this.log('info', 'Stop requested.');
+    await cancelFrameDrags(projectContext({ projectIdentity: getProjectIdentity(), projectPath: getProjectPath(), instanceId: this.instanceId }).expected_context);
     if (this.server) {
       await this.server.stop();
       this.server = null;
@@ -230,7 +236,7 @@ class ExtensionService {
     return {
       host: this.config.host,
       port,
-      url: `http://${this.config.host}:${port}/`,
+      url: serverUrl(this.config, port, getProjectIdentity()),
     };
   }
 
@@ -270,6 +276,8 @@ class ExtensionService {
       projectPath: getProjectPath(),
       projectName: getProjectName(),
       projectIdentity: getProjectIdentity(),
+      projectContext: this.server && typeof this.server.getProjectContext === 'function' ? this.server.getProjectContext()
+        : projectContext({ projectIdentity: getProjectIdentity(), projectPath: getProjectPath(), instanceId: this.instanceId }),
       cocosVersion: getCocosVersion(),
       url: effective.url,
     };
@@ -344,6 +352,7 @@ class ExtensionService {
         ...this.config,
         host: status.host,
         port: status.port,
+        migrateLegacy: status.running,
       }),
       localization: {
         preference: this.config.language,

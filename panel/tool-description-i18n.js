@@ -109,10 +109,10 @@ const ZH_TOOL_DESCRIPTIONS = {
   capture_game_screenshot: '截取编辑器 Game/Preview 面板区域，并在可用时按面板裁剪。',
   list_editor_windows: '列出可用的 Electron 窗口，便于截图或输入工具选择正确目标。明确需要处理窗口目标问题时使用。',
   simulate_mouse_click: '向编辑器、预览或模拟器窗口发送底层 Electron 鼠标点击。',
-  simulate_mouse_drag: '向编辑器、预览或模拟器窗口发送底层 Electron 鼠标拖拽。',
+  simulate_mouse_drag: '发送 Electron 鼠标拖拽。兼容旧步数模式；可显式启用跨渲染帧模式，按时长移动并支持去重、查询和取消。渲染帧及事件发送不代表游戏逻辑已响应。',
   simulate_key_press: '向编辑器、预览或模拟器窗口发送底层 Electron 按键。',
   simulate_key_combo: '向编辑器、预览或模拟器窗口发送底层 Electron 组合按键，例如 Ctrl+S 或 Cmd+P。',
-  simulate_preview_input: '底层预览或模拟器输入的便捷封装。默认模拟鼠标点击；提供 keyCode 时模拟按键。',
+  simulate_preview_input: '预览或模拟器输入的便捷封装。默认点击或按键；拖拽模式支持跨渲染帧时序及同一工具内的回执查询、取消。事件发送不代表游戏行为已验证。',
   capture_preview_screenshot: '截取预览或模拟器窗口，并以 MCP 图片数据返回。仅在需要游戏或预览输出的视觉证明时使用。',
 };
 

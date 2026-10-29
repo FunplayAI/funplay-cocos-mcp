@@ -9,6 +9,7 @@ const test = require('node:test');
 const { buildTargets, configureTarget, formatTargetPreview, getTargetStatuses } = require('../lib/client-config');
 const { getSkillProjectPath, getSkillsDirectory } = require('../lib/skill-platforms');
 const { getProjectSkillsState, updateBuiltInProjectSkill } = require('../lib/project-skills');
+const { serverUrl } = require('../lib/project-context');
 
 const CLIENT = 'deepseek_harness';
 
@@ -31,7 +32,7 @@ test('DSH generates an explicit project overlay in official Cordis format, not a
   const { root, config, options, target } = fixture(t);
   fs.mkdirSync(path.join(root, '.git'));
   const preview = [{ insert: [{ id: target.serverName, name: '@deepseek-ai/dsh-mcp-client', config: {
-    serverName: target.serverName, transport: 'streamable-http', url: 'http://127.0.0.1:23456/',
+    serverName: target.serverName, transport: 'streamable-http', url: serverUrl(config),
   } }] }];
   assert.equal(target.configPath, path.join(config.projectPath, '.dsh', 'funplay-cocos-mcp.patch.json'));
   assert.deepEqual(JSON.parse(formatTargetPreview(target)), preview);
@@ -71,7 +72,7 @@ test('DSH preserves custom client options, permissions, and idempotence when upd
   const updated = { ...config, port: 24567, clientConfigEntries: { [CLIENT]: first } };
   configureTarget(updated, CLIENT, options);
   const entry = JSON.parse(fs.readFileSync(target.configPath, 'utf8'))[0].insert[0];
-  assert.deepEqual(entry.config, { ...target.entry, url: 'http://127.0.0.1:24567/', headers: { 'X-Project': 'keep' }, toolCallTimeoutMs: 90000 });
+  assert.deepEqual(entry.config, { ...target.entry, url: serverUrl(updated), headers: { 'X-Project': 'keep' }, toolCallTimeoutMs: 90000 });
   if (process.platform !== 'win32') assert.equal(fs.statSync(target.configPath).mode & 0o777, 0o640);
   assert.equal(status(config, options).configured, false);
   assert.equal(status(updated, options).configured, true);

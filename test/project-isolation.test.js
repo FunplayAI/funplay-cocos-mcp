@@ -8,6 +8,7 @@ const test = require('node:test');
 const { loadConfig, getProjectPort } = require('../lib/config');
 const { getServerName, buildTargets, configureTarget, getTargetStatuses, formatTargetPreview } = require('../lib/client-config');
 const { writeTextIfUnchanged } = require('../lib/atomic-file');
+const { serverUrl } = require('../lib/project-context');
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-isolation-'));
@@ -79,14 +80,14 @@ test('Claude configuration uses the nearest Git root and preserves other project
   assert.equal(preview.projects[root].mcpServers[result.serverName].url, result.url);
 });
 
-test('migration only retires a verified, generated legacy entry at the active endpoint', (t) => {
+test('scoped migration preserves historical shared root entries', (t) => {
   const { projectPath, options } = fixture(t);
   const file = path.join(options.homePath, '.cursor', 'mcp.json');
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ mcpServers: { funplay_cocos: { url: 'http://127.0.0.1:23456/' }, manual: { command: 'keep' } } }));
   configureTarget({ ...config(projectPath), migrateLegacy: true }, 'cursor', options);
   let written = JSON.parse(fs.readFileSync(file, 'utf8'));
-  assert.equal(written.mcpServers.funplay_cocos, undefined);
+  assert.equal(written.mcpServers.funplay_cocos.url, 'http://127.0.0.1:23456/');
   assert.equal(written.mcpServers.manual.command, 'keep');
   written.mcpServers.funplay_cocos = { url: 'http://127.0.0.1:9999/' };
   fs.writeFileSync(file, JSON.stringify(written));
@@ -133,7 +134,7 @@ test('TOML updates preserve comments, custom options, nested tables and array-of
   const updated = { ...config(projectPath, 28888), clientConfigEntries: { codex: initial } };
   configureTarget(updated, 'codex', options);
   const written = fs.readFileSync(initial.configPath, 'utf8');
-  assert.match(written, /url = "http:\/\/127\.0\.0\.1:28888\/"/);
+  assert.ok(written.includes(`url = "${serverUrl(updated)}"`));
   assert.match(written, /startup_timeout_sec = 60/);
   assert.match(written, /Custom = "keep"/);
   assert.match(written, /\[\[skills.config\]\]\npath = "\/some\/skill"\nenabled = false/);
