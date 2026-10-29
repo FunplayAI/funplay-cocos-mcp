@@ -65,7 +65,15 @@ function dashboardTemplate() {
           </label>
           <ui-button id="restartBtn" data-i18n="dashboard.restart">Restart</ui-button>
         </div>
+        <div id="serverError" class="compact-warning" role="alert" hidden></div>
         <div class="service-form">
+          <label class="form-row"><span data-i18n="dashboard.server_host">Server Host</span>
+            <div class="field-actions">
+              <ui-input id="hostInput" placeholder="127.0.0.1"></ui-input>
+              <ui-button id="applyHostBtn" data-i18n="dashboard.apply_host">Apply Host</ui-button>
+            </div>
+          </label>
+          <div id="hostHint" class="hint-line"></div>
           <label class="form-row"><span data-i18n="dashboard.server_port">Server Port</span>
             <ui-num-input id="portInput"></ui-num-input>
           </label>
@@ -1056,6 +1064,10 @@ const SELECTORS = {
   updateStatus: '#updateStatus',
   enabledInput: '#enabledInput',
   portInput: '#portInput',
+  hostInput: '#hostInput',
+  applyHostBtn: '#applyHostBtn',
+  hostHint: '#hostHint',
+  serverError: '#serverError',
   profileSelect: '#profileSelect',
   sessionsInput: '#sessionsInput',
   consoleLoggingInput: '#consoleLoggingInput',
@@ -1249,6 +1261,7 @@ function createMethods(mode) {
       this.setControlValue('disabledCategoriesInput', this.formatList(config.disabledToolCategories));
       this.setControlValue('enabledToolsInput', this.formatList(config.enabledTools));
       this.setControlValue('disabledToolsInput', this.formatList(config.disabledTools));
+      this.renderServerConnection();
 
       this.renderUpdateStatus();
       this.renderInstallationStatus();
@@ -1260,6 +1273,40 @@ function createMethods(mode) {
       this.renderCategoryControls();
       this.renderToolList();
       this.renderClientTargets();
+    },
+    renderServerConnection() {
+      const config = this.state && this.state.config || {};
+      const status = this.state && this.state.status || {};
+      const overridden = config.hostSource === 'environment';
+      this.setControlValue('hostInput', config.host || status.host || '127.0.0.1');
+      this.setDisabled(this.$.hostInput, overridden || Boolean(this.savingHost));
+      this.setDisabled(this.$.applyHostBtn, overridden || Boolean(this.savingHost));
+      this.setText('hostHint', this.t(overridden ? 'dashboard.host_env_hint' : 'dashboard.host_hint'));
+      this.setHidden(this.$.serverError, !status.startError);
+      if (status.startError) {
+        this.setText('serverError', this.t('dashboard.start_error', {
+          host: status.startError.host,
+          port: status.startError.port,
+          error: status.startError.message,
+        }));
+      }
+    },
+    async applyHost() {
+      if (this.savingHost || this.state && this.state.config && this.state.config.hostSource === 'environment') return;
+      const host = this.$.hostInput.value;
+      this.savingHost = true;
+      this.setDisabled(this.$.hostInput, true);
+      this.setDisabled(this.$.applyHostBtn, true);
+      try {
+        await this.runAction(async () => {
+          const saved = await request('save-config', { host });
+          if (saved.config.autostart && !saved.status.running) await request('start-server');
+          return saved;
+        }, { refreshOnError: true });
+      } finally {
+        this.savingHost = false;
+        this.renderServerConnection();
+      }
     },
     setText(key, value) {
       if (this.$[key]) {
@@ -2231,6 +2278,9 @@ function createMethods(mode) {
         if (options.notify !== false) this.showNotice(this.t('common.action_completed'));
         return result;
       } catch (error) {
+        if (options.refreshOnError) {
+          try { await this.refresh(); } catch (refreshError) { /* Keep the original action failure. */ }
+        }
         this.showNotice(this.t('common.error', { error: error.message }), 'error');
       }
     },
@@ -2488,7 +2538,7 @@ function createMethods(mode) {
 
       await this.persistConfig();
       if (shouldEnable && !wasRunning) {
-        await this.runAction(() => request('start-server'));
+        await this.runAction(() => request('start-server'), { refreshOnError: true });
         return;
       }
       if (!shouldEnable && wasRunning) {
@@ -2642,7 +2692,8 @@ function createMethods(mode) {
     bindEvents() {
       this.on(this.$.clearActivityBtn, 'click', () => this.clearActivity());
       this.on(this.$.dismissNoticeBtn, 'click', () => this.dismissNotice());
-      this.on(this.$.restartBtn, 'click', () => this.runAction(() => request('restart-server')));
+      this.on(this.$.restartBtn, 'click', () => this.runAction(() => request('restart-server'), { refreshOnError: true }));
+      this.on(this.$.applyHostBtn, 'click', () => this.applyHost());
       this.on(this.$.useProjectPortBtn, 'click', () => this.runAction(() => request('save-config', { portMode: 'project' })));
       this.on(this.$.pinCurrentPortBtn, 'click', () => this.runAction(() => request('save-config', { portMode: 'fixed', port: this.state.status.port })));
       this.on(this.$.skillClientSelect, 'change', () => {

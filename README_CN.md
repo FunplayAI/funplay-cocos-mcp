@@ -526,6 +526,13 @@ Editor 上下文脚本可以访问 `Editor`、`fs`、`path`、`os`、`require`�
 - `COCOS_MCP_PORT`
 - `COCOS_MCP_PROFILE`
 
+当配置的 Host 不可用（例如 WSL 网卡尚未启动）时，仅 MCP 监听服务停止，插件及面板仍可打开。
+进入 **Funplay > MCP 服务**，修改 **监听地址** 后点击 **应用地址**；本机访问可填写
+`127.0.0.1`。启用服务时会重试启动，否则可在需要时点击 **启用 MCP 服务** 或 **重启**。
+面板保留启动错误，直到服务成功启动；不会自动替换监听地址，也不会在启动失败时改写配置文件。
+`COCOS_MCP_HOST` 环境变量优先于项目文件；设置了该变量时，需修改环境变量并重启 Creator。
+网络/通配地址可能开放未认证的编辑器访问，请仅在可信网络使用，并在修改地址后重新配置 MCP 客户端。
+
 `toolProfile: "custom"` 会从 `core` 集合开始，再加入 `enabledToolCategories` / `enabledTools`，并移除 `disabledToolCategories` / `disabledTools`。面板可以把这些暴露设置保存为命名 `savedToolProfiles`，方便恢复或分享。`enableSessions` 默认关闭，因为常规编辑器自动化不需要跨请求客户端状态。
 
 `enableConsoleLogging` 默认开启。在 **MCP 设置 > 控制台日志 > 打印 MCP 日志** 取消勾选，即可停止扩展及 HTTP 服务向 Cocos 控制台打印 MCP 信息、警告和错误。设置立即生效并按项目保存，不会重启 MCP、清空历史、静音项目脚本日志或影响 stdio 协议输出。

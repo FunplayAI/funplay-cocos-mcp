@@ -6,6 +6,16 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.6.10] - 2026-10-29
+
+### Fixed
+
+- Fixed [#26](https://github.com/FunplayAI/funplay-cocos-mcp/issues/26): an unavailable configured Host (such as a stopped WSL network adapter) no longer prevents Cocos Creator from loading the extension. MCP stays stopped, the original startup error remains visible, and editor panels remain available for recovery. Explicit start/restart failures still report errors; no automatic Host substitution or startup config rewrite is performed.
+
+### Added
+
+- Added Server Host and Apply Host to the MCP Server panel. Address edits are validated before saving or stopping a healthy listener; applying a corrected Host retries startup when MCP is enabled. Environment-variable overrides are identified without changing their persisted project value. Bilingual guidance explains local-only access, trusted-network exposure, and client reconfiguration after an address change.
+
 ## [0.6.9] - 2026-10-27
 
 ### Added

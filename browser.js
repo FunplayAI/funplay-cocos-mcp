@@ -14,6 +14,7 @@ const {
   getProjectPort,
   getCocosVersion,
   hasRuntimeConfigChanges,
+  normalizeHost,
 } = require('./lib/config');
 const { McpServer } = require('./lib/server');
 const { createToolRegistry } = require('./lib/tool-registry');
@@ -58,6 +59,7 @@ class ExtensionService {
     this.lastUpdateInfo = null;
     this.lastInstallInfo = null;
     this.lastGlobalInstallInfo = null;
+    this.lastServerError = null;
   }
 
   log(level, message, details) {
@@ -81,7 +83,10 @@ class ExtensionService {
     let result;
     if (this.config.autostart) {
       this.log('info', 'Autostart is enabled, starting MCP server.');
-      result = this.startServer();
+      // An unavailable NIC (for example, a stopped WSL adapter) must not make
+      // Creator reject the whole extension: its panel is the recovery path.
+      // Explicit start/restart requests still reject and retain the error.
+      result = this.startServer().catch(() => this.getStatus());
     } else {
       this.log('info', 'Autostart is disabled. MCP server is idle.');
       result = this.getStatus();
@@ -180,7 +185,19 @@ class ExtensionService {
       projectIdentity: getProjectIdentity(),
     });
 
-    await this.server.start();
+    try {
+      await this.server.start();
+      this.lastServerError = null;
+    } catch (error) {
+      this.lastServerError = {
+        message: error.message || String(error),
+        code: error.code || '',
+        host: this.config.host,
+        port: this.config.port,
+      };
+      this.log('error', `MCP server startup failed: ${this.lastServerError.message}. The extension remains available; edit Server Host in MCP Server and retry.`);
+      throw error;
+    }
     this.log('info', `MCP server started at ${this.getStatus().url}`);
     this.log('info', `If this tool saves you time, please consider giving it a Star on GitHub: ${REPOSITORY_URL}`);
     return this.getStatus();
@@ -227,6 +244,7 @@ class ExtensionService {
       : null;
     return {
       running: Boolean(this.server && this.server.isRunning()),
+      startError: this.lastServerError,
       attachedToExisting: Boolean(attachInfo),
       attachInfo,
       host: this.config.host,
@@ -799,6 +817,12 @@ class ExtensionService {
     this.ensureRuntime();
     const originalConfigText = readOptionalText(this.config.configPath);
     if (this.config.configError) throw new Error(this.config.configError);
+    const storedConfig = originalConfigText ? JSON.parse(originalConfigText) : {};
+    const nextHost = partialConfig && partialConfig.host !== undefined
+      ? normalizeHost(partialConfig.host) : this.config.host;
+    if (this.config.hostSource === 'environment' && nextHost !== this.config.host) {
+      throw new Error('Host is overridden by COCOS_MCP_HOST. Change that environment variable and restart Cocos Creator.');
+    }
     const nextPortMode = partialConfig && partialConfig.portMode
       ? (partialConfig.portMode === 'project' ? 'project' : 'fixed')
       : partialConfig && partialConfig.port !== undefined && Number(partialConfig.port) !== this.config.port
@@ -824,8 +848,8 @@ class ExtensionService {
       ? (partialConfig.toolProfile === 'full' || partialConfig.toolProfile === 'custom' ? partialConfig.toolProfile : 'core')
       : this.config.toolProfile;
     const nextConfig = {
-      ...(originalConfigText ? JSON.parse(originalConfigText) : {}),
-      host: partialConfig && partialConfig.host ? String(partialConfig.host) : this.config.host,
+      ...storedConfig,
+      host: nextHost,
       port: Number.isInteger(nextPort) && nextPort > 0 && nextPort <= 65535 ? nextPort : this.config.port,
       portMode: nextPortMode,
       clientConfigEntries: partialConfig && partialConfig.clientConfigEntries
@@ -871,7 +895,13 @@ class ExtensionService {
     };
 
     const configPath = this.config.configPath;
-    writeTextIfUnchanged(configPath, JSON.stringify(nextConfig, null, 2) + '\n', originalConfigText);
+    const persistedConfig = { ...nextConfig };
+    // An environment override is effective runtime state, not a project edit.
+    if (this.config.hostSource === 'environment') {
+      if (Object.prototype.hasOwnProperty.call(storedConfig, 'host')) persistedConfig.host = storedConfig.host;
+      else delete persistedConfig.host;
+    }
+    writeTextIfUnchanged(configPath, JSON.stringify(persistedConfig, null, 2) + '\n', originalConfigText);
     const wasRunning = Boolean(this.server && this.server.isRunning());
     const runtimeConfigChanged = hasRuntimeConfigChanges(this.config, nextConfig);
     const requiresRestart = wasRunning && runtimeConfigChanged;

@@ -526,6 +526,18 @@ Environment variables are also supported:
 - `COCOS_MCP_PORT`
 - `COCOS_MCP_PROFILE`
 
+If a configured Host is unavailable (for example, a stopped WSL adapter), only
+the MCP listener stops; the extension and its panels remain available. Open
+**Funplay > MCP Server**, edit **Server Host**, and click **Apply Host**. Use
+`127.0.0.1` for same-machine access. Applying the address retries startup when
+MCP is enabled; otherwise use **Enable MCP Server** or **Restart** when ready.
+The panel retains the startup error until a successful start. No address is
+silently substituted and existing configuration is not rewritten at startup.
+`COCOS_MCP_HOST` takes priority over the project file; if set, change that
+environment variable and restart Creator instead. Network/wildcard addresses
+can expose unauthenticated editor access: use only on a trusted network and
+reconfigure MCP clients after changing the address.
+
 `toolProfile: "custom"` starts from the `core` set, then adds `enabledToolCategories` / `enabledTools` and removes `disabledToolCategories` / `disabledTools`. The panel can save these exposure settings as named `savedToolProfiles` for quick restore or sharing. `enableSessions` is off by default because this server does not need cross-request client state for normal editor automation.
 
 `enableConsoleLogging` defaults to `true`. Turn it off in **MCP Settings > Console Logs > Print MCP logs** to stop the extension and HTTP server from printing MCP information, warnings, and errors to the Cocos console. It takes effect immediately, persists per project, and does not restart MCP, clear history, mute project-script logs, or change stdio protocol output.
