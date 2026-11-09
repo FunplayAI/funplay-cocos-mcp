@@ -54,6 +54,7 @@ class ExtensionService {
   constructor() {
     this.config = null;
     this.server = null;
+    this.serverOperation = Promise.resolve();
     this.toolRegistry = null;
     this.resourceProvider = null;
     this.promptProvider = null;
@@ -166,7 +167,18 @@ class ExtensionService {
     this.promptProvider = new PromptProvider(runtimeContext, { onWarning: (message) => this.log('warn', message) });
   }
 
-  async startServer() {
+  runServerOperation(operation) {
+    const result = this.serverOperation.then(operation);
+    // A failed operation must not prevent a later stop or recovery attempt.
+    this.serverOperation = result.catch(() => {});
+    return result;
+  }
+
+  startServer() {
+    return this.runServerOperation(() => this.startServerNow());
+  }
+
+  async startServerNow() {
     if (this.server && this.server.isRunning()) {
       this.log('info', `Start requested but MCP server is already running at ${this.getStatus().url}`);
       return this.getStatus();
@@ -208,7 +220,11 @@ class ExtensionService {
     return this.getStatus();
   }
 
-  async stopServer() {
+  stopServer() {
+    return this.runServerOperation(() => this.stopServerNow());
+  }
+
+  async stopServerNow() {
     this.log('info', 'Stop requested.');
     await cancelFrameDrags(projectContext({ projectIdentity: getProjectIdentity(), projectPath: getProjectPath(), instanceId: this.instanceId }).expected_context);
     if (this.server) {
@@ -221,12 +237,14 @@ class ExtensionService {
     return this.getStatus();
   }
 
-  async restartServer() {
-    this.log('info', 'Restart requested.');
-    await this.stopServer();
-    const status = await this.startServer();
-    this.log('info', `Restart completed. MCP server running=${status.running}, url=${status.url}`);
-    return status;
+  restartServer() {
+    return this.runServerOperation(async () => {
+      this.log('info', 'Restart requested.');
+      await this.stopServerNow();
+      const status = await this.startServerNow();
+      this.log('info', `Restart completed. MCP server running=${status.running}, url=${status.url}`);
+      return status;
+    });
   }
 
   getEffectiveServerConnection() {
@@ -822,7 +840,11 @@ class ExtensionService {
     };
   }
 
-  async saveConfig(partialConfig) {
+  saveConfig(partialConfig) {
+    return this.runServerOperation(() => this.saveConfigNow(partialConfig));
+  }
+
+  async saveConfigNow(partialConfig) {
     this.ensureRuntime();
     const originalConfigText = readOptionalText(this.config.configPath);
     if (this.config.configError) throw new Error(this.config.configError);
@@ -919,8 +941,8 @@ class ExtensionService {
     this.config.enableConsoleLogging = nextConfig.enableConsoleLogging;
     if (this.server) this.server.config.enableConsoleLogging = nextConfig.enableConsoleLogging;
     if (requiresRestart) {
-      await this.stopServer();
-      await this.startServer();
+      await this.stopServerNow();
+      await this.startServerNow();
     } else if (runtimeConfigChanged) {
       this.reloadRuntime();
     } else {
@@ -962,6 +984,9 @@ module.exports = {
     },
     openProjectSkillsPanel() {
       return service.openPanel('project-skills');
+    },
+    openContactPanel() {
+      return service.openPanel('contact');
     },
     startServer() {
       return service.startServer();

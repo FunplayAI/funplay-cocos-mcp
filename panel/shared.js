@@ -7,6 +7,8 @@ const { localizeToolDescription } = require('./tool-description-i18n');
 
 const PKG = 'funplay-cocos-mcp';
 const DICTIONARIES = { en: EN, zh: ZH };
+const AUTHOR_EMAIL = '3256714392@qq.com';
+const QQ_GROUP = '1108522331';
 
 function request(message, ...args) {
   return Editor.Message.request(PKG, message, ...args);
@@ -336,10 +338,34 @@ function projectSkillsTemplate() {
   `;
 }
 
+function contactTemplate() {
+  return `
+    <div class="mcp-root contact">
+      ${pageHeader('community.title', 'Contact & Feedback', 'community.hint', 'Questions, ideas, or feedback? Get in touch with the author or join the community.')}
+      <section class="section contact-card">
+        <div class="section-title" data-i18n="community.author_email">Author Email</div>
+        <div class="contact-row">
+          <span id="contactEmailText" class="contact-value"></span>
+          <ui-button id="copyContactEmailBtn" data-i18n="community.copy_email">Copy Email</ui-button>
+        </div>
+      </section>
+      <section class="section contact-card">
+        <div class="section-title" data-i18n="community.qq_group">QQ Group</div>
+        <div class="contact-row">
+          <span id="contactGroupText" class="contact-value"></span>
+          <ui-button id="copyCommunityGroupBtn" data-i18n="community.copy_group">Copy Group Number</ui-button>
+        </div>
+      </section>
+      <div class="hint-line" data-i18n="community.feedback_hint">For problem reports, include your Cocos Creator version, plugin version, and steps to reproduce.</div>
+    </div>
+  `;
+}
+
 function templateForMode(mode) {
   if (mode === 'tool-exposure') return toolExposureTemplate();
   if (mode === 'settings') return settingsTemplate();
   if (mode === 'project-skills') return projectSkillsTemplate();
+  if (mode === 'contact') return contactTemplate();
   return dashboardTemplate();
 }
 
@@ -360,6 +386,17 @@ const STYLE = `
     container-name: mcp-panel;
   }
   [hidden] { display: none !important; }
+  .contact-card { padding-bottom: 18px; }
+  .contact-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .contact-value { font-size: 17px; user-select: text; overflow-wrap: anywhere; }
+  .contact-row ui-button { flex-shrink: 0; }
   .panel-notice {
     position: absolute;
     z-index: 20;
@@ -1076,6 +1113,10 @@ const SELECTORS = {
   languageHint: '#languageHint',
   restartBtn: '#restartBtn',
   copyUrlBtn: '#copyUrlBtn',
+  copyCommunityGroupBtn: '#copyCommunityGroupBtn',
+  copyContactEmailBtn: '#copyContactEmailBtn',
+  contactEmailText: '#contactEmailText',
+  contactGroupText: '#contactGroupText',
   copyHealthCurlBtn: '#copyHealthCurlBtn',
   copyToolsCurlBtn: '#copyToolsCurlBtn',
   checkUpdatesBtn: '#checkUpdatesBtn',
@@ -1148,6 +1189,8 @@ function createPanel(mode) {
       this.detectedLanguage = detectEditorLanguage(global.Editor);
       this.language = resolveLanguage('auto', this.detectedLanguage);
       this.applyStaticTranslations();
+      this.setText('contactEmailText', AUTHOR_EMAIL);
+      this.setText('contactGroupText', QQ_GROUP);
       this.bindEvents();
       this.refresh()
         .then(() => {
@@ -2719,6 +2762,12 @@ function createMethods(mode) {
       this.on(this.$.copyUrlBtn, 'click', () => {
         const status = this.state && this.state.status;
         this.copyText(status && status.url ? status.url : '', this.t('client.url_copied'));
+      });
+      this.on(this.$.copyCommunityGroupBtn, 'click', () => {
+        this.copyText(QQ_GROUP, this.t('community.group_copied'));
+      });
+      this.on(this.$.copyContactEmailBtn, 'click', () => {
+        this.copyText(AUTHOR_EMAIL, this.t('community.email_copied'));
       });
       this.on(this.$.copyHealthCurlBtn, 'click', () => {
         this.copyText(this.getCurlCommand('health'), this.t('client.health_copied'));

@@ -17,6 +17,8 @@
 
 > 如果这个项目对你有帮助，欢迎顺手点一个 Star。它能帮助更多 Cocos 开发者发现项目，也能支持后续持续维护。
 
+交流或问题反馈欢迎加入 QQ 群：**1108522331**。打开 **Funplay > 联系反馈**，可以查看作者邮箱并复制邮箱或群号。
+
 ---
 
 Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy、DeepSeek Harness（DSH）等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
@@ -354,7 +356,7 @@ curl http://127.0.0.1:8765/tools
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
-- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code、OpenCode、CodeBuddy、DSH。内置 v3 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
+- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code、OpenCode、CodeBuddy、DSH。内置 v4 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。
@@ -562,6 +564,10 @@ Full 工具 `simulate_mouse_drag` 默认保留旧 `steps`/`stepDelayMs` 模式�
 回执明确返回 `nativeGameUpdateVerified: false`、`businessOutcomeVerified: false`，游戏行为仍需独立回读或截图确认。
 Game View 的暂停/停止状态另行检查；失焦、截图过期、几何变化、帧停滞和取消会中断并尝试释放本次按键。
 释放失败时保留窗口锁，需显式取消该任务重试清理；不会自动更改项目输入或后台运行策略。
+
+旧坐标点击/拖拽及使用旧计时的截图校准输入，也会在发送异常后尝试释放本次按下的鼠标。
+释放失败时返回投递结果不确定并保留窗口锁，可停止或重启 MCP 重试释放清理；先检查实际状态，勿直接重放手势。
+停止服务也会取消仍在等待中的旧鼠标手势，阻止后续输入继续发送。
 
 ## 架构
 

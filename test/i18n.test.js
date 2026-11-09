@@ -53,7 +53,7 @@ test('panel and package localization references exist in both dictionaries', () 
   let templates;
   try {
     global.Editor = { Panel: { define: (definition) => definition } };
-    templates = ['dashboard', 'tool-exposure', 'settings', 'project-skills']
+    templates = ['dashboard', 'tool-exposure', 'settings', 'project-skills', 'contact']
       .map((mode) => createPanel(mode).template).join('\n');
   } finally {
     global.Editor = previousEditor;

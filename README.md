@@ -17,6 +17,8 @@
 
 > If this project helps your Cocos workflow, please consider giving it a Star. It helps more developers discover the project and supports ongoing development.
 
+For discussion and feedback, join our QQ group: **1108522331**. Open **Funplay > Contact & Feedback** to find the author's email and copy either contact detail.
+
 ---
 
 Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Kiro, Qoder, Kimi Code, OpenCode, CodeBuddy, and DeepSeek Harness (DSH) inspect and operate your running Cocos project.
@@ -354,7 +356,7 @@ Try a higher-level prompt in your AI client:
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
-- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, OpenCode, CodeBuddy, and DSH. Built-in v3 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
+- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, OpenCode, CodeBuddy, and DSH. Built-in v4 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -588,6 +590,12 @@ and `businessOutcomeVerified: false`. Game View pause/stop is checked separately
 Focus loss, stale geometry, stalled frames or cancellation interrupt input and
 attempt only the owned release. Failed release keeps that window locked until
 explicit cleanup succeeds. No project input/background policies are changed.
+
+Legacy-coordinate clicks/drags and calibrated input with legacy timing also
+attempt owned release after interrupted dispatch. If release fails, the result
+reports uncertain delivery and the window remains locked. Stop/restart MCP to
+retry that release cleanup; do not replay the gesture without inspecting the
+actual state. Shutdown also cancels suspended legacy mouse gestures.
 
 ## Architecture
 

@@ -6,9 +6,21 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-09
+
+### Added
+
+- Added a bilingual Funplay > Contact & Feedback menu and dedicated panel with the author's email, QQ group `1108522331`, and copy buttons.
+
 ### Fixed
 
-- `refresh_assets` now requests `db://assets` instead of `db://assets/` when refreshing the assets root, which made Cocos Creator look for a stray `assets/.meta` and log "is not exist! will use cache meta".
+- Serialized server start, stop, restart, and runtime configuration changes so overlapping requests cannot lose the owning listener or report a stopped server while its HTTP port remains open.
+- Legacy-coordinate mouse clicks/drags and calibrated input with legacy timing now share owned release cleanup and uncertain-delivery reporting. Failed release retains the window lock; MCP stop/restart retries cleanup without replaying the press, and shutdown prevents suspended legacy gestures from sending more input.
+- `refresh_assets` now requests `db://assets` instead of `db://assets/` when refreshing the assets root, avoiding Cocos Creator's missing-asset/meta errors. Contributed in [#27](https://github.com/FunplayAI/funplay-cocos-mcp/pull/27).
+
+### Changed
+
+- Corrected the README's built-in project Skills version from v3 to v4.
 
 ## [0.7.0] - 2026-10-29
 

@@ -9,7 +9,7 @@ const { runInNewContext } = require('node:vm');
 const electronTools = require('../lib/electron-tools');
 const { capturePanelScreenshot, captureEditorWindowScreenshot } = require('../lib/screenshots');
 const { CAPTURE_TTL_MS, MAX_CAPTURES, readVisualState, registerCapture, resolveImagePoints, pngDimensions } = require('../lib/visual-coordinates');
-const { sendMouseClick, sendMouseDrag } = require('../lib/input');
+const { sendMouseClick, sendMouseDrag, cancelFrameDrags } = require('../lib/input');
 const { createToolRegistry } = require('../lib/tool-registry');
 const { McpServer } = require('../lib/server');
 
@@ -379,8 +379,80 @@ test('a failed cleanup remains uncertain and its delivery metadata reaches nativ
   assert.equal(value.data.code, 'INPUT_OUTCOME_UNKNOWN');
   assert.equal(value.data.releaseSubmitted, false);
   assert.equal(value.data.retrySafe, false);
+  assert.equal(value.data.windowLocked, true);
+  assert.equal(value.data.cleanup, 'failed');
   assert.deepEqual(JSON.parse(response.result.content[0].text), value);
   assert.deepEqual(f.submitted.map((event) => event.type), ['mouseMove', 'mouseDown', 'mouseUp']);
+  await assert.rejects(sendMouseClick({ x: 1, y: 1 }), /already active/);
+  await cancelFrameDrags('another-editor');
+  await assert.rejects(cancelFrameDrags(f.root), { code: 'INPUT_CLEANUP_FAILED' });
+  await assert.rejects(sendMouseClick({ x: 1, y: 1 }), /already active/);
+  f.window.webContents.sendInputEvent = (event) => f.submitted.push(event);
+  await cancelFrameDrags(f.root);
+  assert.equal(f.submitted.at(-1).type, 'mouseUp');
+  assert.equal(f.submitted.filter((event) => event.type === 'mouseDown').length, 1);
+  assert.equal((await sendMouseClick({ x: 1, y: 1 })).sent, true);
+});
+
+test('legacy drag dispatch failure attempts release at the last attempted point without replaying', async (t) => {
+  const f = fixture(t);
+  f.window.webContents.sendInputEvent = (event) => {
+    f.submitted.push(event);
+    if (f.submitted.length === 3) throw new Error('Move dispatch interrupted');
+  };
+  await assert.rejects(sendMouseDrag({ startX: 10, startY: 20, endX: 90, endY: 60, steps: 2 }), (error) => {
+    assert.equal(error.inputOutcome.code, 'INPUT_OUTCOME_UNKNOWN');
+    assert.equal(error.inputOutcome.releaseSubmitted, true);
+    assert.equal(error.inputOutcome.retrySafe, false);
+    assert.equal(error.inputOutcome.windowLocked, false);
+    return true;
+  });
+  assert.deepEqual(f.submitted.map((event) => event.type), ['mouseMove', 'mouseDown', 'mouseMove', 'mouseUp']);
+  assert.equal(f.submitted.at(-1).x, 50);
+  assert.equal(f.submitted.at(-1).y, 40);
+  assert.equal((await sendMouseClick({ x: 2, y: 3 })).sent, true);
+});
+
+for (const drag of [false, true]) {
+  test(`legacy ${drag ? 'drag' : 'click'} retains its lock after uncertain Down and failed Up until owned cleanup`, async (t) => {
+    const f = fixture(t);
+    f.window.webContents.sendInputEvent = (event) => {
+      f.submitted.push(event);
+      if (event.type !== 'mouseMove') throw new Error('Input renderer unavailable');
+    };
+    const options = { x: 10, y: 20, startX: 10, startY: 20, endX: 30, endY: 40, inputOwner: f.root };
+    await assert.rejects((drag ? sendMouseDrag : sendMouseClick)(options), (error) => {
+      assert.equal(error.inputOutcome.releaseSubmitted, false);
+      assert.equal(error.inputOutcome.windowLocked, true);
+      return true;
+    });
+    await assert.rejects(sendMouseClick({ x: 1, y: 1 }), /already active/);
+    await cancelFrameDrags('another-editor');
+    assert.deepEqual(f.submitted.map((event) => event.type), ['mouseMove', 'mouseDown', 'mouseUp']);
+    f.window.webContents.sendInputEvent = (event) => f.submitted.push(event);
+    await cancelFrameDrags(f.root);
+    assert.deepEqual(f.submitted.map((event) => event.type), ['mouseMove', 'mouseDown', 'mouseUp', 'mouseUp']);
+    assert.equal((await sendMouseClick({ x: 1, y: 1 })).sent, true);
+  });
+}
+
+test('shutdown releases a legacy drag suspended between steps and prevents further presses or movement', async (t) => {
+  const f = fixture(t);
+  let finishDelay;
+  let enteredDelay;
+  const delay = new Promise((resolve) => { finishDelay = resolve; });
+  const entered = new Promise((resolve) => { enteredDelay = resolve; });
+  t.mock.method(electronTools, 'sleep', async () => { enteredDelay(); await delay; });
+  const drag = sendMouseDrag({ startX: 10, startY: 20, endX: 30, endY: 40, steps: 2, stepDelayMs: 1, inputOwner: f.root });
+  const failure = assert.rejects(drag, /INPUT_CANCELLED/);
+  await entered;
+  await cancelFrameDrags(f.root);
+  assert.equal(f.submitted.at(-1).type, 'mouseUp');
+  const count = f.submitted.length;
+  finishDelay();
+  await failure;
+  assert.equal(f.submitted.length, count);
+  assert.equal((await sendMouseClick({ x: 1, y: 1 })).sent, true);
 });
 
 test('the renderer geometry probe detects canvas replacement and bounded scans', async (t) => {

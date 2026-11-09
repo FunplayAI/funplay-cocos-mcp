@@ -11,6 +11,7 @@ const test = require('node:test');
 const config = require('../lib/config');
 const clients = require('../lib/client-config');
 const { createPanel } = require('../panel/shared');
+const { McpServer } = require('../lib/server');
 
 const UNAVAILABLE_HOST = '203.0.113.254';
 
@@ -56,7 +57,7 @@ function fixture(t, settings = {}, env = {}) {
 
 function health(port) {
   return new Promise((resolve, reject) => {
-    const request = http.get(`http://127.0.0.1:${port}/health`, (response) => {
+    const request = http.get(`http://127.0.0.1:${port}/health`, { agent: false }, (response) => {
       const chunks = [];
       response.on('data', (chunk) => chunks.push(chunk));
       response.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))));
@@ -64,6 +65,91 @@ function health(port) {
     request.on('error', reject);
   });
 }
+
+function pauseStartup(t) {
+  const original = McpServer.prototype.start;
+  const instances = [];
+  let release;
+  let entered;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const started = new Promise((resolve) => { entered = resolve; });
+  t.mock.method(McpServer.prototype, 'start', async function () {
+    instances.push(this);
+    entered();
+    await gate;
+    return await original.call(this);
+  });
+  t.after(async () => {
+    release();
+    for (const server of instances) await server.stop();
+  });
+  return { release, started, instances };
+}
+
+test('concurrent starts share the owning listener and stop releases its actual port', async (t) => {
+  const { service } = fixture(t, { autostart: false });
+  await service.load();
+  const gate = pauseStartup(t);
+  const first = service.startServer();
+  const second = service.startServer();
+  await gate.started;
+  gate.release();
+  const [a, b] = await Promise.all([first, second]);
+  assert.equal(gate.instances.length, 1);
+  assert.equal(a.running, true);
+  assert.equal(b.attachedToExisting, false);
+  assert.equal((await health(a.port)).ok, true);
+  assert.equal((await service.stopServer()).running, false);
+  await assert.rejects(health(a.port), { code: 'ECONNREFUSED' });
+});
+
+test('a stop requested during startup waits for and closes the pending listener', async (t) => {
+  const { service } = fixture(t, { autostart: false });
+  await service.load();
+  const gate = pauseStartup(t);
+  const starting = service.startServer();
+  await gate.started;
+  const stopping = service.stopServer();
+  gate.release();
+  const [started, stopped] = await Promise.all([starting, stopping]);
+  assert.equal(started.running, true);
+  assert.equal(stopped.running, false);
+  await assert.rejects(health(started.port), { code: 'ECONNREFUSED' });
+});
+
+test('restart stays atomic when start and stop are requested concurrently', async (t) => {
+  const { service } = fixture(t, { autostart: false });
+  await service.load();
+  const gate = pauseStartup(t);
+  const starting = service.startServer();
+  await gate.started;
+  const restarting = service.restartServer();
+  const anotherStart = service.startServer();
+  const stopping = service.stopServer();
+  gate.release();
+  const results = await Promise.all([starting, restarting, anotherStart, stopping]);
+  assert.equal(gate.instances.length, 2);
+  assert.ok(results.slice(0, 3).every((status) => status.running && !status.attachedToExisting));
+  assert.equal(results[3].running, false);
+  for (const status of results) await assert.rejects(health(status.port), { code: 'ECONNREFUSED' });
+});
+
+test('settings saved during startup restart the owned listener with the new config', async (t) => {
+  const { service } = fixture(t, { autostart: false });
+  await service.load();
+  const gate = pauseStartup(t);
+  const starting = service.startServer();
+  await gate.started;
+  const port = service.config.port + 1;
+  const saving = service.saveConfig({ port });
+  gate.release();
+  const [started, saved] = await Promise.all([starting, saving]);
+  assert.equal(gate.instances.length, 2);
+  assert.equal(saved.status.running, true);
+  assert.equal(saved.status.port, port);
+  await assert.rejects(health(started.port), { code: 'ECONNREFUSED' });
+  assert.equal((await health(port)).ok, true);
+});
 
 test('unavailable Host does not reject extension load or disable its panels (#26)', async (t) => {
   const { file, service, opened, updateChecks } = fixture(t, { host: UNAVAILABLE_HOST });

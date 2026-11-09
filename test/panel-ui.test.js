@@ -59,10 +59,10 @@ function noticeClock(t) {
 
 test('only the dashboard retains Recent Activity; Output and the standalone log window stay removed', (t) => {
   fixture(t);
-  assert.deepEqual(Object.keys(manifest.panels).sort(), ['default', 'project-skills', 'settings', 'tool-exposure']);
+  assert.deepEqual(Object.keys(manifest.panels).sort(), ['contact', 'default', 'project-skills', 'settings', 'tool-exposure']);
   assert.equal(manifest.contributions.messages['open-activity'], undefined);
   assert.equal(manifest.contributions.menu.some((entry) => entry.message === 'open-activity'), false);
-  for (const mode of ['dashboard', 'tool-exposure', 'settings', 'project-skills']) {
+  for (const mode of ['dashboard', 'tool-exposure', 'settings', 'project-skills', 'contact']) {
     const { template, style } = createPanel(mode);
     assert.doesNotMatch(template, /id="(?:output|recentLogs|openActivityBtn)"|common\.output/);
     if (mode === 'dashboard') {
