@@ -6,6 +6,10 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- `refresh_assets` now requests `db://assets` instead of `db://assets/` when refreshing the assets root, which made Cocos Creator look for a stray `assets/.meta` and log "is not exist! will use cache meta".
+
 ## [0.7.0] - 2026-10-29
 
 ### Added
