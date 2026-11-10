@@ -66,6 +66,7 @@ module.exports = {
   'client.reconfigure': '重新配置 MCP',
   'client.reconfigure_skills': '重新配置 MCP + Skills',
   'client.skills_setup_hint': '“配置 + Skills”会安装缺失的内置 Skill，已有内容保留。',
+  'client.trae_project_hint': '在 Trae 中打开此 Cocos 项目目录，并在“设置 > MCP”启用“项目级 MCP”以加载 .trae/mcp.json。项目 Skills 安装至 .trae/skills。',
   'client.configuring': '正在配置…',
   'client.configure_complete': '客户端配置已保存，重新连接客户端即可使用。',
   'client.patch_generated': '配置文件已生成（需 --patch 加载）',

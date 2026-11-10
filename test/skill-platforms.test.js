@@ -99,10 +99,10 @@ test('backup histories are isolated by client and include legacy Codex backups',
 
 test('unsupported clients hide Skills notices and cannot silently install into Codex directories', (t) => {
   const root = project(t);
-  const state = getProjectSkillsState(root, { clientId: 'vscode' });
+  const state = getProjectSkillsState(root, { clientId: 'unsupported_client' });
   assert.equal(state.supported, false);
   assert.deepEqual(state.builtIns, []);
-  assert.throws(() => updateBuiltInProjectSkill(root, { clientId: 'vscode' }), /not supported/);
+  assert.throws(() => updateBuiltInProjectSkill(root, { clientId: 'unsupported_client' }), /not supported/);
   assert.deepEqual(fs.readdirSync(root), []);
 });
 

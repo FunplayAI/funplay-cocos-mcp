@@ -149,6 +149,8 @@ If you prefer to edit config files manually, use the examples below as fallback 
 <details>
 <summary>VS Code</summary>
 
+One-click setup writes the user-profile `mcp.json` using VS Code's `servers` format and preserves JSONC comments. It uses `~/Library/Application Support/Code/User` on macOS, `%APPDATA%/Code/User` on Windows, and `$XDG_CONFIG_HOME/Code/User` (default `~/.config/Code/User`) on Linux, with `VSCODE_PORTABLE` / `VSCODE_APPDATA` overrides. **Configure + Skills** installs project Skills in [`.github/skills`](https://code.visualstudio.com/docs/agent-customization/agent-skills).
+
 ```json
 {
   "servers": {
@@ -165,6 +167,8 @@ If you prefer to edit config files manually, use the examples below as fallback 
 <details>
 <summary>Trae</summary>
 
+One-click setup writes `<Cocos project>/.trae/mcp.json`, following [Trae's project MCP configuration](https://docs.trae.cn/ide_add-mcp-servers). Open this Cocos folder in Trae and enable **Project MCP** in **Settings > MCP**. This target no longer writes `~/.trae/mcp.json`. **Configure + Skills** installs missing built-ins into [`.trae/skills`](https://docs.trae.cn/ide_skills).
+
 ```json
 {
   "mcpServers": {
@@ -179,6 +183,8 @@ If you prefer to edit config files manually, use the examples below as fallback 
 
 <details>
 <summary>Kiro</summary>
+
+One-click MCP setup uses `~/.kiro/settings/mcp.json`. **Configure + Skills** also installs missing built-ins in the project's [`.kiro/skills`](https://kiro.dev/docs/skills/) directory.
 
 ```json
 {
@@ -231,6 +237,8 @@ The user-level configuration is written to `~/.kimi-code/mcp.json`, or to `$KIMI
 <details>
 <summary>Codex</summary>
 
+One-click setup uses `$CODEX_HOME/config.toml`, defaulting to `~/.codex/config.toml`, following [Codex's configuration directory](https://learn.chatgpt.com/docs/config-file/config-advanced#config-and-state-locations). An empty `[mcp_servers]` parent followed by explicit server tables is supported; inline MCP tables still require manual editing.
+
 ```toml
 [mcp_servers.funplay_cocos]
 url = "http://127.0.0.1:8765/"
@@ -244,6 +252,8 @@ url = "http://127.0.0.1:8765/"
 The global config lives in `$XDG_CONFIG_HOME/opencode/opencode.json` or `~/.config/opencode/opencode.json` on every platform (`opencode.jsonc` also works).
 
 One-click configuration prefers an existing `opencode.jsonc`. It supports comments and trailing commas in either file, preserves unrelated settings and comments, and leaves malformed or ambiguous configurations unchanged.
+
+Existing [OpenCode V2](https://opencode.ai/docs/mcp-servers) `mcp.servers` configurations keep that nested structure. New files use the flat `mcp` map below for V1 compatibility; the current [OpenCode schema](https://opencode.ai/config.json) also accepts that legacy form. Setup does not migrate custom timeout/authentication options between formats.
 
 ```json
 {
@@ -356,7 +366,7 @@ Try a higher-level prompt in your AI client:
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
-- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for Codex, Claude Code, Cursor, Qoder, Kimi Code, OpenCode, CodeBuddy, and DSH. Built-in v4 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
+- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for all 11 one-click clients: Codex, Claude Code, Cursor, VS Code / Copilot, Trae, Kiro, Qoder, Kimi Code, OpenCode, CodeBuddy, and DSH. Built-in v4 templates use compact entrypoints and on-demand reference files; version checks, diffs, backups, and restore include those managed references. Existing user-owned reference files are protected. Legacy Codex built-ins can migrate to `.agents/skills` without deleting their original files.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.

@@ -6,6 +6,20 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-10
+
+### Added
+
+- Configure + Skills, Project Skills, and MCP Skill tools now support Trae (`.trae/skills`), VS Code / Copilot (`.github/skills`), and Kiro (`.kiro/skills`), covering all 11 one-click clients with managed references, version checks, diffs, backups and restore.
+
+### Fixed
+
+- Trae setup writes the active Cocos project's `.trae/mcp.json` instead of guessing a global file. Bilingual setup guidance remains visible in the dashboard and explains the required Project MCP switch.
+- VS Code setup always uses its canonical user-profile path on macOS, honors Linux XDG and portable/appdata overrides, and preserves JSONC comments and unrelated configuration.
+- Codex setup honors `CODEX_HOME` and accepts an empty `[mcp_servers]` parent table with explicit server children while retaining conservative rejection of inline/ambiguous TOML.
+- OpenCode recognizes existing V2 `mcp.servers` and global timeout settings, retains compatible V1 flat entries, matches previews to the chosen layout, and refuses duplicate registrations across both maps.
+- Strict JSON clients reject duplicate keys before writing. URL-only clients no longer confuse explicit SSE/stdio with HTTP; setup removes the obsolete transport while retaining custom options. Disabled and local-command registrations require review instead of falsely reporting a configured HTTP connection.
+
 ## [0.7.1] - 2026-11-09
 
 ### Added

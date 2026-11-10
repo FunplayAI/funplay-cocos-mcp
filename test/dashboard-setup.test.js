@@ -8,6 +8,7 @@ const test = require('node:test');
 const { createPanel } = require('../panel/shared');
 const { buildTargets, configureTarget, getTargetStatuses } = require('../lib/client-config');
 const { getProjectSkillsState, updateBuiltInProjectSkill } = require('../lib/project-skills');
+const { SKILL_PLATFORMS } = require('../lib/skill-platforms');
 
 function element(value = '') {
   const classes = new Set();
@@ -106,7 +107,7 @@ test('double clicks cannot configure or install twice', async (t) => {
   assert.equal(panel.$.clientTargetSelect.disabled, false);
 });
 
-for (const clientId of ['opencode', 'codebuddy', 'deepseek_harness']) {
+for (const { id: clientId } of SKILL_PLATFORMS) {
   test(`${clientId} Configure + Skills routes every setup action to the selected client`, async (t) => {
     const skills = { supported: true, builtIns: [{ skillName: 'workflow', status: 'missing' }] };
     const { panel, calls } = fixture(t, (name) => name === 'get-project-skills-state' ? skills : {}, skills);
@@ -121,7 +122,7 @@ for (const clientId of ['opencode', 'codebuddy', 'deepseek_harness']) {
   });
 }
 
-for (const clientId of ['claude_code', 'opencode', 'codebuddy', 'deepseek_harness']) {
+for (const { id: clientId } of SKILL_PLATFORMS) {
   test(`${clientId} Configure + Skills installs real files without Object.hasOwn`, async (t) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-setup-compat-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -177,6 +178,13 @@ for (const clientId of ['claude_code', 'opencode', 'codebuddy', 'deepseek_harnes
         assert.match(panel.$.clientTargetStatus.textContent, /需 --patch 加载/);
         assert.match(panel.$.clientTargetDetails.textContent, /此 Cocos 项目目录/);
         assert.match(panel.$.clientTargetDetails.textContent, /dsh web --patch/);
+      }
+      if (clientId === 'trae') {
+        assert.match(panel.$.clientActionStatus.textContent, /项目级 MCP/);
+        panel.state.clientTargets = getTargetStatuses(config, options).filter((item) => item.id === clientId);
+        panel.renderClientTargetStatus();
+        assert.match(panel.$.clientTargetDetails.textContent, /项目级 MCP/);
+        assert.match(panel.$.clientTargetDetails.textContent, /\.trae\/skills/);
       }
     } finally {
       if (descriptor) Object.defineProperty(Object, 'hasOwn', descriptor);

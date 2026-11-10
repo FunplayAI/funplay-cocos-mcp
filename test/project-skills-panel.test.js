@@ -47,7 +47,7 @@ test('Skills notice follows the selected client and hides for current or unsuppo
   panel.state.projectSkillsByClient.codebuddy.builtIns[0].status = 'current';
   panel.renderProjectSkillsNotice();
   assert.equal(notice.classList.contains('visible'), false);
-  select.value = 'vscode';
+  select.value = 'unsupported_client';
   panel.renderProjectSkillsNotice();
   assert.equal(notice.classList.contains('visible'), false);
   assert.equal(text.textContent, '');

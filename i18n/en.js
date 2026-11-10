@@ -66,6 +66,7 @@ module.exports = {
   'client.reconfigure': 'Reconfigure MCP',
   'client.reconfigure_skills': 'Reconfigure MCP + Skills',
   'client.skills_setup_hint': 'Configure + Skills installs missing built-ins. Existing Skills are kept.',
+  'client.trae_project_hint': 'In Trae, open this Cocos project folder and enable Project MCP in Settings > MCP to load .trae/mcp.json. Project Skills are installed in .trae/skills.',
   'client.configuring': 'Configuring…',
   'client.configure_complete': 'Client configured. Reconnect it to load this project.',
   'client.patch_generated': 'Overlay generated (load with --patch)',

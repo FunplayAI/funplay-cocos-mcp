@@ -149,6 +149,8 @@ cocos-<project>-<hash>
 <details>
 <summary>VS Code</summary>
 
+一键配置使用 VS Code 用户配置目录的 `mcp.json` 和 `servers` 格式，并保留 JSONC 注释。macOS 使用 `~/Library/Application Support/Code/User`，Windows 使用 `%APPDATA%/Code/User`，Linux 使用 `$XDG_CONFIG_HOME/Code/User`（默认 `~/.config/Code/User`），同时支持 `VSCODE_PORTABLE` / `VSCODE_APPDATA` 覆盖。“配置 + Skills”会将项目 Skills 安装至 [`.github/skills`](https://code.visualstudio.com/docs/agent-customization/agent-skills)。
+
 ```json
 {
   "servers": {
@@ -165,6 +167,8 @@ cocos-<project>-<hash>
 <details>
 <summary>Trae</summary>
 
+一键配置按 [Trae 官方项目 MCP 规则](https://docs.trae.cn/ide_add-mcp-servers)写入 `<Cocos 项目>/.trae/mcp.json`。请在 Trae 中打开此 Cocos 项目目录，并在“设置 > MCP”启用“项目级 MCP”。此目标不再写入 `~/.trae/mcp.json`。“配置 + Skills”会将缺失的内置 Skill 安装至 [`.trae/skills`](https://docs.trae.cn/ide_skills)。
+
 ```json
 {
   "mcpServers": {
@@ -179,6 +183,8 @@ cocos-<project>-<hash>
 
 <details>
 <summary>Kiro</summary>
+
+一键 MCP 配置使用 `~/.kiro/settings/mcp.json`。“配置 + Skills”同时将缺失的内置 Skill 安装至项目的 [`.kiro/skills`](https://kiro.dev/docs/skills/) 目录。
 
 ```json
 {
@@ -231,6 +237,8 @@ cocos-<project>-<hash>
 <details>
 <summary>Codex</summary>
 
+一键配置遵循 [Codex 配置目录规则](https://learn.chatgpt.com/docs/config-file/config-advanced#config-and-state-locations)，使用 `$CODEX_HOME/config.toml`，默认是 `~/.codex/config.toml`。支持空的 `[mcp_servers]` 父表配合显式服务器子表；内联 MCP 表仍需手动编辑。
+
 ```toml
 [mcp_servers.funplay_cocos]
 url = "http://127.0.0.1:8765/"
@@ -244,6 +252,8 @@ url = "http://127.0.0.1:8765/"
 全局配置位于所有平台的 `$XDG_CONFIG_HOME/opencode/opencode.json` 或 `~/.config/opencode/opencode.json`（`opencode.jsonc` 同样可用）。
 
 一键配置优先使用已有的 `opencode.jsonc`，支持两种文件中的注释和尾逗号，保留其他设置及注释；遇到格式错误或存在歧义的配置时，不会覆盖原文件。
+
+已有 [OpenCode V2](https://opencode.ai/docs/mcp-servers) 的 `mcp.servers` 配置会保持嵌套结构。新文件使用下方的平铺 `mcp` 格式以兼容 V1；当前 [OpenCode 配置 schema](https://opencode.ai/config.json) 仍接受此旧格式。工具不会在新旧格式之间迁移自定义超时或认证选项。
 
 ```json
 {
@@ -356,7 +366,7 @@ curl http://127.0.0.1:8765/tools
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
-- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，支持 Codex、Claude Code、Cursor、Qoder、Kimi Code、OpenCode、CodeBuddy、DSH。内置 v4 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
+- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，覆盖全部 11 个一键配置客户端：Codex、Claude Code、Cursor、VS Code / Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy、DSH。内置 v4 模板使用精简入口和按需参考文档；版本检测、差异、备份与恢复包含托管参考文件，不覆盖用户自有参考文件。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，原文件不会被删除。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。

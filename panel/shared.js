@@ -1995,7 +1995,8 @@ function createMethods(mode) {
       this.$.clientTargetStatus.textContent = blocked ? this.t('client.fallback_blocked') : target.readError
         ? this.t('client.config_read_error', { error: target.readError }) : `${this.t('client.status')}: ${configured}`;
       const launchHint = target.launchCommand ? `\n${this.t('client.patch_launch_hint', { command: target.launchCommand })}` : '';
-      this.setText('clientTargetDetails', `${target.configPath}\n${target.serverName || ''} → ${this.state && this.state.clientConfig && this.state.clientConfig.url || ''}${launchHint}`);
+      const setupHint = target.setupHintKey ? `\n${this.t(target.setupHintKey)}` : '';
+      this.setText('clientTargetDetails', `${target.configPath}\n${target.serverName || ''} → ${this.state && this.state.clientConfig && this.state.clientConfig.url || ''}${launchHint}${setupHint}`);
       this.renderProjectSkillsNotice();
       const previews = this.state && this.state.clientConfig && Array.isArray(this.state.clientConfig.targets)
         ? this.state.clientConfig.targets
@@ -2577,9 +2578,10 @@ function createMethods(mode) {
             : includeSkills ? 'client.setup_complete' : 'client.configure_complete';
         const launchHint = connection && connection.launchCommand
           ? `\n${this.t('client.patch_launch_hint', { command: connection.launchCommand })}` : '';
+        const setupHint = connection && connection.setupHintKey ? `\n${this.t(connection.setupHintKey)}` : '';
         this.showClientAction(this.t(completionKey, {
           count: installed.length,
-        }) + launchHint, preserved.length ? 'warning' : 'success');
+        }) + launchHint + setupHint, preserved.length ? 'warning' : 'success');
       } catch (error) {
         const message = this.t(configured ? 'client.setup_partial' : 'client.configure_failed', { error: error.message });
         this.showClientAction(message, 'error');
