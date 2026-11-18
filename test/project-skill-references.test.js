@@ -8,11 +8,14 @@ const test = require('node:test');
 const { SKILL_PLATFORMS } = require('../lib/skill-platforms');
 const { COCOS_MCP_SKILL_NAME, COCOS_UI_SKILL_NAME, createCocosMcpProjectSkill } = require('../lib/project-instructions');
 const {
+  COCOS_UI_SKILL_TEMPLATE_VERSION,
   getBuiltInProjectSkillState, getSkillRelativePath, getManifestRelativePath,
   previewBuiltInProjectSkillUpdate, restoreLatestBuiltInProjectSkillBackup,
-  updateBuiltInProjectSkill, sha256Text,
+  updateBuiltInProjectSkill, sha256Text, writeManagedSkillManifest,
 } = require('../lib/project-skills');
 const { getProjectSkillReferences } = require('../lib/project-skill-references');
+
+const IMAGE_TO_PREFAB = 'references/image-to-prefab.md';
 
 function project(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-skill-references-'));
@@ -49,14 +52,14 @@ test('a missing reference triggers preview/update even with an unchanged current
   const options = { skillName: COCOS_UI_SKILL_NAME };
   const installed = updateBuiltInProjectSkill(root, options);
   const entrypoint = fs.readFileSync(path.join(root, installed.state.path), 'utf8');
-  const missing = installed.state.references[2];
+  const missing = installed.state.references.find((file) => file.relativePath === IMAGE_TO_PREFAB);
   fs.unlinkSync(path.join(root, missing.path));
   const state = getBuiltInProjectSkillState(root, options);
   assert.equal(state.status, 'update-available');
   assert.equal(state.modified, false);
   assert.equal(state.missingReferenceCount, 1);
   const preview = previewBuiltInProjectSkillUpdate(root, options);
-  assert.ok(preview.diff.includes(`+++ template-v4/${missing.relativePath}`));
+  assert.ok(preview.diff.includes(`+++ template-v${COCOS_UI_SKILL_TEMPLATE_VERSION}/${missing.relativePath}`));
   const repaired = updateBuiltInProjectSkill(root, options);
   assert.equal(repaired.state.current, true);
   assert.equal(fs.readFileSync(path.join(root, installed.state.path), 'utf8'), entrypoint);
@@ -166,6 +169,46 @@ test('v2 UI content upgrades without a manifest and bundle restore preserves unr
   assert.ok(installed.state.references.every((file) => !fs.existsSync(path.join(root, file.path))));
   assert.equal(getBuiltInProjectSkillState(root, options).status, 'update-available');
 });
+
+for (const managed of [true, false]) {
+  test(`UI v4 ${managed ? 'with' : 'without'} a manifest can add and roll back the image-to-prefab guide`, (t) => {
+    const root = project(t);
+    const options = { skillName: COCOS_UI_SKILL_NAME };
+    const skillPath = path.join(root, getSkillRelativePath(COCOS_UI_SKILL_NAME));
+    const skillRoot = path.dirname(skillPath);
+    const guidePath = path.join(skillRoot, IMAGE_TO_PREFAB);
+    const v4 = fs.readFileSync(path.join(__dirname, 'fixtures/cocos-ui-skill-v4.md'), 'utf8');
+    const oldReferences = getProjectSkillReferences(COCOS_UI_SKILL_NAME).filter((file) => file.path !== IMAGE_TO_PREFAB);
+    fs.mkdirSync(path.join(skillRoot, 'references'), { recursive: true });
+    fs.writeFileSync(skillPath, v4);
+    for (const file of oldReferences) fs.writeFileSync(path.join(skillRoot, file.path), file.content);
+    if (managed) {
+      writeManagedSkillManifest(root, v4, { ...options, templateVersion: 4, referenceFiles: oldReferences });
+    }
+
+    const before = getBuiltInProjectSkillState(root, options);
+    assert.equal(before.installedTemplateVersion, 4);
+    assert.equal(before.status, 'update-available');
+    assert.equal(before.modified, false);
+    assert.equal(before.missingReferenceCount, 1);
+    const preview = previewBuiltInProjectSkillUpdate(root, options);
+    assert.ok(preview.diff.includes(`+++ template-v5/${IMAGE_TO_PREFAB}`));
+    assert.equal(fs.existsSync(guidePath), false);
+
+    const updated = updateBuiltInProjectSkill(root, options);
+    assert.equal(updated.state.installedTemplateVersion, 5);
+    assert.equal(updated.state.current, true);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, updated.manifest), 'utf8'));
+    assert.equal(manifest.files[IMAGE_TO_PREFAB].installedHash, sha256Text(fs.readFileSync(guidePath, 'utf8')));
+
+    const restored = restoreLatestBuiltInProjectSkillBackup(root, options);
+    assert.equal(restored.state.installedTemplateVersion, 4);
+    assert.equal(fs.readFileSync(skillPath, 'utf8'), v4);
+    assert.equal(fs.existsSync(guidePath), false);
+    assert.equal(restored.state.manifest.exists, managed);
+    for (const file of oldReferences) assert.equal(fs.readFileSync(path.join(skillRoot, file.path), 'utf8'), file.content);
+  });
+}
 
 test('reference backup paths cannot escape their predefined bundle', (t) => {
   const root = project(t);

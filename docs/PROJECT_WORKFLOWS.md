@@ -49,13 +49,16 @@ The manager detects the two built-in Skills in `.codex/skills` when their new `.
 
 New backups are stored alongside each client's Skills directory, under `skill-backups/<skill-name>/`. Updating one client's managed copy does not overwrite another client's managed copy.
 
-### Built-in v3 references
+### Built-in skill references
 
 Both built-ins now route from a concise `SKILL.md` to conditional references, instead of loading all specialist guidance on every task:
 
 - `funplay-cocos-mcp-workflow/references/project-readiness.md`: exact asset identity, separate import/compile/preview checks, and persistence.
+- `funplay-cocos-ui-composition/references/image-to-prefab.md` covers turning a full design image into editable Cocos prefabs, including asset splitting, shared navigation, and region-by-region fidelity acceptance against actual preview captures.
 - `funplay-cocos-ui-composition/references/layout-and-adaptation.md`: design baselines, layout ownership, scrolling, and explicitly requested safe-area changes.
 - `references/sprites-and-importers.md`, `references/text-and-localization.md`, and `references/input-and-validation.md` in the UI Skill: nine-slice/importers, font/localization checks, and real input/visual validation respectively.
+
+Image generation is optional for the image-to-prefab workflow. The Cocos extension imports assets, builds the prefab, and captures the preview. If a background or icon needs to be created from scratch, use the AI client's available image tools or supply the artwork.
 
 The UI guidance preserves existing project composition and does not proactively introduce SafeArea containers, adaptation scripts, extra margins, or duplicate insets. New adaptation requires an explicit request or a demonstrated overlap confirmed with the user.
 

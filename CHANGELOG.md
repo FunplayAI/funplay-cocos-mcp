@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-17
+
+### Added
+
+- The built-in Cocos UI Skill v5 guides conversion from a full-page design image to an editable, responsive prefab. It covers asset reuse, separate navigation layers, reusable list rows, and region-by-region fidelity checks against captures from the Cocos preview. Image generation is optional when missing artwork needs to be recreated.
+
 ## [0.7.2] - 2026-11-10
 
 ### Added
