@@ -211,7 +211,7 @@ Generated from `lib/tool-registry.js`. The default `core` profile exposes 39 too
 |---|---|---|---|
 | `capture_desktop_screenshot` | `full` | read-only | [core] Capture a screenshot from the local desktop and return it as an MCP image payload. |
 | `capture_editor_screenshot` | `core`, `full` | read-only | [specialist] Capture the focused Cocos Creator editor window and return it as an MCP image payload. Prefer screenshot tools only when visual verification is explicitly needed. |
-| `capture_game_screenshot` | `full` | read-only | [core] Capture the Game/Preview panel region from the editor window with panel-level cropping when available. |
+| `capture_game_screenshot` | `full` | read-only | [core] Capture the visible Cocos Game View or GameCanvas from the selected window. Reports an error when no game viewport is visible. |
 | `capture_preview_screenshot` | `core`, `full` | read-only | [specialist] Capture the preview or simulator window as an MCP image payload. Prefer this only when you need visual proof of game or preview output. |
 | `capture_scene_screenshot` | `core`, `full` | read-only | [specialist] Capture the Scene panel region from the editor window with panel-level cropping when available. Prefer this only for visual validation of scene-side results. |
 

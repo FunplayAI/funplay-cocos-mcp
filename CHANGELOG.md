@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-11-17
+
+### Fixed
+
+- Fixed [#28](https://github.com/FunplayAI/funplay-cocos-mcp/issues/28): Game View screenshots recognize Windows-style and URL-encoded WebView preload paths. Game capture uses a visible native Game View or Cocos GameCanvas and reports an error when no game render surface is available.
+
 ## [0.7.3] - 2026-11-17
 
 ### Added

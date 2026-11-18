@@ -7,12 +7,12 @@
     "url": "https://github.com/FunplayAI/funplay-cocos-mcp",
     "source": "github"
   },
-  "version": "0.7.3",
+  "version": "0.7.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "funplay-cocos-mcp",
-      "version": "0.7.3",
+      "version": "0.7.4",
       "transport": {
         "type": "stdio"
       },

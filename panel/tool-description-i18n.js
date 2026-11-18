@@ -106,7 +106,7 @@ const ZH_TOOL_DESCRIPTIONS = {
   capture_desktop_screenshot: '截取本地桌面，并以 MCP 图片数据返回。',
   capture_editor_screenshot: '截取当前聚焦的 Cocos Creator 编辑器窗口，并以 MCP 图片数据返回。仅在明确需要视觉验证时优先使用截图工具。',
   capture_scene_screenshot: '截取编辑器 Scene 面板区域，并在可用时按面板裁剪。仅用于场景侧结果的视觉验证。',
-  capture_game_screenshot: '截取编辑器 Game/Preview 面板区域，并在可用时按面板裁剪。',
+  capture_game_screenshot: '截取所选窗口中可见的 Cocos Game View 或 GameCanvas。找不到可见游戏视口时返回错误。',
   list_editor_windows: '列出可用的 Electron 窗口，便于截图或输入工具选择正确目标。明确需要处理窗口目标问题时使用。',
   simulate_mouse_click: '向编辑器、预览或模拟器窗口发送底层 Electron 鼠标点击。',
   simulate_mouse_drag: '发送 Electron 鼠标拖拽。兼容旧步数模式；可显式启用跨渲染帧模式，按时长移动并支持去重、查询和取消。渲染帧及事件发送不代表游戏逻辑已响应。',
