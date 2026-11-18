@@ -186,6 +186,11 @@ for (const { id: clientId } of SKILL_PLATFORMS) {
         assert.match(panel.$.clientTargetDetails.textContent, /项目级 MCP/);
         assert.match(panel.$.clientTargetDetails.textContent, /\.trae\/skills/);
       }
+      if (clientId === 'antigravity') {
+        assert.match(panel.$.clientActionStatus.textContent, /重新加载 MCP 配置/);
+        assert.match(panel.$.clientTargetDetails.textContent, /\.agents\/mcp_config\.json/);
+        assert.match(panel.$.clientTargetDetails.textContent, /\.agents\/skills/);
+      }
     } finally {
       if (descriptor) Object.defineProperty(Object, 'hasOwn', descriptor);
     }

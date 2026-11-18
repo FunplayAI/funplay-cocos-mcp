@@ -21,7 +21,7 @@
 
 ---
 
-Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy、DeepSeek Harness（DSH）等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
+Funplay MCP for Cocos 是一个采用 MIT 协议的 Cocos Creator 扩展，它把 HTTP MCP Server 直接嵌入编辑器，让 Claude Code、Cursor、Codex、VS Code Copilot、Trae、Antigravity、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy、DeepSeek Harness（DSH）等 AI 助手可以直接检查和操作正在运行的 Cocos 项目。
 
 这个项目延续 Funplay MCP for Unity 的产品方向：默认工具面保持聚焦，提供一键客户端配置，并围绕一个高灵活度主执行工具组织工作流。
 
@@ -174,6 +174,23 @@ cocos-<project>-<hash>
   "mcpServers": {
     "funplay_cocos": {
       "url": "http://127.0.0.1:8765/"
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Antigravity（反重力）</summary>
+
+一键配置写入当前 Cocos 项目的 `.agents/mcp_config.json`，通过 `mcpServers` 下的 `serverUrl` 配置 Streamable HTTP。请在 Antigravity 中打开此 Cocos 项目并重新加载 MCP 配置。“配置 + Skills”会把缺失的内置 Skill 安装到与 Codex 共用的 `.agents/skills`。[MCP 配置文档](https://antigravity.google/docs/mcp/) · [项目 Skills 文档](https://antigravity.google/docs/skills/)
+
+```json
+{
+  "mcpServers": {
+    "cocos-demo-012345": {
+      "serverUrl": "http://127.0.0.1:8765/mcp/project/0123456789abcdef01234567/"
     }
   }
 }
@@ -366,7 +383,7 @@ curl http://127.0.0.1:8765/tools
 - 面板会自动检查 GitHub Release，也支持手动检查。
 - 一键更新会下载 GitHub Release zip，校验 `SHA256SUMS.txt`，备份当前扩展目录，替换插件文件，并在 Cocos package API 支持时 reload 扩展；如果当前 Cocos 版本没有可靠 reload 能力，安装后重启 Cocos Creator 即可。Git worktree 和 symlink 安装会保留为手动 `git pull` 或手动替换包，避免覆盖开发目录。
 - “为所有项目安装”使用同一套 Release 与 SHA256 校验流程，目标是当前 Creator 版本管理的全局目录，并会请求 Creator 扫描和注册扩展。为了避免在设置窗口打开时切换扩展，它会保留正在运行的项目副本；没有项目副本时会立即启用全局副本，否则在下次打开项目时启用。
-- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，覆盖全部 11 个一键配置客户端：Codex、Claude Code、Cursor、VS Code / Copilot、Trae、Kiro、Qoder、Kimi Code、OpenCode、CodeBuddy、DSH。MCP 工作流技能为 v4，UI 组合技能为 v5，涵盖整页效果图拆分、可编辑 Prefab 搭建和逐区保真验收。版本检测、差异、备份与恢复包含托管参考文件，用户自有参考文件受保护。旧 Codex 内置 Skill 可迁移到 `.agents/skills`，并保留原文件。
+- **项目 Skills** 按客户端管理 `funplay-cocos-mcp-workflow`、`funplay-cocos-ui-composition` 和自定义 Skills，覆盖包括 Antigravity 在内的 12 个一键配置客户端。MCP 工作流技能为 v4，UI 组合技能为 v5，涵盖整页效果图拆分、可编辑 Prefab 搭建和逐区保真验收。版本检测、差异、备份与恢复包含托管参考文件，用户自有参考文件受保护。Codex 和 Antigravity 共用 `.agents/skills`，迁移旧路径中的内置 Skill 时会保留原文件。
 - Streamable HTTP 响应已补齐 MCP 传输层要求，包括 `Accept`、`MCP-Protocol-Version`、JSON-RPC notification/response，以及可选 `Mcp-Session-Id` session。
 - 工具列表会包含 MCP `outputSchema` 和 `annotations`；结构化工具结果统一使用包含 `ok`、`tool`、`callId`、`summary`、`data`、`refs` 的标准 envelope。
 - `execute_javascript` 安全检查默认开启，会拦截明显高风险的文件系统和 shell 模式，例如删除/截断调用、原始写入流、路径穿越、用户/系统绝对路径和 `child_process`。这是防护栏，不是完整沙箱；确认风险后可在单次调用中显式传入 `safety_checks: false`。
@@ -379,7 +396,7 @@ curl http://127.0.0.1:8765/tools
 
 - **`execute_javascript` 主工具优先** — 一个高灵活度 JavaScript 工具就能编排场景/运行态和编辑器自动化，避免 AI 客户端被大量细碎工具干扰
 - **嵌入式 Cocos 扩展** — Cocos 侧不需要单独 Python 守护进程或外部 bridge
-- **一键客户端配置** — 在 Cocos Creator 内直接配置 Claude Code、Cursor、VS Code、Trae、Kiro、Qoder、Kimi Code、Codex、OpenCode、CodeBuddy（IDE 4.0+），或生成 DSH 配置文件及明确的 `--patch` 启动命令
+- **一键客户端配置** — 在 Cocos Creator 内直接配置 Claude Code、Cursor、VS Code、Trae、Antigravity、Kiro、Qoder、Kimi Code、Codex、OpenCode、CodeBuddy（IDE 4.0+），或生成 DSH 配置文件及明确的 `--patch` 启动命令
 - **内建项目上下文** — 直接暴露项目、场景、选择、脚本诊断、日志和交互历史资源
 - **默认聚焦，必要时全量** — `core` 降低工具列表噪音，需要时切到 `full` 暴露全部工具；`custom` 与保存的 profile 可按分类或工具名调整并恢复
 - **可视化验证** — 截图和输入模拟让 AI 能验证 UI 与玩法改动

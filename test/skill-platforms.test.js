@@ -16,7 +16,7 @@ function project(t) {
 }
 
 for (const platform of SKILL_PLATFORMS) {
-  test(`${platform.name} installs Skills and manifests into its own directory`, (t) => {
+  test(`${platform.name} installs Skills and manifests into its project directory`, (t) => {
     const root = project(t);
     const options = { clientId: platform.id, skillName: COCOS_UI_SKILL_NAME };
     assert.equal(getBuiltInProjectSkillState(root, options).status, 'missing');
@@ -27,7 +27,10 @@ for (const platform of SKILL_PLATFORMS) {
     const custom = createProjectSkill(root, { clientId: platform.id, skillName: 'scene-qa', description: 'Validate this scene' });
     assert.equal(custom.path, `${platform.directory}/scene-qa/SKILL.md`);
     assert.equal(getProjectSkillsState(root, options).skills.length, 2);
-    for (const other of SKILL_PLATFORMS.filter((item) => item.id !== platform.id)) assert.equal(getBuiltInProjectSkillState(root, { ...options, clientId: other.id }).status, 'missing');
+    for (const other of SKILL_PLATFORMS.filter((item) => item.id !== platform.id)) {
+      const expected = other.directory === platform.directory ? 'current' : 'missing';
+      assert.equal(getBuiltInProjectSkillState(root, { ...options, clientId: other.id }).status, expected);
+    }
   });
 }
 
@@ -55,22 +58,24 @@ test('CodeBuddy Skills stay beside the Cocos project config rather than the encl
   assert.equal(fs.existsSync(path.join(root, '.codebuddy')), false);
 });
 
-test('legacy Codex UI v1 migrates with a backup and preserves the original file', (t) => {
-  const root = project(t);
-  const legacy = path.join(root, '.codex', 'skills', COCOS_UI_SKILL_NAME, 'SKILL.md');
-  fs.mkdirSync(path.dirname(legacy), { recursive: true });
-  const original = fs.readFileSync(path.join(__dirname, 'fixtures/cocos-ui-skill-v1.md'), 'utf8');
-  fs.writeFileSync(legacy, original);
-  const options = { clientId: 'codex', skillName: COCOS_UI_SKILL_NAME };
-  const state = getBuiltInProjectSkillState(root, options);
-  assert.equal(state.status, 'update-available');
-  assert.ok(state.legacyPath);
-  const result = updateBuiltInProjectSkill(root, options);
-  assert.equal(result.state.status, 'current');
-  assert.equal(fs.readFileSync(legacy, 'utf8'), original);
-  assert.equal(fs.readFileSync(path.join(root, result.backup.path), 'utf8'), original);
-  assert.equal(fs.readFileSync(path.join(root, result.write.path), 'utf8'), buildCocosUiProjectSkillContent());
-});
+for (const [clientId, legacyDirectory] of [['codex', '.codex'], ['antigravity', '.agent']]) {
+  test(`${clientId} migrates a legacy UI Skill with a backup and preserves the original file`, (t) => {
+    const root = project(t);
+    const legacy = path.join(root, legacyDirectory, 'skills', COCOS_UI_SKILL_NAME, 'SKILL.md');
+    fs.mkdirSync(path.dirname(legacy), { recursive: true });
+    const original = fs.readFileSync(path.join(__dirname, 'fixtures/cocos-ui-skill-v1.md'), 'utf8');
+    fs.writeFileSync(legacy, original);
+    const options = { clientId, skillName: COCOS_UI_SKILL_NAME };
+    const state = getBuiltInProjectSkillState(root, options);
+    assert.equal(state.status, 'update-available');
+    assert.ok(state.legacyPath);
+    const result = updateBuiltInProjectSkill(root, options);
+    assert.equal(result.state.status, 'current');
+    assert.equal(fs.readFileSync(legacy, 'utf8'), original);
+    assert.equal(fs.readFileSync(path.join(root, result.backup.path), 'utf8'), original);
+    assert.equal(fs.readFileSync(path.join(root, result.write.path), 'utf8'), buildCocosUiProjectSkillContent());
+  });
+}
 
 test('legacy modified Skills require consent and never replace an existing new-directory file', (t) => {
   const root = project(t);

@@ -7,7 +7,7 @@ const test = require('node:test');
 const { buildTargets, configureTarget, getTargetStatuses } = require('../lib/client-config');
 const { serverUrl } = require('../lib/project-context');
 
-for (const id of ['claude_code', 'cursor', 'codex', 'vscode', 'trae', 'kiro', 'qoder', 'kimi', 'opencode', 'codebuddy', 'deepseek_harness']) {
+for (const id of ['claude_code', 'cursor', 'codex', 'vscode', 'trae', 'antigravity', 'kiro', 'qoder', 'kimi', 'opencode', 'codebuddy', 'deepseek_harness']) {
   test(`${id}: owned old endpoints migrate explicitly and idempotently without being labeled configured`, (t) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'funplay-context-migration-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));

@@ -8,6 +8,7 @@
 - 一键配置保留其他 MCP 配置。只有当前编辑器正在运行、旧 `funplay_cocos` 条目准确指向当前端口且仍是工具生成的简单格式时，才会迁移旧条目；其他旧条目保留供人工检查。手动改过地址的项目条目不会被静默覆盖。
 - Claude Code 使用 `~/.claude.json` 的 `projects[Git 仓库根目录].mcpServers`，不是所有项目共享的顶层条目。没有 Git 仓库时使用 Cocos 项目目录。这里的 Claude Code 配置不是 Claude Desktop 配置。
 - Trae 写入 `<Cocos 项目>/.trae/mcp.json`，与 `.trae/skills` 使用同一个项目根目录。请在 Trae 中打开此 Cocos 项目，并在“设置 > MCP”启用“项目级 MCP”。旧的用户目录 `.trae/mcp.json` 不会被自动修改或迁移。
+- Antigravity 的一键配置在当前 Cocos 项目的 `.agents/mcp_config.json` 中写入项目专属 `serverUrl`，并保留其他服务器及已有配置项。请在 Antigravity 中打开此项目并重载 MCP 配置。[Antigravity MCP 文档](https://antigravity.google/docs/mcp/)
 - CodeBuddy 使用 IDE 4.0 起支持的 `<Cocos 项目>/.mcp.json`，不写 CLI 或旧编辑器插件的全局配置。请在 CodeBuddy 中打开该 Cocos 项目目录，并按客户端提示启用或批准服务器；不会自动放宽 MCP 审批设置。
 - DeepSeek Harness（DSH）生成独立的 `<Cocos 项目>/.dsh/funplay-cocos-mcp.patch.json` Cordis 覆盖层，以 JSON（有效 YAML）格式配置官方 `@deepseek-ai/dsh-mcp-client` 的 `streamable-http` 连接。不会修改全局/profile YAML、安装依赖或改变审批设置。**文件不会自动加载**：请在 Cocos 项目目录运行面板显示的 `dsh web --patch '<绝对路径>'`，或给原启动命令追加相同 `--patch` 参数。配置状态表示文件已生成，不代表 DSH 已连接；同一 DSH Host 加载的服务器可被该 Host 的其他会话看到，不应把项目覆盖层当成会话权限隔离。
 
@@ -30,6 +31,7 @@ Script cards separate the execution summary, scoped console logs, and return val
 | Cursor | `.cursor/skills` |
 | VS Code / Copilot | `.github/skills` |
 | Trae | `.trae/skills` |
+| Antigravity | `.agents/skills` (shared with Codex) |
 | Kiro | `.kiro/skills` |
 | Qoder | `.qoder/skills` |
 | Kimi Code | `<nearest Git root>/.kimi-code/skills` (project directory when no Git root exists) |
@@ -43,11 +45,11 @@ Client paths were checked against the official [Codex](https://learn.chatgpt.com
 
 DSH's launch overlay and Skills locations follow its official [CLI reference](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/cli/reference/README.md), [MCP client](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md), and [filesystem Skills provider](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md). DSH is in developer preview; this integration targets the official launcher rather than guessing third-party desktop configuration paths. A dedicated overlay must remain a single JSON `insert` containing this project's MCP row. Malformed or unrelated content, duplicate keys, disabled entries and manually repointed endpoints are not overwritten. Custom HTTP headers and timeouts are preserved when an owned endpoint changes. DSH Skills follow the Git root, so projects in the same repository share the managed copies and backups.
 
-### Legacy Codex installs
+### Legacy Codex and Antigravity Skills
 
-The manager detects the two built-in Skills in `.codex/skills` when their new `.agents/skills` destination is absent. Updating backs up the old content and installs the current template in the new directory. The original file is retained. Modified content requires explicit confirmation; an existing new-directory file always takes precedence. Older `.codex/skill-backups` remain available to restore. Custom legacy Skills are not automatically moved: review and migrate them manually.
+When a built-in Skill is absent from `.agents/skills`, the manager looks for it in `.codex/skills` for Codex and `.agent/skills` for Antigravity. Updating backs up the old content, retains the original file, and installs the current template in `.agents/skills`. Modified content requires explicit confirmation. Existing backups from the legacy directory are available to restore. Custom Skills can be moved manually. [Antigravity Skills documentation](https://antigravity.google/docs/skills/)
 
-New backups are stored alongside each client's Skills directory, under `skill-backups/<skill-name>/`. Updating one client's managed copy does not overwrite another client's managed copy.
+New backups are stored alongside the managed Skills directory, under `skill-backups/<skill-name>/`. Codex and Antigravity share the managed copies and backups under `.agents/` in the same project.
 
 ### Built-in skill references
 

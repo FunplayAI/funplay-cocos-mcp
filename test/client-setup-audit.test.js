@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { buildTargets, configureTarget, formatTargetPreview, getTargetStatuses } = require('../lib/client-config');
 const { parseJsonc } = require('../lib/jsonc');
+const { serverUrl } = require('../lib/project-context');
 const { SKILL_PLATFORMS, getSkillsDirectory } = require('../lib/skill-platforms');
 
 function fixture(t, overrides = {}) {
@@ -29,7 +30,7 @@ function fixture(t, overrides = {}) {
 test('every one-click client also has an explicit Skills installation platform', (t) => {
   const { config, options } = fixture(t);
   assert.deepEqual(buildTargets(config, options).map((item) => item.id).sort(), SKILL_PLATFORMS.map((item) => item.id).sort());
-  for (const [id, directory] of [['vscode', '.github/skills'], ['trae', '.trae/skills'], ['kiro', '.kiro/skills']]) {
+  for (const [id, directory] of [['vscode', '.github/skills'], ['trae', '.trae/skills'], ['kiro', '.kiro/skills'], ['antigravity', '.agents/skills']]) {
     assert.equal(getSkillsDirectory({ clientId: id }), directory);
   }
 });
@@ -49,6 +50,81 @@ test('Trae uses project MCP and Skills, leaves old global files alone, and requi
   const withoutProject = { ...config, projectPath: '' };
   assert.equal(buildTargets(withoutProject, options).some((item) => item.id === 'trae'), false);
   assert.throws(() => configureTarget(withoutProject, 'trae', options), /Unknown MCP client/);
+});
+
+test('Antigravity uses the Cocos workspace config and previews the canonical serverUrl', (t) => {
+  const { root, config, options, target, status } = fixture(t);
+  fs.mkdirSync(path.join(root, '.git'));
+  const globalFile = path.join(options.homePath, '.gemini', 'config', 'mcp_config.json');
+  const globalContent = '{"mcpServers":{"other":{"command":"keep"}}}';
+  fs.mkdirSync(path.dirname(globalFile), { recursive: true });
+  fs.writeFileSync(globalFile, globalContent);
+
+  const client = target('antigravity');
+  const expected = { mcpServers: { [client.serverName]: { serverUrl: serverUrl(config) } } };
+  assert.equal(client.configPath, path.join(config.projectPath, '.agents', 'mcp_config.json'));
+  assert.deepEqual(JSON.parse(formatTargetPreview(client)), expected);
+  const result = configureTarget(config, client.id, options);
+  assert.deepEqual(JSON.parse(fs.readFileSync(client.configPath, 'utf8')), expected);
+  assert.equal(result.url, serverUrl(config));
+  assert.equal(status(client.id).configured, true);
+  assert.equal(result.setupHintKey, 'client.antigravity_project_hint');
+  assert.equal(fs.readFileSync(globalFile, 'utf8'), globalContent);
+  assert.equal(fs.existsSync(path.join(root, '.agents')), false);
+  assert.equal(buildTargets({ ...config, projectPath: '' }, options).some((item) => item.id === client.id), false);
+});
+
+test('Antigravity recognizes the url alias and preserves custom options when an owned endpoint changes', (t) => {
+  const { config, options, target, status, write } = fixture(t);
+  const client = target('antigravity');
+  const custom = { headers: { 'X-Client': 'keep' }, timeoutSeconds: 90, disabledTools: ['open_scene'] };
+  const original = { mcpServers: {
+    [client.serverName]: { url: serverUrl(config), ...custom },
+    other: { command: 'keep' },
+  } };
+  const file = write(client.id, JSON.stringify(original));
+  assert.equal(status(client.id).configured, true);
+  const first = configureTarget(config, client.id, options);
+  const canonical = fs.readFileSync(file, 'utf8');
+  assert.deepEqual(JSON.parse(canonical).mcpServers[client.serverName], { serverUrl: serverUrl(config), ...custom });
+  const changed = { ...config, port: 24567 };
+  assert.throws(() => configureTarget(changed, client.id, options), /another endpoint/);
+  assert.equal(fs.readFileSync(file, 'utf8'), canonical);
+  const owned = { ...changed, clientConfigEntries: { [client.id]: first } };
+  configureTarget(owned, client.id, options);
+  const updated = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.deepEqual(updated.mcpServers[client.serverName], { serverUrl: serverUrl(owned), ...custom });
+  assert.deepEqual(updated.mcpServers.other, original.mcpServers.other);
+  assert.equal(getTargetStatuses(owned, options).find((item) => item.id === client.id).configured, true);
+});
+
+test('Antigravity preserves disabled, command-based and ambiguous workspace entries', (t) => {
+  const { config, options, target, status, write } = fixture(t);
+  const client = target('antigravity');
+  const serverUrl = client.entry.serverUrl;
+  for (const [entry, error] of [
+    [{ serverUrl, disabled: true }, /disabled/],
+    [{ serverUrl, command: 'keep' }, /local command/],
+    [{ serverUrl, url: 'http://127.0.0.1:9999/' }, /conflicting serverUrl and url/],
+  ]) {
+    const content = JSON.stringify({ mcpServers: { [client.serverName]: entry } });
+    const file = write(client.id, content);
+    assert.match(status(client.id).readError, error);
+    assert.throws(() => configureTarget(config, client.id, options), error);
+    assert.equal(fs.readFileSync(file, 'utf8'), content);
+  }
+});
+
+test('Antigravity reports project config symlinks outside the workspace without writing through them', (t) => {
+  const { root, config, options, status } = fixture(t);
+  const outside = path.join(root, 'external');
+  fs.mkdirSync(outside);
+  const outsideFile = path.join(outside, 'mcp_config.json');
+  fs.writeFileSync(outsideFile, '{}');
+  fs.symlinkSync(outside, path.join(config.projectPath, '.agents'), 'junction');
+  assert.match(status('antigravity').readError, /outside the Cocos project/);
+  assert.throws(() => configureTarget(config, 'antigravity', options), /outside the Cocos project/);
+  assert.equal(fs.readFileSync(outsideFile, 'utf8'), '{}');
 });
 
 for (const platform of ['darwin', 'linux', 'win32']) {

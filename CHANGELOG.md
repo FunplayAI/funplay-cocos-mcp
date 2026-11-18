@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-11-18
+
+### Added
+
+- One-click MCP setup for Google Antigravity writes the project-bound Streamable HTTP endpoint to `.agents/mcp_config.json`. Configure + Skills installs missing built-ins into `.agents/skills`, which Antigravity and Codex both discover.
+
 ## [0.7.4] - 2026-11-17
 
 ### Fixed
