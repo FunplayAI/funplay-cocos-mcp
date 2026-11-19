@@ -30,7 +30,7 @@ function fixture(t, overrides = {}) {
 test('every one-click client also has an explicit Skills installation platform', (t) => {
   const { config, options } = fixture(t);
   assert.deepEqual(buildTargets(config, options).map((item) => item.id).sort(), SKILL_PLATFORMS.map((item) => item.id).sort());
-  for (const [id, directory] of [['vscode', '.github/skills'], ['trae', '.trae/skills'], ['kiro', '.kiro/skills'], ['antigravity', '.agents/skills']]) {
+  for (const [id, directory] of [['vscode', '.github/skills'], ['trae', '.trae/skills'], ['kiro', '.kiro/skills'], ['antigravity', '.agents/skills'], ['pi', '.agents/skills']]) {
     assert.equal(getSkillsDirectory({ clientId: id }), directory);
   }
 });
@@ -124,6 +124,74 @@ test('Antigravity reports project config symlinks outside the workspace without 
   fs.symlinkSync(outside, path.join(config.projectPath, '.agents'), 'junction');
   assert.match(status('antigravity').readError, /outside the Cocos project/);
   assert.throws(() => configureTarget(config, 'antigravity', options), /outside the Cocos project/);
+  assert.equal(fs.readFileSync(outsideFile, 'utf8'), '{}');
+});
+
+test('Pi configures the Cocos project and preserves unrelated config and the user profile', (t) => {
+  const { config, options, target, status, write } = fixture(t);
+  const client = target('pi');
+  const globalFile = path.join(options.homePath, '.pi', 'agent', 'mcp.json');
+  const unrelated = { autoEnableCodemode: false, mcpServers: { other: { command: 'keep' } } };
+  const globalContent = JSON.stringify(unrelated);
+  fs.mkdirSync(path.dirname(globalFile), { recursive: true });
+  fs.writeFileSync(globalFile, globalContent);
+  const file = write(client.id, '\uFEFF' + globalContent);
+
+  const entry = { url: serverUrl(config) };
+  assert.equal(file, path.join(config.projectPath, '.pi', 'mcp.json'));
+  assert.deepEqual(JSON.parse(formatTargetPreview(client)), { mcpServers: { [client.serverName]: entry } });
+  const result = configureTarget(config, client.id, options);
+  assert.equal(result.setupHintKey, 'client.pi_project_hint');
+  assert.equal(status(client.id).configured, true);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), {
+    ...unrelated,
+    mcpServers: { ...unrelated.mcpServers, [client.serverName]: entry },
+  });
+  assert.equal(fs.readFileSync(globalFile, 'utf8'), globalContent);
+  assert.equal(buildTargets({ ...config, projectPath: '' }, options).some((item) => item.id === client.id), false);
+});
+
+test('Pi reuses the existing server namespace and retains its HTTP transport and options', (t) => {
+  const { config, options, target, status, write } = fixture(t);
+  const client = target('pi');
+  const alias = client.serverName.replace(/-/g, '_');
+  const entry = { type: 'streamable-http', url: client.entry.url, exposure: 'direct', timeout: 90 };
+  const file = write(client.id, JSON.stringify({ mcpServers: { [alias]: entry } }));
+  assert.equal(status(client.id).configured, true);
+  assert.equal(status(client.id).serverName, alias);
+  assert.deepEqual(Object.keys(JSON.parse(formatTargetPreview(client)).mcpServers), [alias]);
+  const first = configureTarget(config, client.id, options);
+  assert.equal(first.serverName, alias);
+  const changed = { ...config, port: 24567 };
+  assert.throws(() => configureTarget(changed, client.id, options), /another endpoint/);
+  const owned = { ...changed, clientConfigEntries: { [client.id]: first } };
+  configureTarget(owned, client.id, options);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).mcpServers, { [alias]: { ...entry, url: serverUrl(owned) } });
+
+  const conflicting = JSON.stringify({ mcpServers: { [client.serverName]: client.entry, [alias]: entry } });
+  fs.writeFileSync(file, conflicting);
+  assert.match(status(client.id).readError, /share the namespace/);
+  assert.throws(() => configureTarget(config, client.id, options), /share the namespace/);
+  assert.equal(fs.readFileSync(file, 'utf8'), conflicting);
+});
+
+test('Pi leaves an unsafe project config or a disabled MCP entry for review', (t) => {
+  const { root, config, options, target, status, write } = fixture(t);
+  const client = target('pi');
+  const disabled = JSON.stringify({ mcpServers: { [client.serverName]: { ...client.entry, enabled: false } } });
+  const file = write(client.id, disabled);
+  assert.match(status(client.id).readError, /disabled/);
+  assert.throws(() => configureTarget(config, client.id, options), /disabled/);
+  assert.equal(fs.readFileSync(file, 'utf8'), disabled);
+
+  const outside = path.join(root, 'external');
+  const projectDir = path.dirname(file);
+  fs.renameSync(projectDir, outside);
+  const outsideFile = path.join(outside, 'mcp.json');
+  fs.writeFileSync(outsideFile, '{}');
+  fs.symlinkSync(outside, projectDir, 'junction');
+  assert.match(status(client.id).readError, /outside the Cocos project/);
+  assert.throws(() => configureTarget(config, client.id, options), /outside the Cocos project/);
   assert.equal(fs.readFileSync(outsideFile, 'utf8'), '{}');
 });
 

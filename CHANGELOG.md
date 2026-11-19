@@ -6,6 +6,12 @@ This project follows a simple changelog format inspired by [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-11-18
+
+### Added
+
+- One-click MCP setup for Pi 1.0+ writes the project-bound Streamable HTTP endpoint to `.pi/mcp.json`. Configure + Skills installs missing built-ins into the shared `.agents/skills` directory.
+
 ## [0.7.5] - 2026-11-18
 
 ### Added

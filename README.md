@@ -21,7 +21,7 @@ For discussion and feedback, join our QQ group: **1108522331**. Open **Funplay >
 
 ---
 
-Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Antigravity, Kiro, Qoder, Kimi Code, OpenCode, CodeBuddy, and DeepSeek Harness (DSH) inspect and operate your running Cocos project.
+Funplay MCP for Cocos is an MIT-licensed Cocos Creator extension that embeds an HTTP MCP server directly inside the editor. It lets AI assistants such as Claude Code, Cursor, Codex, VS Code Copilot, Trae, Antigravity, Pi, Kiro, Qoder, Kimi Code, OpenCode, CodeBuddy, and DeepSeek Harness (DSH) inspect and operate your running Cocos project.
 
 The package follows the same product direction as Funplay MCP for Unity: keep the default tool surface focused, provide a one-click client configuration window, and make one high-flexibility execution tool the primary workflow.
 
@@ -191,6 +191,25 @@ One-click setup writes the active Cocos project's `.agents/mcp_config.json` usin
   "mcpServers": {
     "cocos-demo-012345": {
       "serverUrl": "http://127.0.0.1:8765/mcp/project/0123456789abcdef01234567/"
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Pi (1.0+)</summary>
+
+Select **Pi** under **Funplay > MCP Server**. One-click setup saves the project's Streamable HTTP URL in `.pi/mcp.json`. **Configure + Skills** installs missing built-ins into `.agents/skills`, shared with Codex and Antigravity. [Pi MCP configuration](https://docs.pi.dev/latest/mcp) · [Pi Skills](https://docs.pi.dev/latest/skills)
+
+Start `pi` from the Cocos project directory and trust the project when prompted. In an already trusted session, run `/reload` and check `/mcp` for connection status.
+
+```json
+{
+  "mcpServers": {
+    "cocos-demo-012345": {
+      "url": "http://127.0.0.1:8765/mcp/project/0123456789abcdef01234567/"
     }
   }
 }
@@ -383,7 +402,7 @@ Try a higher-level prompt in your AI client:
 - The panel checks GitHub releases automatically and also supports manual checks.
 - One-click update downloads the GitHub Release zip, verifies `SHA256SUMS.txt`, backs up the current extension, replaces the package files, and reloads the extension when the Cocos package API supports it. If reload is unavailable, restart Cocos Creator after installation. Git worktree and symlink installs are intentionally left to manual `git pull` or package replacement.
 - **Install for All Projects** uses the same release and SHA256 verification flow, targets the active Creator version's managed global directory, then asks Creator to scan and register the package. It preserves an active project copy instead of switching packages underneath an open settings window; the global copy is enabled immediately when no project copy is active, or on the next project open otherwise.
-- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for all 12 one-click clients, including Antigravity. The workflow skill is v4. The UI composition skill is v5 and covers splitting full-page designs into editable prefabs and checking fidelity by region. Version checks, diffs, backups, and restore include managed references, and user-owned reference files are protected. Codex and Antigravity share `.agents/skills` and can migrate their legacy built-ins while retaining the original files.
+- **Project Skills** manages the built-in `funplay-cocos-mcp-workflow` and `funplay-cocos-ui-composition` skills plus custom skills for all 13 one-click clients. The workflow skill is v4. The UI composition skill is v5 and covers splitting full-page designs into editable prefabs and checking fidelity by region. Version checks, diffs, backups, and restore include managed references, and user-owned reference files are protected. Codex, Antigravity, and Pi share `.agents/skills`. Codex and Antigravity can migrate their legacy built-ins while retaining the original files.
 - Streamable HTTP responses follow the MCP transport requirements for `Accept`, `MCP-Protocol-Version`, JSON-RPC notifications/responses, and optional `Mcp-Session-Id` sessions.
 - Tool listings include MCP `outputSchema` and `annotations`; structured tool results use a standard envelope with `ok`, `tool`, `callId`, `summary`, `data`, and follow-up `refs`.
 - `execute_javascript` safety checks are enabled by default. They block obvious risky filesystem and shell patterns such as delete/truncate calls, raw writable streams, path traversal, user/system absolute paths, and `child_process`. This is a guardrail, not a full sandbox; a call can explicitly pass `safety_checks: false` when you have reviewed the risk.
@@ -396,7 +415,7 @@ Try a higher-level prompt in your AI client:
 
 - **`execute_javascript` First** — One high-flexibility JavaScript tool can orchestrate scene/runtime work and editor-side automation without flooding AI clients with too many narrow tool calls
 - **Embedded Cocos Extension** — No separate Python daemon or external bridge process is required for the Cocos-side plugin
-- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Antigravity, Kiro, Qoder, Kimi Code, Codex, OpenCode, and CodeBuddy (IDE 4.0+), or generate a DSH overlay with an explicit `--patch` launch command
+- **One-Click Client Configuration** — Configure Claude Code, Cursor, VS Code, Trae, Antigravity, Pi (1.0+), Kiro, Qoder, Kimi Code, Codex, OpenCode, and CodeBuddy (IDE 4.0+), or generate a DSH overlay with an explicit `--patch` launch command
 - **Project Context Built In** — Exposes live project, scene, selection, script diagnostics, logs, and interaction-history resources
 - **Focused by Default, Full When Needed** — `core` reduces tool-list noise; `full` exposes every available tool; `custom` plus saved profiles lets you tune and restore tool exposure by category or tool
 - **Visual Validation** — Scene/editor/preview screenshots and input simulation help AI verify UI and gameplay changes

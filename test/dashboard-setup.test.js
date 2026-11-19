@@ -191,6 +191,11 @@ for (const { id: clientId } of SKILL_PLATFORMS) {
         assert.match(panel.$.clientTargetDetails.textContent, /\.agents\/mcp_config\.json/);
         assert.match(panel.$.clientTargetDetails.textContent, /\.agents\/skills/);
       }
+      if (clientId === 'pi') {
+        assert.match(panel.$.clientActionStatus.textContent, /信任项目/);
+        assert.match(panel.$.clientTargetDetails.textContent, /\.pi\/mcp\.json/);
+        assert.match(panel.$.clientTargetDetails.textContent, /\/reload/);
+      }
     } finally {
       if (descriptor) Object.defineProperty(Object, 'hasOwn', descriptor);
     }

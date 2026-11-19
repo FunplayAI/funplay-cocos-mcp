@@ -9,6 +9,7 @@
 - Claude Code 使用 `~/.claude.json` 的 `projects[Git 仓库根目录].mcpServers`，不是所有项目共享的顶层条目。没有 Git 仓库时使用 Cocos 项目目录。这里的 Claude Code 配置不是 Claude Desktop 配置。
 - Trae 写入 `<Cocos 项目>/.trae/mcp.json`，与 `.trae/skills` 使用同一个项目根目录。请在 Trae 中打开此 Cocos 项目，并在“设置 > MCP”启用“项目级 MCP”。旧的用户目录 `.trae/mcp.json` 不会被自动修改或迁移。
 - Antigravity 的一键配置在当前 Cocos 项目的 `.agents/mcp_config.json` 中写入项目专属 `serverUrl`，并保留其他服务器及已有配置项。请在 Antigravity 中打开此项目并重载 MCP 配置。[Antigravity MCP 文档](https://antigravity.google/docs/mcp/)
+- Pi 1.0+ 的一键配置在当前 Cocos 项目的 `.pi/mcp.json` 中保存 Streamable HTTP 地址。从 Cocos 项目目录启动 `pi`，按提示信任项目后即可加载 MCP 和 `.agents/skills`。已信任的会话可执行 `/reload` 再用 `/mcp` 查看状态。[Pi MCP 文档](https://docs.pi.dev/latest/mcp) · [Pi Skills 文档](https://docs.pi.dev/latest/skills)
 - CodeBuddy 使用 IDE 4.0 起支持的 `<Cocos 项目>/.mcp.json`，不写 CLI 或旧编辑器插件的全局配置。请在 CodeBuddy 中打开该 Cocos 项目目录，并按客户端提示启用或批准服务器；不会自动放宽 MCP 审批设置。
 - DeepSeek Harness（DSH）生成独立的 `<Cocos 项目>/.dsh/funplay-cocos-mcp.patch.json` Cordis 覆盖层，以 JSON（有效 YAML）格式配置官方 `@deepseek-ai/dsh-mcp-client` 的 `streamable-http` 连接。不会修改全局/profile YAML、安装依赖或改变审批设置。**文件不会自动加载**：请在 Cocos 项目目录运行面板显示的 `dsh web --patch '<绝对路径>'`，或给原启动命令追加相同 `--patch` 参数。配置状态表示文件已生成，不代表 DSH 已连接；同一 DSH Host 加载的服务器可被该 Host 的其他会话看到，不应把项目覆盖层当成会话权限隔离。
 
@@ -32,6 +33,7 @@ Script cards separate the execution summary, scoped console logs, and return val
 | VS Code / Copilot | `.github/skills` |
 | Trae | `.trae/skills` |
 | Antigravity | `.agents/skills` (shared with Codex) |
+| Pi | `.agents/skills` (shared with Codex and Antigravity) |
 | Kiro | `.kiro/skills` |
 | Qoder | `.qoder/skills` |
 | Kimi Code | `<nearest Git root>/.kimi-code/skills` (project directory when no Git root exists) |
@@ -49,7 +51,7 @@ DSH's launch overlay and Skills locations follow its official [CLI reference](ht
 
 When a built-in Skill is absent from `.agents/skills`, the manager looks for it in `.codex/skills` for Codex and `.agent/skills` for Antigravity. Updating backs up the old content, retains the original file, and installs the current template in `.agents/skills`. Modified content requires explicit confirmation. Existing backups from the legacy directory are available to restore. Custom Skills can be moved manually. [Antigravity Skills documentation](https://antigravity.google/docs/skills/)
 
-New backups are stored alongside the managed Skills directory, under `skill-backups/<skill-name>/`. Codex and Antigravity share the managed copies and backups under `.agents/` in the same project.
+New backups are stored alongside the managed Skills directory, under `skill-backups/<skill-name>/`. Codex, Antigravity, and Pi share the managed copies and backups under `.agents/` in the same project.
 
 ### Built-in skill references
 
